@@ -3,7 +3,7 @@ import {createNeonAuth} from "@neondatabase/auth/next/server";
 const baseUrl=process.env.NEON_AUTH_BASE_URL;
 const cookieSecret=process.env.NEON_AUTH_COOKIE_SECRET;
 
-if(process.env.NODE_ENV==="production"&&(!baseUrl||!cookieSecret)){
+if(process.env.VERCEL==="1"&&(!baseUrl||!cookieSecret)){
  throw new Error("Neon Auth production environment is not configured");
 }
 
