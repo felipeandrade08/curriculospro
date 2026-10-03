@@ -168,3 +168,28 @@ body{background:#f7fafc;color:var(--cp-ink)}
 
 /* Semantic progress language */
 .editorHead .progress{width:205px;height:43px;padding-top:15px}.editorHead .progress:before,.editorHead .progress>i{top:7px}.editorHead .progress>span{display:block;font-size:10px;line-height:1.2;color:#536b82;font-weight:650;white-space:nowrap}.editorHead .progress>span>b{font-size:11px;color:#075fc9}.editorHead .progress>span>small{display:block;margin-top:2px;font-size:9px;color:#7b8d9f;font-weight:600}.assistantTop>strong{min-width:58px;text-align:center}.assistantNext>span{font-size:9px;letter-spacing:.8px}
+
+
+/* Editor final UX refinement — interface only, never the A4/PDF */
+.guidedJourney{padding:16px 17px;margin-bottom:14px;box-shadow:none}
+.journeyIntro small{font-size:11px}.journeyIntro b{font-size:15px}.journeyIntro>span{font-size:11px;line-height:1.45}
+.journeySteps{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.journeySteps button{min-height:48px;padding:10px}.journeySteps button b{font-size:11px}.journeySteps button small{font-size:10px;line-height:1.25}
+.journeySteps button>i{width:25px;height:25px;flex-basis:25px;font-size:11px}
+.journeyAnchor{scroll-margin-top:92px}
+.resumeAssistant{padding:12px 14px;margin-bottom:22px;background:#f8fbfe;box-shadow:none}
+.assistantTop small{font-size:10px}.assistantTop b{font-size:12px}.assistantTop>strong{font-size:11px}
+.assistantMeter{margin:9px 0 10px}.assistantNext{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.assistantNext>span{grid-column:1/-1;font-size:10px;margin:0;letter-spacing:.7px}
+.assistantNext>div{border:1px solid #e3ebf2;border-radius:9px;padding:8px;background:#fff}
+.assistantNext b{font-size:10px}.assistantNext small{font-size:9px;line-height:1.4}.assistantRule{font-size:9px;line-height:1.45}
+.assistantReady{font-size:10px}
+.contextChoice>b{font-size:12px}.contextChoice button{font-size:11px;min-height:36px}
+.coachTip b{font-size:10px}.coachTip small{font-size:9px;line-height:1.5}
+.sectionTitle.withAction>div p{font-size:10px}
+.finalReview{margin:24px 0 4px;padding:17px}.reviewHead small{font-size:10px}.reviewHead b{font-size:13px}.reviewHead>span{font-size:10px}
+.reviewIssue b{font-size:10px}.reviewIssue small,.reviewFoot{font-size:9px;line-height:1.5}
+.currentJob{margin:-2px 0 12px;padding:8px 11px;border:1px solid #cfdce8;border-radius:9px;background:#fff;color:#49647d;font-size:11px;font-weight:750;cursor:pointer}
+.currentJob:hover{border-color:#9ec9ef;color:#075fc9}.currentJob.active{border-color:#9ed8bc;background:#effaf4;color:#24704e}
+@media(max-width:850px){.journeySteps{grid-template-columns:repeat(2,minmax(0,1fr))}.assistantNext{grid-template-columns:1fr}.assistantNext>span{grid-column:auto}}
+@media(max-width:520px){.guidedJourney{padding:14px}.journeySteps{grid-template-columns:1fr 1fr}.journeySteps button{min-height:52px}.assistantTop{align-items:flex-start}.assistantTop b{font-size:12px}.assistantNext small,.assistantRule,.coachTip small,.reviewIssue small,.reviewFoot{font-size:10px}.currentJob{min-height:38px}}
