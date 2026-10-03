@@ -11,7 +11,11 @@ const files=(await fs.readdir(dir)).filter(x=>x.endsWith(".sql")).sort();
 for(const name of files){
  const exists=await sql`SELECT 1 FROM schema_migrations WHERE name=${name}`;
  if(exists.length){console.log("skip",name);continue}
- const source=(await fs.readFile(path.join(dir,name),"utf8")).replace(/^\\s*BEGIN\\s*;?/i,"").replace(/COMMIT\\s*;?\\s*$/i,"").trim();
+ const raw=await fs.readFile(path.join(dir,name),"utf8");
+ const source=raw
+  .replace(new RegExp("^\\s*BEGIN\\s*;?","i"),"")
+  .replace(new RegExp("COMMIT\\s*;?\\s*$","i"),"")
+  .trim();
  if(!source)throw new Error("Migration "+name+" is empty");
  await sql.transaction([sql.query(source),sql`INSERT INTO schema_migrations(name) VALUES(${name})`]);
  console.log("applied",name);
