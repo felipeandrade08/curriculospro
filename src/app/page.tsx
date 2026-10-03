@@ -10,7 +10,7 @@ export default function Home() {
         </Link>
         <nav>
           <a href="#recursos">Recursos</a>
-          <a href="#modelos">Modelos</a>
+          <Link href="/modelos">Modelos</Link><Link href="/curriculos">Meus currículos</Link>
           <Link href="/editor" className="navCta">Criar currículo grátis</Link>
         </nav>
       </header>
@@ -23,7 +23,7 @@ export default function Home() {
             <p>Crie um currículo profissional em poucos minutos, com design moderno e uma experiência feita para você se destacar.</p>
             <div className="actions">
               <Link href="/editor" className="primary">Criar meu currículo grátis <b>→</b></Link>
-              <a href="#modelos" className="secondary">Ver modelos</a>
+              <Link href="/modelos" className="secondary">Ver modelos</Link>
             </div>
             <small>✓ Sem cartão &nbsp; ✓ Fácil de editar &nbsp; ✓ Pronto para PDF</small>
           </div>
@@ -41,7 +41,7 @@ export default function Home() {
         <div className="pill">DESIGN QUE TRABALHA POR VOCÊ</div>
         <h2>Bonito para quem vê.<br/><em>Prático para quem cria.</em></h2>
         <p>Começamos com modelos limpos e profissionais. Você cuida da sua história; o CurriculosPRO cuida da apresentação.</p>
-        <Link href="/editor" className="primary">Começar agora →</Link>
+        <Link href="/modelos" className="primary">Escolher meu modelo →</Link>
       </section>
 
       <footer>
