@@ -11,7 +11,8 @@ export default function Home() {
         <nav>
           <a href="#recursos">Recursos</a>
           <Link href="/modelos">Modelos</Link><Link href="/curriculos">Meus currículos</Link>
-          <Link href="/editor?new=blank" className="navCta">Criar currículo grátis</Link>
+          <Link href="/auth/sign-in">Entrar</Link>
+          <Link href="/auth/sign-up" className="navCta">Criar conta grátis</Link>
         </nav>
       </header>
 
