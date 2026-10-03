@@ -1,5 +1,4 @@
 import sharp from "sharp";
-import fs from "node:fs/promises";
 import path from "node:path";
 
 const dir=path.join(process.cwd(),"public","brand");
