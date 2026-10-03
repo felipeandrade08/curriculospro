@@ -165,3 +165,6 @@ body{background:#f7fafc;color:var(--cp-ink)}
 
 /* Optional subsection guidance */
 .subGuidance{margin:12px 0}.subGuidance .contextChoice{margin-bottom:8px}.subGuidance+.listEditor{margin-top:10px}
+
+/* Semantic progress language */
+.editorHead .progress{width:205px;height:43px;padding-top:15px}.editorHead .progress:before,.editorHead .progress>i{top:7px}.editorHead .progress>span{display:block;font-size:10px;line-height:1.2;color:#536b82;font-weight:650;white-space:nowrap}.editorHead .progress>span>b{font-size:11px;color:#075fc9}.editorHead .progress>span>small{display:block;margin-top:2px;font-size:9px;color:#7b8d9f;font-weight:600}.assistantTop>strong{min-width:58px;text-align:center}.assistantNext>span{font-size:9px;letter-spacing:.8px}
