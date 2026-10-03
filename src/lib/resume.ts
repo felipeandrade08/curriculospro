@@ -23,3 +23,12 @@ export type ResumeBackup={product:"CurriculosPRO";version:3;exportedAt:string;re
 export function isResumeDocument(x:unknown):x is ResumeDocument{if(!x||typeof x!=="object")return false;const d=x as Partial<ResumeDocument>;return typeof d.id==="string"&&typeof d.title==="string"&&!!d.cv&&typeof d.cv==="object"&&["essential","modern","executive"].includes(String(d.template))&&Array.isArray(d.sectionOrder)&&Array.isArray(d.hidden)}
 export function parseBackup(value:string):ResumeDocument[]{const raw=JSON.parse(value) as Partial<ResumeBackup>;if(raw.product!=="CurriculosPRO"||raw.version!==3||!Array.isArray(raw.resumes))throw new Error("invalid-backup");const docs=raw.resumes.filter(isResumeDocument);if(!docs.length)throw new Error("empty-backup");return docs}
 export function safeFilename(value:string){return (value||"curriculo").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9-_ ]/g,"").trim().replace(/\s+/g,"-").toLowerCase().slice(0,70)||"curriculo"}
+
+export const RECOVERY_KEY="curriculospro.recovery.v1";
+export type RecoverySnapshot={createdAt:string;reason:"delete"|"import"|"manual";resumes:ResumeDocument[]};
+export type SyncStatus="local"|"pending"|"synced"|"error";
+export type SyncEnvelope={documentId:string;updatedAt:string;revision:number;deviceId:string};
+export type AccountProfile={id:string;email:string;displayName:string;plan:PlanId};
+export function createRecovery(resumes:ResumeDocument[],reason:RecoverySnapshot["reason"]):RecoverySnapshot{return{createdAt:new Date().toISOString(),reason,resumes:structuredClone(resumes)}}
+export function readRecovery():RecoverySnapshot|null{try{const raw=localStorage.getItem(RECOVERY_KEY);return raw?JSON.parse(raw) as RecoverySnapshot:null}catch{return null}}
+export function storeRecovery(resumes:ResumeDocument[],reason:RecoverySnapshot["reason"]){try{localStorage.setItem(RECOVERY_KEY,JSON.stringify(createRecovery(resumes,reason)))}catch{}}
