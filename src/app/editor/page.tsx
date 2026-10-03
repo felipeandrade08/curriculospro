@@ -65,10 +65,10 @@ export default function Editor(){
   const blankItems=[...cv.experiences,...cv.education].filter(x=>!x.title.trim()&&!x.subtitle.trim()&&!x.period.trim()&&!x.description.trim()).length;
   if(blankItems)issues.push({level:"optional",title:"Há itens vazios",text:"Remova itens que você adicionou mas decidiu não preencher."});
   if(hasDuplicateSkills(cv.skills))issues.push({level:"recommended",title:"Competências repetidas",text:"Remova duplicatas para deixar a seção mais objetiva."});
-  const hiddenWithContent=hidden.filter(k=>k==="summary"?!!cv.summary.trim():k==="experiences"?cv.experiences.length>0:k==="education"?cv.education.length>0:k==="skills"?cv.skills.some(Boolean):k==="languages"?cv.languages.some(Boolean):cv.courses.some(Boolean));
+  const hiddenWithContent=hidden.filter(k=>k==="summary"?!!cv.summary.trim():k==="experiences"?cv.experiences.length>0:k==="education"?cv.education.length>0:k==="skills"?cv.skills.some(Boolean):k==="languages"?cv.languages.some(Boolean):guidance.courses!=="none"&&cv.courses.some(Boolean));
   if(hiddenWithContent.length)issues.push({level:"optional",title:"Há conteúdo oculto",text:"Algumas informações preenchidas não aparecerão no PDF porque a seção está oculta."});
   return{issues,required:issues.filter(x=>x.level==="required").length,recommended:issues.filter(x=>x.level==="recommended").length}
- },[cv,hidden]);
+ },[cv,hidden,guidance]);
  const set=<K extends keyof CV>(k:K,v:CV[K])=>setCv({...cv,[k]:v});
  const updateItem=(section:"experiences"|"education",id:string,key:keyof Item,value:string)=>setCv({...cv,[section]:cv[section].map(x=>x.id===id?{...x,[key]:value}:x)});
  const addItem=(section:"experiences"|"education")=>setCv({...cv,[section]:[...cv[section],{id:uid(),title:"",subtitle:"",period:"",description:""}]});
