@@ -1,20 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
+import {SiteHeader} from "@/components/site-header";
+import {SiteFooter} from "@/components/site-footer";
 
 export default function Home() {
   return (
     <main>
-      <header className="nav shell">
-        <Link className="brand brandImage" href="/">
-          <Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={190} height={72} priority />
-        </Link>
-        <nav>
-          <a href="#recursos">Recursos</a>
-          <Link href="/modelos">Modelos</Link><Link href="/curriculos">Meus currículos</Link>
-          <Link href="/auth/sign-in">Entrar</Link>
-          <Link href="/auth/sign-up" className="navCta">Criar conta grátis</Link>
-        </nav>
-      </header>
+      <SiteHeader />
 
       <section className="heroBrand">
         <div className="hero shell">
@@ -45,15 +36,7 @@ export default function Home() {
         <Link href="/modelos" className="primary">Escolher meu modelo →</Link>
       </section>
 
-      <footer>
-        <div className="shell footer">
-          <div className="brand brandImage footerLogo">
-            <Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={165} height={62} />
-          </div>
-          <p>Feito com dedicação por <strong>Felipe Andrade Dev</strong></p>
-          <small>© 2026 CurriculosPRO</small>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }
