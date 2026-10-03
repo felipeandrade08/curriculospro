@@ -80,7 +80,7 @@ export default function Editor(){
  const onPhoto=(file?:File)=>{if(!file||file.size>2_500_000)return;const reader=new FileReader();reader.onload=()=>{const img=new window.Image();img.onload=()=>{const canvas=document.createElement("canvas"),max=480,scale=Math.min(1,max/Math.max(img.width,img.height));canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext("2d")?.drawImage(img,0,0,canvas.width,canvas.height);set("photo",canvas.toDataURL("image/jpeg",.82))};img.src=String(reader.result)};reader.readAsDataURL(file)};
  const moveSection=(key:SectionKey,dir:-1|1)=>{const i=sectionOrder.indexOf(key),target=i+dir;if(target<0||target>=sectionOrder.length)return;const next=[...sectionOrder];[next[i],next[target]]=[next[target],next[i]];setSectionOrder(next)};
  const toggleSection=(key:SectionKey)=>setHidden(hidden.includes(key)?hidden.filter(x=>x!==key):[...hidden,key]);
- const visible=(key:SectionKey)=>!hidden.includes(key);
+ const visible=(key:SectionKey)=>!hidden.includes(key)&&!(key==="courses"&&guidance.courses==="none");
  const formatPhone=(value:string)=>{const d=value.replace(/\D/g,"").slice(0,11);if(!d)return"";if(d.length<3)return"("+d;if(d.length<=6)return"("+d.slice(0,2)+") "+d.slice(2);if(d.length<=10)return"("+d.slice(0,2)+") "+d.slice(2,6)+"-"+d.slice(6);return"("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7)};
  const formatCity=(value:string)=>value.replace(/\s*\/\s*/g," / ").replace(/\s{2,}/g," ");
  return <main className="editor">
