@@ -12,9 +12,10 @@ function readLocal(){try{const raw=JSON.parse(localStorage.getItem(RESUME_LIBRAR
 function writeLocal(items:ResumeDocument[]){localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(items));window.dispatchEvent(new Event("curriculospro:library-changed"))}
 
 export function CloudSync(){
- const session=authClient.useSession(),[status,setStatus]=useState(""),[busy,setBusy]=useState(false),[conflicts,setConflicts]=useState<Conflict[]>([]);
+ const session=authClient.useSession(),[status,setStatus]=useState(""),[busy,setBusy]=useState(false),[conflicts,setConflicts]=useState<Conflict[]>([]),[plan,setPlan]=useState<"free"|"pro"|null>(null);
  const userId=session.data?.user.id||session.data?.user.email||"anonymous",key=REVISIONS+":"+userId,pendingKey=PENDING_DELETIONS+":"+userId;
  useEffect(()=>{try{if(session.data)localStorage.setItem(LAST_CLOUD_USER,userId);else if(!session.isPending)localStorage.removeItem(LAST_CLOUD_USER)}catch{}},[session.data,session.isPending,userId]);
+ useEffect(()=>{let active=true;if(!session.data){setPlan(null);return()=>{active=false}}fetch("/api/account",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(data=>{if(active)setPlan(data.account?.plan==="pro"?"pro":"free")}).catch(()=>{if(active)setPlan(null)});return()=>{active=false}},[session.data]);
  const resolve=(conflict:Conflict,choice:"local-copy"|"remote")=>{
   const items=readLocal();
   if(choice==="remote")writeLocal(items.map(x=>x.id===conflict.local.id?conflict.remote.document:x));
@@ -56,9 +57,9 @@ export function CloudSync(){
  const user=session.data.user,initials=(user.name||user.email||"CP").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
  return <div className="accountCard signedIn">
   <div className="accountIdentity"><span className="accountAvatar">{initials}</span><div><small>CONTA CONECTADA</small><strong>{user.name||"Sua conta CurriculosPRO"}</strong><p>{user.email}</p></div></div>
-  <div className="accountPlan"><small>PLANO ATUAL</small><b>FREE</b><span>Nuvem incluída</span></div>
+  <div className="accountPlan"><small>PLANO ATUAL</small><b>{plan?plan.toUpperCase():"—"}</b><span>{plan?"Nuvem incluída":"Consultando conta"}</span></div>
   <div className="accountCloud"><small>SINCRONIZAÇÃO</small><b><i className={busy?"syncDot busy":"syncDot"}/>{busy?"Sincronizando…":"Nuvem disponível"}</b><span>Local + conta</span></div>
-  <div className="accountActions"><button disabled={busy} onClick={sync}>{busy?"Sincronizando…":"Sincronizar agora"}</button><button className="cloudSignout" onClick={()=>authClient.signOut()}>Sair</button></div>
+  <div className="accountActions"><button disabled={busy} onClick={sync}>{busy?"Sincronizando…":"Sincronizar agora"}</button><button className="cloudSignout" onClick={async()=>{setStatus("");setConflicts([]);await authClient.signOut();location.href="/curriculos"}}>Sair</button></div>
   {status&&<div className="syncMessage" role="status">{status}</div>}
   {conflicts.length>0&&<div className="conflictCenter"><div className="conflictIntro"><b>Conflitos encontrados</b><span>Nada foi sobrescrito. Escolha o que fazer com cada currículo.</span></div>{conflicts.map(c=><div className="conflictItem" key={c.local.id}><div><strong>{c.local.title}</strong><small>Local: {new Date(c.local.updatedAt).toLocaleString("pt-BR")} · Nuvem: {new Date(c.remote.updatedAt).toLocaleString("pt-BR")}</small></div><div><button onClick={()=>resolve(c,"local-copy")}>Preservar as duas</button><button className="conflictRemote" onClick={()=>resolve(c,"remote")}>Usar versão da nuvem</button></div></div>)}</div>}
  </div>
