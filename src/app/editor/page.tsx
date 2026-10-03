@@ -17,7 +17,7 @@ export default function Editor(){
  const updateItem=(section:"experiences"|"education",id:string,key:keyof Item,value:string)=>setCv({...cv,[section]:cv[section].map(x=>x.id===id?{...x,[key]:value}:x)});
  const addItem=(section:"experiences"|"education")=>setCv({...cv,[section]:[...cv[section],{id:uid(),title:"",subtitle:"",period:"",description:""}]});
  const removeItem=(section:"experiences"|"education",id:string)=>setCv({...cv,[section]:cv[section].filter(x=>x.id!==id)});
- const list=(key:"courses"|"skills"|"languages",value:string)=>set(cv?key:key,value.split(",").map(x=>x.trim()).filter(Boolean));
+ const list=(key:"courses"|"skills"|"languages",value:string)=>set(key,value.split(",").map(x=>x.trim()).filter(Boolean));
  return <main className="editor">
   <header className="editorHead"><a className="brand" href="/"><span>CP</span>Curriculos<b>PRO</b></a><div className="progress"><i style={{width:completion+"%"}}/><span>{completion}% completo</span></div><div className="save">● Salvo automaticamente</div><button className="mobileView" onClick={()=>setMobilePreview(!mobilePreview)}>{mobilePreview?"Editar":"Visualizar"}</button><button onClick={()=>window.print()} className="download">Baixar PDF ↓</button></header>
   <div className={"workspace "+(mobilePreview?"showPreview":"")}>
