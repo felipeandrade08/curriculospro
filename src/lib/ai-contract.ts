@@ -21,3 +21,10 @@ export function validateTailoringRequest(value:unknown):value is TailoringReques
 export function enforceEvidence(suggestion:Pick<TailoringSuggestion,"usedFactIds">,allowed:Set<string>){
  return suggestion.usedFactIds.length>0&&suggestion.usedFactIds.every(id=>allowed.has(id));
 }
+
+export function validateProviderSuggestion(value:unknown,request:TailoringRequest,allowed:Set<string>):TailoringSuggestion|null{
+ if(!value||typeof value!=="object")return null;const x=value as Partial<TailoringSuggestion>;
+ if(typeof x.id!=="string"||!x.id||x.instruction!==request.instruction||typeof x.original!=="string"||typeof x.text!=="string"||!x.text.trim()||!Array.isArray(x.usedFactIds)||!x.usedFactIds.every(v=>typeof v==="string")||typeof x.createdAt!=="string")return null;
+ const suggestion=x as TailoringSuggestion;
+ return enforceEvidence(suggestion,allowed)?suggestion:null;
+}
