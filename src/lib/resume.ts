@@ -26,10 +26,25 @@ export function createResume(mode:"blank"|"example"="blank",template:ResumeTempl
 export type JobTarget={version:1;title:string;company:string;description:string;updatedAt:string};
 export type JobEvidence={term:string;sources:string[]};
 export type JobAnalysis={matched:JobEvidence[];unverified:string[];profileFacts:string[]};
+export type JobSelectionKind="experience"|"education"|"skill"|"course"|"language";
+export type JobSelectionItem={id:string;kind:JobSelectionKind;label:string;detail:string;matchedTerms:string[]};
+export type JobSelection={version:1;resumeId:string;jobUpdatedAt:string;selectedIds:string[];updatedAt:string};
+export const JOB_SELECTION_KEY="curriculospro.jobSelection.v1";
 export const JOB_TARGET_KEY="curriculospro.jobTarget.v1";
 export const emptyJobTarget=():JobTarget=>({version:1,title:"",company:"",description:"",updatedAt:new Date().toISOString()});
 const normalizeWords=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9+#.\s-]/g," ").split(/\s+/).filter(x=>x.length>=3);
 const meaningfulTerms=(value:string)=>{const stop=new Set(["para","com","uma","das","dos","que","por","como","mais","sua","seu","ser","ter","the","and","for","with","this","from"]);return [...new Set(normalizeWords(value).filter(x=>!stop.has(x)))].slice(0,80)};
+export function buildJobSelection(target:JobTarget,profile:ProfessionalProfile):JobSelectionItem[]{
+ const terms=meaningfulTerms(target.title+" "+target.description),matches=(value:string)=>terms.filter(term=>normalizeWords(value).includes(term));
+ const items:JobSelectionItem[]=[
+  ...profile.experiences.map(x=>({id:"exp:"+x.id,kind:"experience" as const,label:x.title||"Experiência",detail:[x.subtitle,x.period].filter(Boolean).join(" · "),matchedTerms:matches([x.title,x.subtitle,x.description].join(" "))})),
+  ...profile.education.map(x=>({id:"edu:"+x.id,kind:"education" as const,label:x.title||"Formação",detail:[x.subtitle,x.period].filter(Boolean).join(" · "),matchedTerms:matches([x.title,x.subtitle,x.description].join(" "))})),
+  ...profile.skills.map((x,i)=>({id:"skill:"+i,kind:"skill" as const,label:x,detail:"Competência do Perfil Profissional",matchedTerms:matches(x)})),
+  ...profile.courses.map((x,i)=>({id:"course:"+i,kind:"course" as const,label:x,detail:"Curso ou certificação",matchedTerms:matches(x)})),
+  ...profile.languages.map((x,i)=>({id:"language:"+i,kind:"language" as const,label:x,detail:"Idioma informado no perfil",matchedTerms:matches(x)}))
+ ];
+ return items.filter(x=>x.label.trim()).sort((a,b)=>Number(b.matchedTerms.length>0)-Number(a.matchedTerms.length>0));
+}
 export function analyzeJobTarget(target:JobTarget,profile:ProfessionalProfile,resume?:ResumeData):JobAnalysis{
  const facts=[
   ...profile.skills.map(x=>({label:x,source:"Competência do perfil"})),
