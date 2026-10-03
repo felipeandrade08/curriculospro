@@ -8,14 +8,16 @@
     "start": "next start",
     "lint": "next lint",
     "prebuild": "node scripts/prepare-brand.mjs",
-    "predev": "node scripts/prepare-brand.mjs"
+    "predev": "node scripts/prepare-brand.mjs",
+    "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "next": "^15.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "sharp": "^0.34.4"
+    "sharp": "^0.34.4",
+    "@neondatabase/serverless": "^1.0.2"
   },
   "devDependencies": {
     "@types/node": "^22",
