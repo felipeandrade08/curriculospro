@@ -67,7 +67,7 @@ export default function Editor(){
   const blankItems=[...cv.experiences,...cv.education].filter(x=>!x.title.trim()&&!x.subtitle.trim()&&!x.period.trim()&&!x.description.trim()).length;
   if(blankItems)issues.push({level:"optional",title:"Há itens vazios",text:"Remova itens que você adicionou mas decidiu não preencher."});
   if(hasDuplicateSkills(cv.skills))issues.push({level:"recommended",title:"Competências repetidas",text:"Remova duplicatas para deixar a seção mais objetiva."});
-  const hiddenWithContent=hidden.filter(k=>k==="summary"?!!cv.summary.trim():k==="experiences"?cv.experiences.length>0:k==="education"?cv.education.length>0:k==="skills"?cv.skills.some(Boolean):k==="languages"?cv.languages.some(Boolean):guidance.courses!=="none"&&cv.courses.some(Boolean));
+  const hiddenWithContent=hidden.filter(k=>k==="summary"?!!cv.summary.trim():k==="experiences"?cv.experiences.length>0:k==="education"?guidance.education!=="none"&&cv.education.length>0:k==="skills"?cv.skills.some(Boolean):k==="languages"?guidance.languages!=="none"&&cv.languages.some(Boolean):guidance.courses!=="none"&&cv.courses.some(Boolean));
   if(hiddenWithContent.length)issues.push({level:"optional",title:"Há conteúdo oculto",text:"Algumas informações preenchidas não aparecerão no PDF porque a seção está oculta."});
   return{issues,required:issues.filter(x=>x.level==="required").length,recommended:issues.filter(x=>x.level==="recommended").length}
  },[cv,hidden,guidance]);
