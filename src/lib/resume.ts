@@ -4,6 +4,8 @@ export type ResumeSection="summary"|"experiences"|"education"|"skills"|"language
 export type ResumeItem={id:string;title:string;subtitle:string;period:string;description:string};
 export type ResumeData={name:string;role:string;email:string;phone:string;city:string;summary:string;photo:string;experiences:ResumeItem[];education:ResumeItem[];courses:string[];skills:string[];languages:string[]};
 export type ResumeDocument={id:string;title:string;createdAt:string;updatedAt:string;cv:ResumeData;template:ResumeTemplate;accent:string;density:ResumeDensity;sectionOrder:ResumeSection[];hidden:ResumeSection[]};
+const isText=(x:unknown):x is string=>typeof x==="string";
+const isItem=(x:unknown):x is ResumeItem=>{if(!x||typeof x!=="object")return false;const i=x as Partial<ResumeItem>;return [i.id,i.title,i.subtitle,i.period,i.description].every(isText)};
 export type ProfessionalProfile={version:1;updatedAt:string;name:string;email:string;phone:string;city:string;photo:string;experiences:ResumeItem[];education:ResumeItem[];courses:string[];skills:string[];languages:string[]};
 export const PROFESSIONAL_PROFILE_KEY="curriculospro.professionalProfile.v1";
 export const emptyProfessionalProfile=():ProfessionalProfile=>({version:1,updatedAt:new Date().toISOString(),name:"",email:"",phone:"",city:"",photo:"",experiences:[],education:[],courses:[],skills:[],languages:[]});
@@ -28,8 +30,6 @@ export const PRODUCT_ACCESS_KEY="curriculospro.access.v1";
 export const defaultAccess:ProductAccess={plan:"free",accountMode:"guest"};
 export const features={multipleResumes:{free:true,pro:true},pdfExport:{free:true,pro:true},allCurrentTemplates:{free:true,pro:true},backup:{free:true,pro:true},cloudSync:{free:true,pro:true},aiRewrite:{free:false,pro:true},jobTailoring:{free:false,pro:true},coverLetter:{free:false,pro:true}} as const;
 export type ResumeBackup={product:"CurriculosPRO";version:3;exportedAt:string;resumes:ResumeDocument[]};
-const isText=(x:unknown):x is string=>typeof x==="string";
-const isItem=(x:unknown):x is ResumeItem=>{if(!x||typeof x!=="object")return false;const i=x as Partial<ResumeItem>;return [i.id,i.title,i.subtitle,i.period,i.description].every(isText)};
 const isSection=(x:unknown):x is ResumeSection=>isText(x)&&defaultOrder.includes(x as ResumeSection);
 export function isResumeDocument(x:unknown):x is ResumeDocument{
  if(!x||typeof x!=="object")return false;const d=x as Partial<ResumeDocument>,cv=d.cv as Partial<ResumeData>|undefined;
