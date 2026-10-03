@@ -36,3 +36,9 @@ footer{background:linear-gradient(120deg,#041735,#062a5f);color:#bdcce0}.footerL
 @media(max-width:850px){.libraryHero{display:block}.libraryActions{justify-content:flex-start;margin-top:25px}.resumeLibrary{grid-template-columns:1fr}.modelGallery{grid-template-columns:1fr;max-width:520px}.modelSheet{height:330px}.modelsBottom{margin-left:20px;margin-right:20px}.backLibrary{display:none}}
 @media(max-width:520px){.libraryHero,.modelsHero{padding-top:45px}.libraryHero h1,.modelsHero h1{font-size:36px}.libraryActions{display:grid}.resumeCard{grid-template-columns:90px 1fr;padding:11px;gap:12px}.resumeCardThumb{height:130px;padding:12px}.resumeCardBody>div button{padding:7px}.modelSheet{margin:15px 15px 0}.modelsBottom{display:block}.modelsBottom .secondary{display:inline-block;margin-top:18px}}
 @media print{.libraryPage,.modelsPage{display:none!important}}
+
+/* Package 3 — document identity and access foundation */
+.documentTitle{width:180px;border:1px solid transparent;background:#f5f8fb;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:750;color:#455468;outline:none}.documentTitle:hover,.documentTitle:focus{background:white;border-color:#cfe3f7}.planBadge{display:inline-flex;align-items:center;border:1px solid #d8eafa;background:#f3f9ff;color:#087cf0;border-radius:999px;padding:6px 9px;font-size:9px;font-weight:900;letter-spacing:.5px}
+@media(max-width:1050px){.documentTitle{width:135px}.editorHead{gap:12px}}
+@media(max-width:850px){.documentTitle{display:none}}
+@media print{.documentTitle{display:none!important}}
