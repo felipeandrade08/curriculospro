@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import {useEffect,useMemo,useRef,useState} from "react";
+import {ACTIVE_RESUME_KEY,LEGACY_RESUME_KEY,RESUME_LIBRARY_KEY,ResumeDocument,createResume} from "@/lib/resume";
 
 type Item={id:string;title:string;subtitle:string;period:string;description:string};
 type CV={name:string;role:string,email:string;phone:string;city:string;summary:string;photo:string;experiences:Item[];education:Item[];courses:string[];skills:string[];languages:string[]};
@@ -12,10 +13,10 @@ const initial:CV={name:"Felipe Andrade",photo:"",role:"Desenvolvedor de Software
 const tabs=["Conteúdo","Design"] as const;
 
 export default function Editor(){
- const hydrated=useRef(false);
+ const hydrated=useRef(false),activeId=useRef("");
  const [cv,setCv]=useState(initial),[tab,setTab]=useState<(typeof tabs)[number]>("Conteúdo"),[template,setTemplate]=useState<Template>("essential"),[accent,setAccent]=useState("#087cf0"),[mobilePreview,setMobilePreview]=useState(false),[density,setDensity]=useState<"comfortable"|"compact">("comfortable"),[sectionOrder,setSectionOrder]=useState<SectionKey[]>(defaultOrder),[hidden,setHidden]=useState<SectionKey[]>([]);
- useEffect(()=>{try{const s=localStorage.getItem("curriculospro.cv.v2");if(s){const d=JSON.parse(s);setCv({...initial,...d.cv});setTemplate(d.template||"essential");setAccent(d.accent||"#087cf0");setDensity(d.density||"comfortable");setSectionOrder(Array.isArray(d.sectionOrder)?d.sectionOrder:defaultOrder);setHidden(Array.isArray(d.hidden)?d.hidden:[])}}catch{}finally{hydrated.current=true}},[]);
- useEffect(()=>{if(!hydrated.current)return;try{localStorage.setItem("curriculospro.cv.v2",JSON.stringify({cv,template,accent,density,sectionOrder,hidden}))}catch{}},[cv,template,accent,density,sectionOrder,hidden]);
+ useEffect(()=>{try{const params=new URLSearchParams(location.search),mode=params.get("new"),requested=params.get("template") as Template|null;let docs:ResumeDocument[]=JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY)||"[]");let doc:ResumeDocument|undefined;if(mode==="blank"||mode==="example"){doc=createResume(mode,requested||"essential");docs=[doc,...docs];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(docs));history.replaceState({},"","/editor")}else{const id=localStorage.getItem(ACTIVE_RESUME_KEY);doc=docs.find(x=>x.id===id)||docs[0]}if(doc){activeId.current=doc.id;localStorage.setItem(ACTIVE_RESUME_KEY,doc.id);setCv({...initial,...doc.cv});setTemplate(doc.template);setAccent(doc.accent);setDensity(doc.density);setSectionOrder(doc.sectionOrder||defaultOrder);setHidden(doc.hidden||[])}else{const s=localStorage.getItem(LEGACY_RESUME_KEY);if(s){const d=JSON.parse(s);setCv({...initial,...d.cv});setTemplate(d.template||"essential");setAccent(d.accent||"#087cf0");setDensity(d.density||"comfortable");setSectionOrder(d.sectionOrder||defaultOrder);setHidden(d.hidden||[])}}}catch{}finally{hydrated.current=true}},[]);
+ useEffect(()=>{if(!hydrated.current)return;try{localStorage.setItem(LEGACY_RESUME_KEY,JSON.stringify({cv,template,accent,density,sectionOrder,hidden}));let docs:ResumeDocument[]=JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY)||"[]");let id=activeId.current;if(!id){const doc=createResume("blank",template);id=doc.id;activeId.current=id;docs=[doc,...docs];localStorage.setItem(ACTIVE_RESUME_KEY,id)}const now=new Date().toISOString(),found=docs.find(x=>x.id===id),next:ResumeDocument={id,title:found?.title||cv.name||"Meu currículo",createdAt:found?.createdAt||now,updatedAt:now,cv,template,accent,density,sectionOrder,hidden};docs=found?docs.map(x=>x.id===id?next:x):[next,...docs];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(docs))}catch{}},[cv,template,accent,density,sectionOrder,hidden]);
  const completion=useMemo(()=>Math.round([cv.name,cv.role,cv.email,cv.summary,cv.experiences.length,cv.education.length,cv.skills.length].filter(Boolean).length/7*100),[cv]);
  const set=<K extends keyof CV>(k:K,v:CV[K])=>setCv({...cv,[k]:v});
  const updateItem=(section:"experiences"|"education",id:string,key:keyof Item,value:string)=>setCv({...cv,[section]:cv[section].map(x=>x.id===id?{...x,[key]:value}:x)});
@@ -30,7 +31,7 @@ export default function Editor(){
  const toggleSection=(key:SectionKey)=>setHidden(hidden.includes(key)?hidden.filter(x=>x!==key):[...hidden,key]);
  const visible=(key:SectionKey)=>!hidden.includes(key);
  return <main className="editor">
-  <header className="editorHead"><a className="brand brandImage editorLogo" href="/"><Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={155} height={58} priority /></a><div className="progress"><i style={{width:completion+"%"}}/><span>{completion}% completo</span></div><div className="save">● Salvo automaticamente</div><button className="mobileView" onClick={()=>setMobilePreview(!mobilePreview)}>{mobilePreview?"Editar":"Visualizar"}</button><button onClick={()=>window.print()} className="download">Baixar PDF ↓</button></header>
+  <header className="editorHead"><a className="brand brandImage editorLogo" href="/"><Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={155} height={58} priority /></a><a className="backLibrary" href="/curriculos">← Meus currículos</a><div className="progress"><i style={{width:completion+"%"}}/><span>{completion}% completo</span></div><div className="save">● Salvo automaticamente</div><button className="mobileView" onClick={()=>setMobilePreview(!mobilePreview)}>{mobilePreview?"Editar":"Visualizar"}</button><button onClick={()=>window.print()} className="download">Baixar PDF ↓</button></header>
   <div className={"workspace "+(mobilePreview?"showPreview":"")}>
    <aside className="side">
     <div className="editorTabs">{tabs.map(x=><button className={tab===x?"active":""} onClick={()=>setTab(x)} key={x}>{x}</button>)}</div>
