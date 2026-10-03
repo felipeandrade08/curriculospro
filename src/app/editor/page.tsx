@@ -51,8 +51,9 @@ export default function Editor(){
   {id:"step-experience",label:"Experiência",done:guidance.experience==="first-job"||cv.experiences.some(x=>x.title.trim()&&(x.subtitle.trim()||x.description.trim())),optional:true},
   {id:"step-education",label:"Formação",done:guidance.education==="none"||cv.education.some(x=>x.title.trim()),optional:true},
   {id:"step-skills",label:"Competências",done:cv.skills.filter(x=>x.trim()).length>=3,optional:true},
-  {id:"step-review",label:"Revisão",done:false,optional:false}
- ],[cv,guidance]);
+  {id:"step-complements",label:"Complementos",done:(guidance.courses==="none"||guidance.courses!=="pending"&&cv.courses.some(x=>x.trim()))&&(guidance.languages==="none"||guidance.languages!=="pending"&&cv.languages.some(x=>x.trim())),optional:true},
+  {id:"step-review",label:"Revisão",done:assistant.score===100,optional:false}
+ ],[cv,guidance,assistant.score]);
  const review=useMemo(()=>{
   const issues:{level:"required"|"recommended"|"optional";title:string;text:string}[]=[];
   const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email),phoneDigits=cv.phone.replace(/\D/g,"");
@@ -62,12 +63,13 @@ export default function Editor(){
   if(!cv.email&&!cv.phone)issues.push({level:"required",title:"Adicione um contato",text:"Informe pelo menos e-mail ou telefone para que possam falar com você."});
   if(cv.summary.trim().length>0&&cv.summary.trim().length<60)issues.push({level:"recommended",title:"Desenvolva um pouco o resumo",text:"Explique experiência, pontos fortes e objetivo com mais contexto."});
   if(cv.summary.length>650)issues.push({level:"recommended",title:"Enxugue o resumo",text:"Um resumo mais direto facilita a leitura inicial."});
-  const incompleteExp=cv.experiences.filter(x=>x.title.trim()&&(!x.subtitle.trim()||!x.period.trim()||!x.description.trim())).length;
+  const incompleteExp=guidance.experience==="first-job"?0:cv.experiences.filter(x=>x.title.trim()&&(!x.subtitle.trim()||!x.period.trim()||!x.description.trim())).length;
   if(incompleteExp)issues.push({level:"recommended",title:incompleteExp+" experiência(s) podem ser detalhadas",text:"Confira empresa, período e atividades quando essas informações existirem."});
-  const blankItems=[...cv.experiences,...cv.education].filter(x=>!x.title.trim()&&!x.subtitle.trim()&&!x.period.trim()&&!x.description.trim()).length;
+  const reviewItems=[...(guidance.experience==="first-job"?[]:cv.experiences),...(guidance.education==="none"?[]:cv.education)];
+  const blankItems=reviewItems.filter(x=>!x.title.trim()&&!x.subtitle.trim()&&!x.period.trim()&&!x.description.trim()).length;
   if(blankItems)issues.push({level:"optional",title:"Há itens vazios",text:"Remova itens que você adicionou mas decidiu não preencher."});
   if(hasDuplicateSkills(cv.skills))issues.push({level:"recommended",title:"Competências repetidas",text:"Remova duplicatas para deixar a seção mais objetiva."});
-  const hiddenWithContent=hidden.filter(k=>k==="summary"?!!cv.summary.trim():k==="experiences"?cv.experiences.length>0:k==="education"?guidance.education!=="none"&&cv.education.length>0:k==="skills"?cv.skills.some(Boolean):k==="languages"?guidance.languages!=="none"&&cv.languages.some(Boolean):guidance.courses!=="none"&&cv.courses.some(Boolean));
+  const hiddenWithContent=hidden.filter(k=>k==="summary"?!!cv.summary.trim():k==="experiences"?guidance.experience!=="first-job"&&cv.experiences.length>0:k==="education"?guidance.education!=="none"&&cv.education.length>0:k==="skills"?cv.skills.some(Boolean):k==="languages"?guidance.languages!=="none"&&cv.languages.some(Boolean):guidance.courses!=="none"&&cv.courses.some(Boolean));
   if(hiddenWithContent.length)issues.push({level:"optional",title:"Há conteúdo oculto",text:"Algumas informações preenchidas não aparecerão no PDF porque a seção está oculta."});
   return{issues,required:issues.filter(x=>x.level==="required").length,recommended:issues.filter(x=>x.level==="recommended").length}
  },[cv,hidden,guidance]);
@@ -82,8 +84,8 @@ export default function Editor(){
  const onPhoto=(file?:File)=>{if(!file||file.size>2_500_000)return;const reader=new FileReader();reader.onload=()=>{const img=new window.Image();img.onload=()=>{const canvas=document.createElement("canvas"),max=480,scale=Math.min(1,max/Math.max(img.width,img.height));canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext("2d")?.drawImage(img,0,0,canvas.width,canvas.height);set("photo",canvas.toDataURL("image/jpeg",.82))};img.src=String(reader.result)};reader.readAsDataURL(file)};
  const moveSection=(key:SectionKey,dir:-1|1)=>{const i=sectionOrder.indexOf(key),target=i+dir;if(target<0||target>=sectionOrder.length)return;const next=[...sectionOrder];[next[i],next[target]]=[next[target],next[i]];setSectionOrder(next)};
  const toggleSection=(key:SectionKey)=>setHidden(hidden.includes(key)?hidden.filter(x=>x!==key):[...hidden,key]);
- const visible=(key:SectionKey)=>!hidden.includes(key)&&!(key==="courses"&&guidance.courses==="none")&&!(key==="languages"&&guidance.languages==="none")&&!(key==="education"&&guidance.education==="none");
- const formatPhone=(value:string)=>{const d=value.replace(/\D/g,"").slice(0,11);if(!d)return"";if(d.length<3)return"("+d;if(d.length<=6)return"("+d.slice(0,2)+") "+d.slice(2);if(d.length<=10)return"("+d.slice(0,2)+") "+d.slice(2,6)+"-"+d.slice(6);return"("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7)};
+ const visible=(key:SectionKey)=>!hidden.includes(key)&&!(key==="experiences"&&guidance.experience==="first-job")&&!(key==="courses"&&guidance.courses==="none")&&!(key==="languages"&&guidance.languages==="none")&&!(key==="education"&&guidance.education==="none");
+ const formatPhone=(value:string)=>{let d=value.replace(/\D/g,"");if((d.length===12||d.length===13)&&d.startsWith("55"))d=d.slice(2);d=d.slice(0,11);if(!d)return"";if(d.length<3)return"("+d;if(d.length<=6)return"("+d.slice(0,2)+") "+d.slice(2);if(d.length<=10)return"("+d.slice(0,2)+") "+d.slice(2,6)+"-"+d.slice(6);return"("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7)};
  const formatCity=(value:string)=>value.replace(/\s*\/\s*/g," / ").replace(/\s{2,}/g," ");
  return <main className="editor">
   <header className="editorHead"><a className="brand brandImage editorLogo" href="/"><Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={155} height={58} priority /></a><a className="backLibrary" href="/curriculos">← Meus currículos</a><input className="documentTitle" aria-label="Nome do currículo" value={documentTitle} onChange={e=>setDocumentTitle(e.target.value)}/><div className="progress" aria-label={completion+"% da trajetória organizada"}><i style={{width:completion+"%"}}/><span><b>{completion}%</b> da sua trajetória organizada <small>{assistant.done} de {assistant.total} áreas resolvidas</small></span></div><div className="save">● Salvo neste dispositivo</div><button className="mobileView" onClick={()=>setMobilePreview(!mobilePreview)}>{mobilePreview?"Editar":"Visualizar"}</button><button onClick={printResume} className="download">Salvar em PDF ↓</button></header>
