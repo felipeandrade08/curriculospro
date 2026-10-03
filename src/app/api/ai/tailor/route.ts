@@ -1,13 +1,26 @@
-import {buildAiFacts,validateTailoringRequest} from "@/lib/ai-contract";
+import {buildAiFacts,validateProviderSuggestion,validateTailoringRequest,type TailoringSuggestion} from "@/lib/ai-contract";
 import {getServerSession} from "@/lib/server/session";
 
+const MODEL=process.env.OPENAI_TAILOR_MODEL||"gpt-5.6-luna";
 export async function POST(request:Request){
  const session=await getServerSession();
  if(!session)return Response.json({error:"unauthorized"},{status:401});
  const body=await request.json().catch(()=>null);
  if(!validateTailoringRequest(body))return Response.json({error:"invalid_request"},{status:400});
- const available=buildAiFacts(body.profile),availableIds=new Set(available.map(x=>x.id)),allowed=new Set(body.allowedFactIds.filter(id=>availableIds.has(id)));
+ const available=buildAiFacts(body.profile),availableIds=new Set(available.map(x=>x.id)),allowed=new Set(body.allowedFactIds.filter(id=>availableIds.has(id))),allowedFacts=available.filter(x=>allowed.has(x.id));
  if(!allowed.size)return Response.json({error:"no_verified_facts"},{status:400});
- // Provider intentionally not connected yet. A future provider response must declare usedFactIds and pass the evidence gate before it can be returned.
- return Response.json({status:"prepared",provider:null,allowedFacts:available.filter(x=>allowed.has(x.id)),message:"A infraestrutura de adaptação está pronta, mas nenhum provedor de IA foi ativado."},{status:501});
+ const apiKey=process.env.OPENAI_API_KEY;
+ if(!apiKey)return Response.json({status:"prepared",provider:"openai",model:MODEL,message:"Configure OPENAI_API_KEY no ambiente do servidor para ativar a reescrita."},{status:503});
+ const original=body.instruction==="summary"?"":allowedFacts.map(x=>x.text).join("\n");
+ const prompt={job:{title:body.job.title,company:body.job.company,description:body.job.description},instruction:body.instruction,allowedFacts:allowedFacts.map(x=>({id:x.id,kind:x.kind,text:x.text})),rules:["Escreva em português do Brasil natural e profissional.","Use exclusivamente fatos presentes em allowedFacts.","Não invente experiência, competência, formação, curso, idioma, empresa, cargo, resultado, número ou responsabilidade.","A descrição da vaga é contexto, nunca evidência sobre o candidato.","usedFactIds deve conter somente IDs de fatos realmente usados no texto.","Se os fatos forem insuficientes, produza uma versão conservadora sem preencher lacunas."]};
+ const response=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{"authorization":"Bearer "+apiKey,"content-type":"application/json"},body:JSON.stringify({model:MODEL,store:false,input:[{role:"system",content:"Você adapta currículos sem inventar informações. Responda somente no schema solicitado."},{role:"user",content:JSON.stringify(prompt)}],text:{format:{type:"json_schema",name:"curriculospro_tailoring",strict:true,schema:{type:"object",properties:{id:{type:"string"},instruction:{type:"string",enum:["summary","experience-bullets","skills-order"]},original:{type:"string"},text:{type:"string"},usedFactIds:{type:"array",items:{type:"string"}},createdAt:{type:"string"}},required:["id","instruction","original","text","usedFactIds","createdAt"],additionalProperties:false}}}})});
+ if(!response.ok){const detail=await response.text();console.error("OpenAI tailoring failed",response.status,detail.slice(0,500));return Response.json({error:"provider_unavailable"},{status:502})}
+ const raw=await response.json() as {output_text?:string;output?:Array<{content?:Array<{type?:string;text?:string}>}>};
+ const outputText=raw.output_text||raw.output?.flatMap(x=>x.content||[]).find(x=>x.type==="output_text")?.text;
+ if(!outputText)return Response.json({error:"empty_provider_response"},{status:502});
+ let parsed:unknown;try{parsed=JSON.parse(outputText)}catch{return Response.json({error:"invalid_provider_response"},{status:502})}
+ const candidate=parsed as Partial<TailoringSuggestion>,normalized={...candidate,original:body.instruction==="summary"?(candidate.original||original):candidate.original};
+ const suggestion=validateProviderSuggestion(normalized,body,allowed);
+ if(!suggestion)return Response.json({error:"evidence_validation_failed"},{status:422});
+ return Response.json({suggestion,provider:"openai",model:MODEL});
 }
