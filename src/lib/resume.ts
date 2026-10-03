@@ -4,6 +4,14 @@ export type ResumeSection="summary"|"experiences"|"education"|"skills"|"language
 export type ResumeItem={id:string;title:string;subtitle:string;period:string;description:string};
 export type ResumeData={name:string;role:string;email:string;phone:string;city:string;summary:string;photo:string;experiences:ResumeItem[];education:ResumeItem[];courses:string[];skills:string[];languages:string[]};
 export type ResumeDocument={id:string;title:string;createdAt:string;updatedAt:string;cv:ResumeData;template:ResumeTemplate;accent:string;density:ResumeDensity;sectionOrder:ResumeSection[];hidden:ResumeSection[]};
+export type ProfessionalProfile={version:1;updatedAt:string;name:string;email:string;phone:string;city:string;photo:string;experiences:ResumeItem[];education:ResumeItem[];courses:string[];skills:string[];languages:string[]};
+export const PROFESSIONAL_PROFILE_KEY="curriculospro.professionalProfile.v1";
+export const emptyProfessionalProfile=():ProfessionalProfile=>({version:1,updatedAt:new Date().toISOString(),name:"",email:"",phone:"",city:"",photo:"",experiences:[],education:[],courses:[],skills:[],languages:[]});
+export function isProfessionalProfile(x:unknown):x is ProfessionalProfile{
+ if(!x||typeof x!=="object")return false;const p=x as Partial<ProfessionalProfile>;
+ return p.version===1&&isText(p.updatedAt)&&[p.name,p.email,p.phone,p.city,p.photo].every(isText)&&Array.isArray(p.experiences)&&p.experiences.every(isItem)&&Array.isArray(p.education)&&p.education.every(isItem)&&Array.isArray(p.courses)&&p.courses.every(isText)&&Array.isArray(p.skills)&&p.skills.every(isText)&&Array.isArray(p.languages)&&p.languages.every(isText);
+}
+export function profileFromResume(doc:ResumeDocument):ProfessionalProfile{return{version:1,updatedAt:new Date().toISOString(),name:doc.cv.name,email:doc.cv.email,phone:doc.cv.phone,city:doc.cv.city,photo:doc.cv.photo,experiences:doc.cv.experiences.map(x=>({...x,id:uid()})),education:doc.cv.education.map(x=>({...x,id:uid()})),courses:[...doc.cv.courses],skills:[...doc.cv.skills],languages:[...doc.cv.languages]}}
 export const RESUME_LIBRARY_KEY="curriculospro.resumes.v3";
 export const ACTIVE_RESUME_KEY="curriculospro.activeResume.v3";
 export const LEGACY_RESUME_KEY="curriculospro.cv.v2";
