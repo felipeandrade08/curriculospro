@@ -16,7 +16,7 @@ export default function Editor(){
  useEffect(()=>{try{const s=localStorage.getItem("curriculospro.cv.v2");if(s){const d=JSON.parse(s);setCv({...initial,...d.cv});setTemplate(d.template||"essential");setAccent(d.accent||"#087cf0");setDensity(d.density||"comfortable");setSectionOrder(d.sectionOrder||defaultOrder);setHidden(d.hidden||[])}}catch{}},[]);
  useEffect(()=>{localStorage.setItem("curriculospro.cv.v2",JSON.stringify({cv,template,accent,density,sectionOrder,hidden}))},[cv,template,accent,density,sectionOrder,hidden]);
  const completion=useMemo(()=>Math.round([cv.name,cv.role,cv.email,cv.summary,cv.experiences.length,cv.education.length,cv.skills.length].filter(Boolean).length/7*100),[cv]);
- const set=(k:keyof CV,v:any)=>setCv({...cv,[k]:v});
+ const set=<K extends keyof CV>(k:K,v:CV[K])=>setCv({...cv,[k]:v});
  const updateItem=(section:"experiences"|"education",id:string,key:keyof Item,value:string)=>setCv({...cv,[section]:cv[section].map(x=>x.id===id?{...x,[key]:value}:x)});
  const addItem=(section:"experiences"|"education")=>setCv({...cv,[section]:[...cv[section],{id:uid(),title:"",subtitle:"",period:"",description:""}]});
  const removeItem=(section:"experiences"|"education",id:string)=>setCv({...cv,[section]:cv[section].filter(x=>x.id!==id)});
