@@ -24,8 +24,6 @@ export function CloudSync(){
  };
  const sync=async()=>{setBusy(true);setStatus("Comparando dispositivo e nuvem…");setConflicts([]);try{
   let local=readLocal();const revisions:Record<string,number>=JSON.parse(localStorage.getItem(key)||"{}");
-  const cloudRes=await fetch("/api/resumes",{cache:"no-store"});if(!cloudRes.ok)throw new Error("cloud");
-  const cloudData=await cloudRes.json() as {resumes?:CloudResume[];deleted?:{id:string;revision:number}[]},remote=(cloudData.resumes||[]).filter(x=>isResumeDocument(x.document)),tombstones=cloudData.deleted||[];
   const pending:string[]=JSON.parse(localStorage.getItem(pendingKey)||"[]");
   let deletedSent=0;
   for(const id of pending){
@@ -34,6 +32,8 @@ export function CloudSync(){
    delete revisions[id];deletedSent++;
   }
   if(pending.length)localStorage.setItem(pendingKey,"[]");
+  const cloudRes=await fetch("/api/resumes",{cache:"no-store"});if(!cloudRes.ok)throw new Error("cloud");
+  const cloudData=await cloudRes.json() as {resumes?:CloudResume[];deleted?:{id:string;revision:number}[]},remote=(cloudData.resumes||[]).filter(x=>isResumeDocument(x.document)),tombstones=cloudData.deleted||[];
   const knownDeleted=new Set(tombstones.filter(x=>Number(revisions[x.id]||0)>0).map(x=>x.id));
   if(knownDeleted.size){local=local.filter(x=>!knownDeleted.has(x.id));writeLocal(local);for(const id of knownDeleted)delete revisions[id]}
   const blockedDeleted=new Set([...pending,...tombstones.map(x=>x.id)]);
