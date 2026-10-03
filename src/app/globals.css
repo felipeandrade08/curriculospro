@@ -42,3 +42,6 @@ footer{background:linear-gradient(120deg,#041735,#062a5f);color:#bdcce0}.footerL
 @media(max-width:1050px){.documentTitle{width:135px}.editorHead{gap:12px}}
 @media(max-width:850px){.documentTitle{display:none}}
 @media print{.documentTitle{display:none!important}}
+
+.storageStatus{margin-bottom:22px;background:#f0f8ff;border:1px solid #d7eafb;border-radius:14px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:18px}.storageStatus div{display:flex;align-items:center;gap:12px}.storageStatus b{font-size:11px;color:#176b52;white-space:nowrap}.storageStatus span{font-size:10px;color:#708093;line-height:1.5}.storageStatus button{border:1px solid #cbdfee;background:white;color:#526b82;border-radius:8px;padding:8px 10px;font-size:9px;font-weight:800;cursor:pointer;white-space:nowrap}
+@media(max-width:650px){.storageStatus,.storageStatus div{align-items:flex-start;flex-direction:column}.storageStatus{gap:10px}.storageStatus div{gap:4px}.storageStatus button{width:100%}}
