@@ -1,6 +1,6 @@
 BEGIN;
 CREATE TABLE IF NOT EXISTS app_users (
-  id uuid PRIMARY KEY,
+  id text PRIMARY KEY,
   email text NOT NULL UNIQUE,
   display_name text,
   plan text NOT NULL DEFAULT 'free' CHECK (plan IN ('free','pro')),
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS app_users (
 );
 CREATE TABLE IF NOT EXISTS resumes (
   id text PRIMARY KEY,
-  user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+  user_id text NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
   title text NOT NULL,
   template text NOT NULL CHECK (template IN ('essential','modern','executive')),
   accent text NOT NULL DEFAULT '#087cf0',
