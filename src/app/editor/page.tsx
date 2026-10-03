@@ -20,7 +20,7 @@ export default function Editor(){
  const removeItem=(section:"experiences"|"education",id:string)=>setCv({...cv,[section]:cv[section].filter(x=>x.id!==id)});
  const list=(key:"courses"|"skills"|"languages",value:string)=>set(key,value.split(",").map(x=>x.trim()).filter(Boolean));
  return <main className="editor">
-  <header className="editorHead"><a className="brand brandImage editorLogo" href="/"><Image src="/brand/logo.png" alt="CurriculosPRO" width={155} height={58} priority /></a><div className="progress"><i style={{width:completion+"%"}}/><span>{completion}% completo</span></div><div className="save">● Salvo automaticamente</div><button className="mobileView" onClick={()=>setMobilePreview(!mobilePreview)}>{mobilePreview?"Editar":"Visualizar"}</button><button onClick={()=>window.print()} className="download">Baixar PDF ↓</button></header>
+  <header className="editorHead"><a className="brand brandImage editorLogo" href="/"><Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={155} height={58} priority /></a><div className="progress"><i style={{width:completion+"%"}}/><span>{completion}% completo</span></div><div className="save">● Salvo automaticamente</div><button className="mobileView" onClick={()=>setMobilePreview(!mobilePreview)}>{mobilePreview?"Editar":"Visualizar"}</button><button onClick={()=>window.print()} className="download">Baixar PDF ↓</button></header>
   <div className={"workspace "+(mobilePreview?"showPreview":"")}>
    <aside className="side">
     <div className="editorTabs">{tabs.map(x=><button className={tab===x?"active":""} onClick={()=>setTab(x)} key={x}>{x}</button>)}</div>
