@@ -1,5 +1,5 @@
 "use client";
-import {useState} from "react";
+import {useEffect,useState} from "react";
 import {authClient} from "@/lib/auth/client";
 import {RESUME_LIBRARY_KEY,ResumeDocument,cloneResume,isResumeDocument} from "@/lib/resume";
 const REVISIONS="curriculospro.cloudRevisions.v1";
@@ -14,7 +14,7 @@ function writeLocal(items:ResumeDocument[]){localStorage.setItem(RESUME_LIBRARY_
 export function CloudSync(){
  const session=authClient.useSession(),[status,setStatus]=useState(""),[busy,setBusy]=useState(false),[conflicts,setConflicts]=useState<Conflict[]>([]);
  const userId=session.data?.user.id||session.data?.user.email||"anonymous",key=REVISIONS+":"+userId,pendingKey=PENDING_DELETIONS+":"+userId;
- if(typeof window!=="undefined"&&session.data)try{localStorage.setItem(LAST_CLOUD_USER,userId)}catch{};
+ useEffect(()=>{try{if(session.data)localStorage.setItem(LAST_CLOUD_USER,userId);else if(!session.isPending)localStorage.removeItem(LAST_CLOUD_USER)}catch{}},[session.data,session.isPending,userId]);
  const resolve=(conflict:Conflict,choice:"local-copy"|"remote")=>{
   const items=readLocal();
   if(choice==="remote")writeLocal(items.map(x=>x.id===conflict.local.id?conflict.remote.document:x));
