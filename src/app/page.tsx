@@ -11,7 +11,7 @@ export default function Home() {
         <nav>
           <a href="#recursos">Recursos</a>
           <Link href="/modelos">Modelos</Link><Link href="/curriculos">Meus currículos</Link>
-          <Link href="/editor" className="navCta">Criar currículo grátis</Link>
+          <Link href="/editor?new=blank" className="navCta">Criar currículo grátis</Link>
         </nav>
       </header>
 
@@ -22,7 +22,7 @@ export default function Home() {
             <h1>Seu currículo merece <em>abrir portas.</em></h1>
             <p>Crie um currículo profissional em poucos minutos, com design moderno e uma experiência feita para você se destacar.</p>
             <div className="actions">
-              <Link href="/editor" className="primary">Criar meu currículo grátis <b>→</b></Link>
+              <Link href="/editor?new=blank" className="primary">Criar meu currículo grátis <b>→</b></Link>
               <Link href="/modelos" className="secondary">Ver modelos</Link>
             </div>
             <small>✓ Sem cartão &nbsp; ✓ Fácil de editar &nbsp; ✓ Pronto para PDF</small>
