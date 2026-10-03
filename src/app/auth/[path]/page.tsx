@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import {AuthView} from "@neondatabase/auth-ui";
+import {CurriculosAuthForm} from "../curriculos-auth-form";
 import {authViewPaths} from "@neondatabase/auth-ui/server";
 
 export const dynamicParams=false;
@@ -20,7 +21,7 @@ export default async function AuthPage({params}:{params:Promise<{path:string}>})
   </section>
   <section className="authPanel">
    <div className="authPanelIntro"><span>{creating?"CRIAR CONTA":"ACESSAR CONTA"}</span><strong>{creating?"Comece gratuitamente":"Entre na sua conta"}</strong></div>
-   <div className="authCard"><AuthView path={path}/></div>
+   <div className="authCard">{path==="sign-in"||path==="sign-up"?<CurriculosAuthForm mode={path}/>:<AuthView path={path}/>}</div>
    <small className="authPrivacy">Ao continuar, você concorda em usar seus dados apenas para os recursos da sua conta e currículos.</small>
   </section>
  </main>
