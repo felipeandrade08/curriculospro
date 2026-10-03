@@ -11,43 +11,45 @@ const defaultOrder:SectionKey[]=["summary","experiences","education","skills","l
 const uid=()=>Math.random().toString(36).slice(2,9);
 const initial:CV={name:"Felipe Andrade",photo:"",role:"Desenvolvedor de Software",email:"felipe@email.com",phone:"(11) 99999-9999",city:"São Paulo, SP",summary:"Profissional apaixonado por tecnologia, com foco em criar soluções digitais modernas, eficientes e fáceis de usar.",experiences:[{id:"exp1",title:"Desenvolvedor Full Stack",subtitle:"Empresa Exemplo",period:"2024 — Atual",description:"Desenvolvimento de aplicações web, melhoria de experiências digitais e colaboração com equipes multidisciplinares."}],education:[{id:"edu1",title:"Análise e Desenvolvimento de Sistemas",subtitle:"Instituição de Ensino",period:"2023 — 2025",description:""}],courses:["Desenvolvimento Web"],skills:["JavaScript","TypeScript","React","Comunicação"],languages:["Português — Nativo"]};
 const tabs=["Conteúdo","Design"] as const;
-type ExperienceContext="standard"|"first-job"|"informal"|"self-employed";
-type EducationContext="standard"|"in-progress"|"no-exact-date";
-type CoursesContext="standard"|"none"|"missing-details";
-type GuidanceContext={experience:ExperienceContext;education:EducationContext;courses:CoursesContext};
+type ExperienceContext="pending"|"standard"|"first-job"|"informal"|"self-employed"|"partial";
+type EducationContext="pending"|"standard"|"in-progress"|"no-exact-date"|"none"|"partial";
+type CoursesContext="pending"|"standard"|"none"|"missing-details";
+type LanguagesContext="pending"|"standard"|"none"|"partial";
+type GuidanceContext={experience:ExperienceContext;education:EducationContext;courses:CoursesContext;languages:LanguagesContext};
 const guidanceKey=(id:string)=>"curriculospro.guidance.v1:"+id;
 
 export default function Editor(){
  const hydrated=useRef(false),activeId=useRef("");
  const [documentTitle,setDocumentTitle]=useState("Meu currículo");
- const [guidance,setGuidance]=useState<GuidanceContext>({experience:"standard",education:"standard",courses:"standard"});
+ const [guidance,setGuidance]=useState<GuidanceContext>({experience:"pending",education:"pending",courses:"pending",languages:"pending"});
  const [cv,setCv]=useState(initial),[tab,setTab]=useState<(typeof tabs)[number]>("Conteúdo"),[template,setTemplate]=useState<Template>("essential"),[accent,setAccent]=useState("#087cf0"),[mobilePreview,setMobilePreview]=useState(false),[density,setDensity]=useState<"comfortable"|"compact">("comfortable"),[sectionOrder,setSectionOrder]=useState<SectionKey[]>(defaultOrder),[hidden,setHidden]=useState<SectionKey[]>([]);
- useEffect(()=>{try{const params=new URLSearchParams(location.search),mode=params.get("new"),requested=params.get("template");let docs:ResumeDocument[]=JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY)||"[]");let doc:ResumeDocument|undefined;if(mode==="blank"||mode==="example"){doc=createResume(mode,isResumeTemplate(requested)?requested:"essential");docs=[doc,...docs];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(docs));history.replaceState({},"","/editor")}else{const id=localStorage.getItem(ACTIVE_RESUME_KEY);doc=docs.find(x=>x.id===id)||docs[0]}if(doc){activeId.current=doc.id;try{const g=JSON.parse(localStorage.getItem(guidanceKey(doc.id))||"null") as GuidanceContext|null;if(g)setGuidance({experience:g.experience||"standard",education:g.education||"standard",courses:g.courses||"standard"})}catch{};setDocumentTitle(doc.title);localStorage.setItem(ACTIVE_RESUME_KEY,doc.id);setCv({...initial,...doc.cv});setTemplate(doc.template);setAccent(doc.accent);setDensity(doc.density);setSectionOrder(doc.sectionOrder||defaultOrder);setHidden(doc.hidden||[])}else{const s=localStorage.getItem(LEGACY_RESUME_KEY);if(s){doc=migrateLegacyResume(s);docs=[doc];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(docs));activeId.current=doc.id;setDocumentTitle(doc.title);localStorage.setItem(ACTIVE_RESUME_KEY,doc.id);setCv({...initial,...doc.cv});setTemplate(doc.template);setAccent(doc.accent);setDensity(doc.density);setSectionOrder(doc.sectionOrder);setHidden(doc.hidden)}}}catch{}finally{hydrated.current=true}},[]);
+ useEffect(()=>{try{const params=new URLSearchParams(location.search),mode=params.get("new"),requested=params.get("template");let docs:ResumeDocument[]=JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY)||"[]");let doc:ResumeDocument|undefined;if(mode==="blank"||mode==="example"){doc=createResume(mode,isResumeTemplate(requested)?requested:"essential");docs=[doc,...docs];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(docs));history.replaceState({},"","/editor")}else{const id=localStorage.getItem(ACTIVE_RESUME_KEY);doc=docs.find(x=>x.id===id)||docs[0]}if(doc){activeId.current=doc.id;try{const g=JSON.parse(localStorage.getItem(guidanceKey(doc.id))||"null") as GuidanceContext|null;if(g)setGuidance({experience:g.experience||"pending",education:g.education||"pending",courses:g.courses||"pending",languages:g.languages||"pending"})}catch{};setDocumentTitle(doc.title);localStorage.setItem(ACTIVE_RESUME_KEY,doc.id);setCv({...initial,...doc.cv});setTemplate(doc.template);setAccent(doc.accent);setDensity(doc.density);setSectionOrder(doc.sectionOrder||defaultOrder);setHidden(doc.hidden||[])}else{const s=localStorage.getItem(LEGACY_RESUME_KEY);if(s){doc=migrateLegacyResume(s);docs=[doc];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(docs));activeId.current=doc.id;setDocumentTitle(doc.title);localStorage.setItem(ACTIVE_RESUME_KEY,doc.id);setCv({...initial,...doc.cv});setTemplate(doc.template);setAccent(doc.accent);setDensity(doc.density);setSectionOrder(doc.sectionOrder);setHidden(doc.hidden)}}}catch{}finally{hydrated.current=true}},[]);
  useEffect(()=>{if(!hydrated.current)return;try{localStorage.setItem(LEGACY_RESUME_KEY,JSON.stringify({cv,template,accent,density,sectionOrder,hidden}));let docs:ResumeDocument[]=JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY)||"[]");let id=activeId.current;if(!id){const doc=createResume("blank",template);id=doc.id;activeId.current=id;docs=[doc,...docs];localStorage.setItem(ACTIVE_RESUME_KEY,id)}const now=new Date().toISOString(),found=docs.find(x=>x.id===id),next:ResumeDocument={id,title:documentTitle||found?.title||cv.name||"Meu currículo",createdAt:found?.createdAt||now,updatedAt:now,cv,template,accent,density,sectionOrder,hidden};docs=found?docs.map(x=>x.id===id?next:x):[next,...docs];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(docs))}catch{}},[cv,template,accent,density,sectionOrder,hidden,documentTitle]);
  const goToStep=(id:string)=>{setTab("Conteúdo");setMobilePreview(false);requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"}))};
  useEffect(()=>{if(hydrated.current&&activeId.current)try{localStorage.setItem(guidanceKey(activeId.current),JSON.stringify(guidance))}catch{}},[guidance]);
  const printResume=()=>{const previous=document.title;document.title=safeFilename(documentTitle||cv.name||"curriculo")+"-CurriculosPRO";window.print();setTimeout(()=>{document.title=previous},500)};
  const assistant=useMemo(()=>{
-  const validEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email),phoneDigits=cv.phone.replace(/\D/g,"");
-  const expComplete=cv.experiences.some(x=>x.title.trim()&&x.subtitle.trim()),eduComplete=cv.education.some(x=>x.title.trim()&&x.subtitle.trim()),skills=cv.skills.filter(x=>x.trim());
-  const checks=[
-   {ok:cv.name.trim().split(/\s+/).length>=2,label:"Nome completo",tip:"Informe nome e sobrenome para identificação profissional."},
-   {ok:validEmail,label:"E-mail de contato",tip:"Use um endereço válido que você consulta com frequência."},
-   {ok:phoneDigits.length===10||phoneDigits.length===11,label:"Telefone com DDD",tip:"Inclua DDD e número para facilitar o contato."},
-   {ok:cv.role.trim().length>=3,label:"Título profissional",tip:"Diga em poucas palavras sua área ou função desejada."},
-   {ok:cv.summary.trim().length>=60,label:"Resumo profissional",tip:"Conte em 3 a 5 linhas o que você já fez, seus pontos fortes e objetivo."},
-   {ok:expComplete,label:"Experiência",tip:"Se já trabalhou, informe função e empresa. Experiência informal também pode ser descrita."},
-   {ok:eduComplete,label:"Formação",tip:"Inclua sua formação mais relevante, concluída ou em andamento."},
-   {ok:skills.length>=3,label:"Competências",tip:"Liste pelo menos três habilidades que você realmente possui."}
+  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email),phoneOk=[10,11].includes(cv.phone.replace(/\D/g,"").length);
+  const expHas=cv.experiences.some(x=>x.title.trim()&&(x.subtitle.trim()||x.description.trim())),eduHas=cv.education.some(x=>x.title.trim()),skillsOk=cv.skills.filter(x=>x.trim()).length>=3;
+  const resolved=[
+   {ok:cv.name.trim().split(/\s+/).length>=2,label:"Identificação",tip:"Informe nome e sobrenome."},
+   {ok:emailOk||phoneOk,label:"Contato",tip:"Informe pelo menos um contato válido."},
+   {ok:cv.role.trim().length>=3,label:"Objetivo profissional",tip:"Informe sua área, função ou objetivo."},
+   {ok:cv.summary.trim().length>=60,label:"Resumo",tip:"Apresente sua trajetória e pontos fortes em poucas linhas."},
+   {ok:guidance.experience==="first-job"||expHas||["informal","self-employed"].includes(guidance.experience)&&expHas,label:"Experiência",tip:guidance.experience==="pending"?"Diga qual é sua situação profissional.":"Complete apenas as informações que realmente existirem."},
+   {ok:guidance.education==="none"||eduHas,label:"Formação",tip:guidance.education==="pending"?"Diga como está sua formação.":"Informe o que souber com segurança."},
+   {ok:skillsOk,label:"Competências",tip:"Liste habilidades que você realmente possui."},
+   {ok:guidance.courses==="none"||guidance.courses!=="pending"&&cv.courses.some(x=>x.trim()),label:"Cursos",tip:guidance.courses==="pending"?"Diga se você tem cursos para informar.":"Esta seção é opcional."},
+   {ok:guidance.languages==="none"||guidance.languages!=="pending"&&cv.languages.some(x=>x.trim()),label:"Idiomas",tip:guidance.languages==="pending"?"Diga se você quer informar idiomas.":"Informe apenas seu nível real."}
   ];
-  const done=checks.filter(x=>x.ok).length,score=Math.round(done/checks.length*100),next=checks.filter(x=>!x.ok).slice(0,3);
-  return{checks,score,next,done,total:checks.length}
- },[cv]); const completion=assistant.score;
+  const done=resolved.filter(x=>x.ok).length,score=Math.round(done/resolved.length*100),next=resolved.filter(x=>!x.ok).slice(0,3);
+  return{checks:resolved,score,next,done,total:resolved.length}
+ },[cv,guidance]); const completion=assistant.score;
  const journey=useMemo(()=>[
   {id:"step-personal",label:"Dados pessoais",done:!!cv.name.trim()&&(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email)||[10,11].includes(cv.phone.replace(/\D/g,"").length)),optional:false},
   {id:"step-summary",label:"Resumo",done:cv.summary.trim().length>=60,optional:true},
   {id:"step-experience",label:"Experiência",done:guidance.experience==="first-job"||cv.experiences.some(x=>x.title.trim()&&(x.subtitle.trim()||x.description.trim())),optional:true},
-  {id:"step-education",label:"Formação",done:cv.education.some(x=>x.title.trim()),optional:true},
+  {id:"step-education",label:"Formação",done:guidance.education==="none"||cv.education.some(x=>x.title.trim()),optional:true},
   {id:"step-skills",label:"Competências",done:cv.skills.filter(x=>x.trim()).length>=3,optional:true},
   {id:"step-review",label:"Revisão",done:false,optional:false}
  ],[cv,guidance]);
