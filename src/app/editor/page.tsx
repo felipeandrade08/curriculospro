@@ -37,7 +37,7 @@ export default function Editor(){
   return{checks,score,next,done,total:checks.length}
  },[cv]); const completion=assistant.score;
  const journey=useMemo(()=>[
-  {id:"step-personal",label:"Dados pessoais",done:!!cv.name.trim()&&(/[^^\s@]+@[^\s@]+\.[^\s@]+/.test(cv.email)||[10,11].includes(cv.phone.replace(/\D/g,"").length)),optional:false},
+  {id:"step-personal",label:"Dados pessoais",done:!!cv.name.trim()&&(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email)||[10,11].includes(cv.phone.replace(/\D/g,"").length)),optional:false},
   {id:"step-summary",label:"Resumo",done:cv.summary.trim().length>=60,optional:true},
   {id:"step-experience",label:"Experiência",done:cv.experiences.some(x=>x.title.trim()&&(x.subtitle.trim()||x.description.trim())),optional:true},
   {id:"step-education",label:"Formação",done:cv.education.some(x=>x.title.trim()),optional:true},
