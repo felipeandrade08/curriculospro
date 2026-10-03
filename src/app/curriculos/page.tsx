@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
-import {CloudSync} from "./cloud-sync";
+import {CloudSync,LAST_CLOUD_USER,PENDING_DELETIONS} from "./cloud-sync";
 import {SiteHeader} from "@/components/site-header";
 import {SiteFooter} from "@/components/site-footer";
 import {ACTIVE_RESUME_KEY,LEGACY_RESUME_KEY,RESUME_LIBRARY_KEY,ResumeDocument,createResume,parseBackup,readRecovery,storeRecovery,cloneResume,migrateLegacyResume} from "@/lib/resume";
@@ -13,7 +13,7 @@ export default function ResumesPage(){
  const add=(mode:"blank"|"example")=>{const doc=createResume(mode);save([doc,...items]);open(doc.id)};
  const rename=(doc:ResumeDocument)=>{const title=prompt("Nome deste currículo:",doc.title)?.trim();if(title)save(items.map(x=>x.id===doc.id?{...x,title,updatedAt:new Date().toISOString()}:x))};
  const duplicate=(doc:ResumeDocument)=>save([cloneResume(doc),...items]);
- const remove=(id:string)=>{if(confirm("Excluir este currículo? Você poderá restaurar a última recuperação.")){storeRecovery(items,"delete");setRecoveryDate(new Date().toISOString());save(items.filter(x=>x.id!==id))}};
+ const remove=(id:string)=>{if(confirm("Excluir este currículo? Você poderá restaurar a última recuperação.")){storeRecovery(items,"delete");setRecoveryDate(new Date().toISOString());try{const userId=localStorage.getItem(LAST_CLOUD_USER);if(userId){const revisions:Record<string,number>=JSON.parse(localStorage.getItem("curriculospro.cloudRevisions.v1:"+userId)||"{}");if(Number(revisions[id]||0)>0){const key=PENDING_DELETIONS+":"+userId,pending:string[]=JSON.parse(localStorage.getItem(key)||"[]");if(!pending.includes(id))localStorage.setItem(key,JSON.stringify([...pending,id]))}}}catch{}save(items.filter(x=>x.id!==id))}};
  const restore=()=>{const recovery=readRecovery();if(recovery&&confirm("Restaurar a biblioteca para o estado salvo antes da última alteração?"))save(recovery.resumes)};
  const exportAll=()=>{const blob=new Blob([JSON.stringify({product:"CurriculosPRO",version:3,exportedAt:new Date().toISOString(),resumes:items},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="curriculospro-backup.json";a.click();URL.revokeObjectURL(a.href)};
  const importFile=(file?:File)=>{if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const incoming=parseBackup(String(reader.result));storeRecovery(items,"import");setRecoveryDate(new Date().toISOString());save([...incoming.map((x:ResumeDocument)=>cloneResume(x,x.title)),...items])}catch{alert("Arquivo de backup inválido.")}};reader.readAsText(file)};
