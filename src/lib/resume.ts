@@ -23,6 +23,26 @@ export const emptyResumeData=():ResumeData=>({name:"",photo:"",role:"",email:"",
 export const exampleResumeData=():ResumeData=>({name:"Mariana Costa",photo:"",role:"Analista de Marketing",email:"mariana@email.com",phone:"(11) 99999-9999",city:"São Paulo, SP",summary:"Profissional de marketing com experiência em planejamento de campanhas, conteúdo e análise de resultados.",experiences:[{id:uid(),title:"Analista de Marketing",subtitle:"Empresa Exemplo",period:"2024 — Atual",description:"Planejamento e acompanhamento de campanhas digitais, produção de conteúdo e análise de indicadores."}],education:[{id:uid(),title:"Marketing",subtitle:"Instituição de Ensino",period:"2021 — 2023",description:""}],courses:["Marketing Digital"],skills:["Planejamento","Conteúdo","Análise de dados"],languages:["Português — Nativo"]});
 export function createResume(mode:"blank"|"example"="blank",template:ResumeTemplate="essential"):ResumeDocument{const now=new Date().toISOString();return{id:uid(),title:mode==="example"?"Currículo de exemplo":"Meu currículo",createdAt:now,updatedAt:now,cv:mode==="example"?exampleResumeData():emptyResumeData(),template,accent:"#087cf0",density:"comfortable",sectionOrder:[...defaultOrder],hidden:[]}}
 
+export type JobTarget={version:1;title:string;company:string;description:string;updatedAt:string};
+export type JobEvidence={term:string;sources:string[]};
+export type JobAnalysis={matched:JobEvidence[];unverified:string[];profileFacts:string[]};
+export const JOB_TARGET_KEY="curriculospro.jobTarget.v1";
+export const emptyJobTarget=():JobTarget=>({version:1,title:"",company:"",description:"",updatedAt:new Date().toISOString()});
+const normalizeWords=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9+#.\s-]/g," ").split(/\s+/).filter(x=>x.length>=3);
+const meaningfulTerms=(value:string)=>{const stop=new Set(["para","com","uma","das","dos","que","por","como","mais","sua","seu","ser","ter","the","and","for","with","this","from"]);return [...new Set(normalizeWords(value).filter(x=>!stop.has(x)))].slice(0,80)};
+export function analyzeJobTarget(target:JobTarget,profile:ProfessionalProfile,resume?:ResumeData):JobAnalysis{
+ const facts=[
+  ...profile.skills.map(x=>({label:x,source:"Competência do perfil"})),
+  ...profile.courses.map(x=>({label:x,source:"Curso do perfil"})),
+  ...profile.languages.map(x=>({label:x,source:"Idioma do perfil"})),
+  ...profile.experiences.flatMap(x=>[{label:x.title,source:"Experiência: "+(x.title||"sem título")},{label:x.description,source:"Descrição de experiência"}]),
+  ...profile.education.flatMap(x=>[{label:x.title,source:"Formação"},{label:x.description,source:"Descrição de formação"}]),
+  ...(resume?[...resume.skills.map(x=>({label:x,source:"Competência deste currículo"})),{label:resume.role,source:"Objetivo deste currículo"},{label:resume.summary,source:"Resumo deste currículo"}]:[])
+ ].filter(x=>x.label.trim());
+ const jobTerms=meaningfulTerms(target.title+" "+target.description),matched:JobEvidence[]=[],unverified:string[]=[];
+ for(const term of jobTerms){const sources=facts.filter(f=>normalizeWords(f.label).includes(term)).map(f=>f.source);sources.length?matched.push({term,sources:[...new Set(sources)]}):unverified.push(term)}
+ return{matched,unverified:unverified.slice(0,24),profileFacts:[...new Set(facts.map(x=>x.label.trim()))].slice(0,80)};
+}
 export type PlanId="free"|"pro";
 export type AccountMode="guest"|"account";
 export type ProductAccess={plan:PlanId;accountMode:AccountMode};
