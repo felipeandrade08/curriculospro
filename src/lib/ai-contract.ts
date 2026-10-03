@@ -2,7 +2,8 @@ import {isProfessionalProfile,type JobTarget,type ProfessionalProfile} from "@/l
 
 export type AiFact={id:string;kind:"experience"|"education"|"skill"|"course"|"language"|"identity";text:string};
 export type TailoringRequest={job:JobTarget;profile:ProfessionalProfile;allowedFactIds:string[];instruction:"summary"|"experience-bullets"|"skills-order"};
-export type TailoringSuggestion={text:string;usedFactIds:string[]};
+export type TailoringSuggestion={id:string;instruction:TailoringRequest["instruction"];original:string;text:string;usedFactIds:string[];createdAt:string};
+export type TailoringReview={suggestion:TailoringSuggestion;facts:AiFact[]};
 
 export function buildAiFacts(profile:ProfessionalProfile):AiFact[]{
  return[
@@ -17,6 +18,6 @@ export function validateTailoringRequest(value:unknown):value is TailoringReques
  if(!value||typeof value!=="object")return false;const x=value as Partial<TailoringRequest>,job=x.job as JobTarget|undefined;
  return !!job&&job.version===1&&typeof job.title==="string"&&typeof job.company==="string"&&typeof job.description==="string"&&typeof job.updatedAt==="string"&&isProfessionalProfile(x.profile)&&Array.isArray(x.allowedFactIds)&&x.allowedFactIds.every(v=>typeof v==="string")&&["summary","experience-bullets","skills-order"].includes(String(x.instruction));
 }
-export function enforceEvidence(suggestion:TailoringSuggestion,allowed:Set<string>){
+export function enforceEvidence(suggestion:Pick<TailoringSuggestion,"usedFactIds">,allowed:Set<string>){
  return suggestion.usedFactIds.length>0&&suggestion.usedFactIds.every(id=>allowed.has(id));
 }
