@@ -2,11 +2,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import {useEffect,useState} from "react";
-import {ACTIVE_RESUME_KEY,LEGACY_RESUME_KEY,RESUME_LIBRARY_KEY,ResumeDocument,createResume,parseBackup,readRecovery,storeRecovery,cloneResume} from "@/lib/resume";
+import {ACTIVE_RESUME_KEY,LEGACY_RESUME_KEY,RESUME_LIBRARY_KEY,ResumeDocument,createResume,parseBackup,readRecovery,storeRecovery,cloneResume,migrateLegacyResume} from "@/lib/resume";
 
 export default function ResumesPage(){
  const [items,setItems]=useState<ResumeDocument[]>([]),[recoveryDate,setRecoveryDate]=useState("");
- useEffect(()=>{try{let list:ResumeDocument[]=JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY)||"[]");if(!list.length){const legacy=localStorage.getItem(LEGACY_RESUME_KEY);if(legacy){const old=JSON.parse(legacy),doc=createResume("blank",old.template||"essential");doc.title=old.cv?.name?("Currículo — "+old.cv.name):"Meu currículo";doc.cv={...doc.cv,...old.cv};doc.accent=old.accent||doc.accent;doc.density=old.density||doc.density;doc.sectionOrder=old.sectionOrder||doc.sectionOrder;doc.hidden=old.hidden||[];list=[doc];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(list))}}setItems(list);const recovery=readRecovery();if(recovery)setRecoveryDate(recovery.createdAt)}catch{}},[]);
+ useEffect(()=>{try{let list:ResumeDocument[]=JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY)||"[]");if(!list.length){const legacy=localStorage.getItem(LEGACY_RESUME_KEY);if(legacy){const doc=migrateLegacyResume(legacy);list=[doc];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(list))}}setItems(list);const recovery=readRecovery();if(recovery)setRecoveryDate(recovery.createdAt)}catch{}},[]);
  const save=(list:ResumeDocument[])=>{setItems(list);localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(list))};
  const open=(id:string)=>{localStorage.setItem(ACTIVE_RESUME_KEY,id);location.href="/editor"};
  const add=(mode:"blank"|"example")=>{const doc=createResume(mode);save([doc,...items]);open(doc.id)};
