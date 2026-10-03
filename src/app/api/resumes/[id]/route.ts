@@ -2,13 +2,14 @@ import {db} from "@/lib/server/db";
 import {getServerSession} from "@/lib/server/session";
 import {defaultOrder,isResumeDocument} from "@/lib/resume";
 type Context={params:Promise<{id:string}>};
+type ResumeWrite=import("@/lib/resume").ResumeDocument&{revision?:unknown};
 
 export async function PUT(request:Request,{params}:Context){
  const session=await getServerSession();if(!session)return Response.json({error:"unauthorized"},{status:401});
  const {id}=await params;
  let body:unknown;try{body=await request.json()}catch{return Response.json({error:"invalid_json"},{status:400})}
  if(!isResumeDocument(body)||body.id!==id)return Response.json({error:"invalid_resume"},{status:400});
- const revisionValue=(body as typeof body&{revision?:unknown}).revision,expected=Number(revisionValue||0);
+ const revisionValue=(body as ResumeWrite).revision,expected=Number(revisionValue||0);
  if(!Number.isInteger(expected)||expected<0)return Response.json({error:"invalid_revision"},{status:400});
  if(body.title.length>160||body.accent.length>32||!defaultOrder.every(x=>body.sectionOrder.includes(x)||body.hidden.includes(x)))return Response.json({error:"invalid_resume"},{status:400});
  const sql=db();
