@@ -162,3 +162,6 @@ body{background:#f7fafc;color:var(--cp-ink)}
 /* Career context choices — guidance, never requirements */
 .contextChoice{margin:0 0 12px;padding:12px 13px;border:1px solid #dce8f2;border-radius:12px;background:#f9fcff}.contextChoice>b{display:block;margin-bottom:8px;font-size:11px;color:#29445e}.contextChoice>div{display:flex;flex-wrap:wrap;gap:7px}.contextChoice button{min-height:32px;padding:7px 10px;border:1px solid #d6e2ec;border-radius:999px;background:#fff;color:#49647d;font-size:10px;font-weight:750;cursor:pointer}.contextChoice button:hover{border-color:#9ec9ef;color:#075fc9}.contextChoice button.active{border-color:#8abfec;background:#eaf5ff;color:#075fc9;box-shadow:inset 0 0 0 1px rgba(8,124,240,.08)}
 @media(max-width:520px){.contextChoice>b{font-size:12px}.contextChoice button{font-size:11px;min-height:36px}}
+
+/* Optional subsection guidance */
+.subGuidance{margin:12px 0}.subGuidance .contextChoice{margin-bottom:8px}.subGuidance+.listEditor{margin-top:10px}
