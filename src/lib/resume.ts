@@ -18,7 +18,7 @@ export type AccountMode="guest"|"account";
 export type ProductAccess={plan:PlanId;accountMode:AccountMode};
 export const PRODUCT_ACCESS_KEY="curriculospro.access.v1";
 export const defaultAccess:ProductAccess={plan:"free",accountMode:"guest"};
-export const features={multipleResumes:{free:true,pro:true},pdfExport:{free:true,pro:true},allCurrentTemplates:{free:true,pro:true},backup:{free:true,pro:true},cloudSync:{free:false,pro:true},aiRewrite:{free:false,pro:true},jobTailoring:{free:false,pro:true},coverLetter:{free:false,pro:true}} as const;
+export const features={multipleResumes:{free:true,pro:true},pdfExport:{free:true,pro:true},allCurrentTemplates:{free:true,pro:true},backup:{free:true,pro:true},cloudSync:{free:true,pro:true},aiRewrite:{free:false,pro:true},jobTailoring:{free:false,pro:true},coverLetter:{free:false,pro:true}} as const;
 export type ResumeBackup={product:"CurriculosPRO";version:3;exportedAt:string;resumes:ResumeDocument[]};
 export function isResumeDocument(x:unknown):x is ResumeDocument{if(!x||typeof x!=="object")return false;const d=x as Partial<ResumeDocument>;return typeof d.id==="string"&&typeof d.title==="string"&&!!d.cv&&typeof d.cv==="object"&&["essential","modern","executive"].includes(String(d.template))&&Array.isArray(d.sectionOrder)&&Array.isArray(d.hidden)}
 export function parseBackup(value:string):ResumeDocument[]{const raw=JSON.parse(value) as Partial<ResumeBackup>;if(raw.product!=="CurriculosPRO"||raw.version!==3||!Array.isArray(raw.resumes))throw new Error("invalid-backup");const docs=raw.resumes.filter(isResumeDocument);if(!docs.length)throw new Error("empty-backup");return docs}
