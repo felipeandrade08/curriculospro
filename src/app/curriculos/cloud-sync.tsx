@@ -2,7 +2,7 @@
 import {useState} from "react";
 import {authClient} from "@/lib/auth/client";
 import {RESUME_LIBRARY_KEY,ResumeDocument,cloneResume,isResumeDocument} from "@/lib/resume";
-const REVISIONS="curriculospro.cloudRevisions.v1";
+const REVISIONS="curriculospro.cloudRevisions.v1";\nexport const PENDING_DELETIONS="curriculospro.pendingCloudDeletes.v1";\nexport const LAST_CLOUD_USER="curriculospro.lastCloudUser.v1";
 type CloudResume={document:ResumeDocument;revision:number;updatedAt:string};
 type Conflict={local:ResumeDocument;remote:CloudResume};
 
@@ -11,7 +11,7 @@ function writeLocal(items:ResumeDocument[]){localStorage.setItem(RESUME_LIBRARY_
 
 export function CloudSync(){
  const session=authClient.useSession(),[status,setStatus]=useState(""),[busy,setBusy]=useState(false),[conflicts,setConflicts]=useState<Conflict[]>([]);
- const userId=session.data?.user.id||session.data?.user.email||"anonymous",key=REVISIONS+":"+userId;
+ const userId=session.data?.user.id||session.data?.user.email||"anonymous",key=REVISIONS+":"+userId,pendingKey=PENDING_DELETIONS+":"+userId;\n if(typeof window!=="undefined"&&session.data)try{localStorage.setItem(LAST_CLOUD_USER,userId)}catch{};
  const resolve=(conflict:Conflict,choice:"local-copy"|"remote")=>{
   const items=readLocal();
   if(choice==="remote")writeLocal(items.map(x=>x.id===conflict.local.id?conflict.remote.document:x));
@@ -22,8 +22,19 @@ export function CloudSync(){
  const sync=async()=>{setBusy(true);setStatus("Comparando dispositivo e nuvem…");setConflicts([]);try{
   let local=readLocal();const revisions:Record<string,number>=JSON.parse(localStorage.getItem(key)||"{}");
   const cloudRes=await fetch("/api/resumes",{cache:"no-store"});if(!cloudRes.ok)throw new Error("cloud");
-  const cloudData=await cloudRes.json() as {resumes?:CloudResume[]},remote=(cloudData.resumes||[]).filter(x=>isResumeDocument(x.document));
-  const localIds=new Set(local.map(x=>x.id)),downloaded=remote.filter(x=>!localIds.has(x.document.id)),downloadedIds=new Set(downloaded.map(x=>x.document.id));
+  const cloudData=await cloudRes.json() as {resumes?:CloudResume[];deleted?:{id:string;revision:number}[]},remote=(cloudData.resumes||[]).filter(x=>isResumeDocument(x.document)),tombstones=cloudData.deleted||[];
+  const pending:string[]=JSON.parse(localStorage.getItem(pendingKey)||"[]");
+  let deletedSent=0;
+  for(const id of pending){
+   const res=await fetch("/api/resumes/"+encodeURIComponent(id),{method:"DELETE"});
+   if(!res.ok&&res.status!==404)throw new Error("delete");
+   delete revisions[id];deletedSent++;
+  }
+  if(pending.length)localStorage.setItem(pendingKey,"[]");
+  const knownDeleted=new Set(tombstones.filter(x=>Number(revisions[x.id]||0)>0).map(x=>x.id));
+  if(knownDeleted.size){local=local.filter(x=>!knownDeleted.has(x.id));writeLocal(local);for(const id of knownDeleted)delete revisions[id]}
+  const blockedDeleted=new Set([...pending,...tombstones.map(x=>x.id)]);
+  const localIds=new Set(local.map(x=>x.id)),downloaded=remote.filter(x=>!localIds.has(x.document.id)&&!blockedDeleted.has(x.document.id)),downloadedIds=new Set(downloaded.map(x=>x.document.id));
   if(downloaded.length){local=[...downloaded.map(x=>x.document),...local];writeLocal(local);for(const x of downloaded)revisions[x.document.id]=x.revision}
   const remoteById=new Map(remote.map(x=>[x.document.id,x])),found:Conflict[]=[];let saved=0;
   for(const doc of local){
@@ -35,7 +46,7 @@ export function CloudSync(){
    if(!res.ok)throw new Error("sync");const data=await res.json();revisions[doc.id]=data.revision;saved++;
   }
   localStorage.setItem(key,JSON.stringify(revisions));setConflicts(found);
-  setStatus(found.length?downloaded.length+" baixado(s) · "+saved+" sincronizado(s) · "+found.length+" conflito(s) aguardando decisão":downloaded.length+" baixado(s) · "+saved+" sincronizado(s) · tudo atualizado");
+  setStatus(found.length?downloaded.length+" baixado(s) · "+saved+" sincronizado(s) · "+deletedSent+" exclusão(ões) confirmada(s) · "+found.length+" conflito(s) aguardando decisão":downloaded.length+" baixado(s) · "+saved+" sincronizado(s) · "+deletedSent+" exclusão(ões) confirmada(s) · tudo atualizado");
  }catch{setStatus("Não foi possível sincronizar agora. Seus currículos locais foram preservados.")}finally{setBusy(false)}};
  if(session.isPending)return <div className="accountCard accountLoading"><span className="statusDot"/>Verificando sua conta…</div>;
  if(!session.data)return <div className="accountCard signedOut"><div className="accountIcon">☁</div><div><small>NUVEM OPCIONAL</small><strong>Salve também na sua conta</strong><p>Entre para sincronizar seus currículos sem perder as cópias deste dispositivo.</p></div><a className="cloudLogin" href="/auth/sign-in">Entrar na conta →</a></div>;
