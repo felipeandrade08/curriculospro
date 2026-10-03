@@ -20,7 +20,15 @@ export const PRODUCT_ACCESS_KEY="curriculospro.access.v1";
 export const defaultAccess:ProductAccess={plan:"free",accountMode:"guest"};
 export const features={multipleResumes:{free:true,pro:true},pdfExport:{free:true,pro:true},allCurrentTemplates:{free:true,pro:true},backup:{free:true,pro:true},cloudSync:{free:true,pro:true},aiRewrite:{free:false,pro:true},jobTailoring:{free:false,pro:true},coverLetter:{free:false,pro:true}} as const;
 export type ResumeBackup={product:"CurriculosPRO";version:3;exportedAt:string;resumes:ResumeDocument[]};
-export function isResumeDocument(x:unknown):x is ResumeDocument{if(!x||typeof x!=="object")return false;const d=x as Partial<ResumeDocument>;return typeof d.id==="string"&&typeof d.title==="string"&&!!d.cv&&typeof d.cv==="object"&&["essential","modern","executive"].includes(String(d.template))&&Array.isArray(d.sectionOrder)&&Array.isArray(d.hidden)}
+const isText=(x:unknown):x is string=>typeof x==="string";
+const isItem=(x:unknown):x is ResumeItem=>{if(!x||typeof x!=="object")return false;const i=x as Partial<ResumeItem>;return [i.id,i.title,i.subtitle,i.period,i.description].every(isText)};
+const isSection=(x:unknown):x is ResumeSection=>isText(x)&&defaultOrder.includes(x as ResumeSection);
+export function isResumeDocument(x:unknown):x is ResumeDocument{
+ if(!x||typeof x!=="object")return false;const d=x as Partial<ResumeDocument>,cv=d.cv as Partial<ResumeData>|undefined;
+ if(!isText(d.id)||!d.id||!isText(d.title)||!isText(d.createdAt)||!isText(d.updatedAt)||!isResumeTemplate(isText(d.template)?d.template:null)||!isText(d.accent)||!/^#[0-9a-f]{6}$/i.test(d.accent)||(d.density!=="comfortable"&&d.density!=="compact")||!Array.isArray(d.sectionOrder)||!d.sectionOrder.every(isSection)||new Set(d.sectionOrder).size!==d.sectionOrder.length||!Array.isArray(d.hidden)||!d.hidden.every(isSection)||!cv)return false;
+ const textFields=[cv.name,cv.role,cv.email,cv.phone,cv.city,cv.summary,cv.photo];
+ return textFields.every(isText)&&Array.isArray(cv.experiences)&&cv.experiences.every(isItem)&&Array.isArray(cv.education)&&cv.education.every(isItem)&&Array.isArray(cv.courses)&&cv.courses.every(isText)&&Array.isArray(cv.skills)&&cv.skills.every(isText)&&Array.isArray(cv.languages)&&cv.languages.every(isText);
+}
 export function parseBackup(value:string):ResumeDocument[]{const raw=JSON.parse(value) as Partial<ResumeBackup>;if(raw.product!=="CurriculosPRO"||raw.version!==3||!Array.isArray(raw.resumes))throw new Error("invalid-backup");const docs=raw.resumes.filter(isResumeDocument);if(!docs.length)throw new Error("empty-backup");return docs}
 export function isResumeTemplate(value:string|null):value is ResumeTemplate{return value==="essential"||value==="modern"||value==="executive"}
 export function cloneResume(source:ResumeDocument,title=source.title+" — cópia"):ResumeDocument{const now=new Date().toISOString();return{...source,id:uid(),title,createdAt:now,updatedAt:now,cv:{...source.cv,experiences:source.cv.experiences.map(x=>({...x,id:uid()})),education:source.cv.education.map(x=>({...x,id:uid()})),courses:[...source.cv.courses],skills:[...source.cv.skills],languages:[...source.cv.languages]},sectionOrder:[...source.sectionOrder],hidden:[...source.hidden]}}
