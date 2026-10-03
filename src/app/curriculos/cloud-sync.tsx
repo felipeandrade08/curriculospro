@@ -2,7 +2,9 @@
 import {useState} from "react";
 import {authClient} from "@/lib/auth/client";
 import {RESUME_LIBRARY_KEY,ResumeDocument,cloneResume,isResumeDocument} from "@/lib/resume";
-const REVISIONS="curriculospro.cloudRevisions.v1";\nexport const PENDING_DELETIONS="curriculospro.pendingCloudDeletes.v1";\nexport const LAST_CLOUD_USER="curriculospro.lastCloudUser.v1";
+const REVISIONS="curriculospro.cloudRevisions.v1";
+export const PENDING_DELETIONS="curriculospro.pendingCloudDeletes.v1";
+export const LAST_CLOUD_USER="curriculospro.lastCloudUser.v1";
 type CloudResume={document:ResumeDocument;revision:number;updatedAt:string};
 type Conflict={local:ResumeDocument;remote:CloudResume};
 
@@ -11,7 +13,8 @@ function writeLocal(items:ResumeDocument[]){localStorage.setItem(RESUME_LIBRARY_
 
 export function CloudSync(){
  const session=authClient.useSession(),[status,setStatus]=useState(""),[busy,setBusy]=useState(false),[conflicts,setConflicts]=useState<Conflict[]>([]);
- const userId=session.data?.user.id||session.data?.user.email||"anonymous",key=REVISIONS+":"+userId,pendingKey=PENDING_DELETIONS+":"+userId;\n if(typeof window!=="undefined"&&session.data)try{localStorage.setItem(LAST_CLOUD_USER,userId)}catch{};
+ const userId=session.data?.user.id||session.data?.user.email||"anonymous",key=REVISIONS+":"+userId,pendingKey=PENDING_DELETIONS+":"+userId;
+ if(typeof window!=="undefined"&&session.data)try{localStorage.setItem(LAST_CLOUD_USER,userId)}catch{};
  const resolve=(conflict:Conflict,choice:"local-copy"|"remote")=>{
   const items=readLocal();
   if(choice==="remote")writeLocal(items.map(x=>x.id===conflict.local.id?conflict.remote.document:x));
