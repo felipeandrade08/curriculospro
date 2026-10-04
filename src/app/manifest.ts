@@ -1,0 +1,2 @@
+import type {MetadataRoute} from "next";
+export default function manifest():MetadataRoute.Manifest{return {name:"CurriculosPRO",short_name:"CurriculosPRO",description:"Crie, organize e exporte currículos profissionais.",start_url:"/",display:"standalone",background_color:"#f7fbff",theme_color:"#087cf0",lang:"pt-BR",icons:[{src:"/brand/icon.png",sizes:"512x512",type:"image/png"}]}}
