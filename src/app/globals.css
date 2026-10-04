@@ -388,3 +388,7 @@ body{background:#f7fafc;color:var(--cp-ink)}
 /* Public launch — legal/trust layer */
 .legalPage{max-width:900px;padding-top:72px;padding-bottom:90px}.legalPage>span{font-size:10px;letter-spacing:1.4px;font-weight:900;color:#087cf0}.legalPage h1{margin:10px 0 14px;font-size:44px;line-height:1.08;letter-spacing:-2px;color:#102d4b}.legalLead{max-width:720px;margin:0 0 42px;font-size:16px;line-height:1.7;color:#60758a}.legalPage section{padding:24px 0;border-top:1px solid #e3ebf2}.legalPage section h2{margin:0 0 9px;font-size:18px;color:#17324d}.legalPage section p{margin:0;max-width:780px;font-size:13px;line-height:1.75;color:#60758a}.legalUpdated{margin-top:28px;font-size:11px;color:#8290a0}.dataSafetyCard a{display:inline-block;margin-top:7px;color:#0870d7;font-size:10px;font-weight:800;text-decoration:none}.footerLinks a:focus-visible,.legalPage a:focus-visible,.dataSafetyCard a:focus-visible{outline:3px solid rgba(8,124,240,.24);outline-offset:3px}
 @media(max-width:520px){.legalPage{padding-top:42px;padding-bottom:60px}.legalPage h1{font-size:34px;letter-spacing:-1.4px}.legalLead{font-size:14px;margin-bottom:30px}.legalPage section{padding:20px 0}.legalPage section p{font-size:12px}}
+
+/* Release audit — preview-only placeholders must never enter PDF */
+.previewPlaceholder{color:#aeb9c5!important}
+@media print{.previewPlaceholder{display:none!important}}
