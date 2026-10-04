@@ -319,3 +319,26 @@ body{background:#f7fafc;color:var(--cp-ink)}
 @media(max-width:650px){.profileHeroActions{width:100%;display:grid;grid-template-columns:1fr 1fr}.profileHeroActions>*{width:100%}.pdfHint{top:78px;right:16px}.libraryActions{align-items:stretch}.libraryActions>*{text-align:center}}
 @media(max-width:430px){.profileHeroActions{grid-template-columns:1fr}}
 @media print{.pdfHint{display:none!important}}
+
+
+/* A4 + responsive refinement package */
+.editorHead{min-width:0}.editorHead>*{min-width:0}.documentTitle{min-width:120px;max-width:230px}
+.workspace{grid-template-columns:clamp(460px,31vw,560px) minmax(0,1fr)}
+.side{min-width:0;padding:28px 32px 46px}.formBody,.designPanel{min-width:0}
+.side label,.side input,.side textarea,.itemEditor,.profileImportBar,.coachTip,.contextChoice,.finalReview{min-width:0}
+.side input,.side textarea{line-height:1.4;min-height:42px}.side textarea{min-height:96px;height:auto}
+.itemTop,.sectionTitle,.profileImportBar{min-width:0}.itemTop>*{min-width:0}
+.profileImportBar{flex-wrap:wrap}.profileImportBar>div{flex:1 1 100%;min-width:0}.profileImportBar a,.profileImportBar button{white-space:normal;line-height:1.25}
+.paper{box-sizing:border-box;overflow-wrap:anywhere;word-break:normal}
+.paper header>div:last-child{min-width:0;flex:1}.paper header p{line-height:1.55;overflow-wrap:anywhere}
+.paper .row{gap:18px;align-items:flex-start}.paper .row>*{min-width:0}.paper .row>span{flex:0 0 auto;max-width:35%;text-align:right}
+.paper .resumeItem{break-inside:avoid;page-break-inside:avoid}.paper section h3{break-after:avoid;page-break-after:avoid}
+.paper.essential{padding:68px 70px}.paper.essential header{padding-bottom:25px}.paper.essential section{margin-top:28px}
+.paper.modern{padding:64px 68px 70px}.paper.modern header{padding:3px 0 27px}.paper.modern h1{font-size:36px}.paper.modern section{margin-top:29px}.paper.modern .chips i{border-radius:999px;padding:6px 9px}
+.paper.executive{padding:70px 76px}.paper.executive header{padding-bottom:25px}.paper.executive h1{font-size:35px;letter-spacing:-.7px}.paper.executive header h2{font-size:15px;letter-spacing:.2px}.paper.executive section{margin-top:30px}.paper.executive section p{line-height:1.65}.paper.executive h3{letter-spacing:1.5px}
+@media(min-width:1500px){.workspace{grid-template-columns:clamp(500px,32vw,610px) minmax(0,1fr)}.side{padding-left:38px;padding-right:38px}}
+@media(max-width:1100px) and (min-width:851px){.workspace{grid-template-columns:410px minmax(0,1fr)}.side{padding:24px}.preview{padding-left:22px;padding-right:22px}}
+@media(max-width:850px){.editorHead{height:auto;min-height:70px;padding-top:8px;padding-bottom:8px;flex-wrap:wrap}.editorHead .backLibrary,.editorHead .documentTitle{display:none}.mobileView{margin-left:auto}.workspace.showPreview .preview{overflow-x:hidden;display:flex;flex-direction:column;align-items:center}.workspace.showPreview .previewBar{width:min(100%,794px);padding:0 4px}.workspace.showPreview .paper{zoom:1;transform:scale(.72);transform-origin:top center;margin-bottom:calc(-1123px * .28)}}
+@media(max-width:620px){.side{padding:22px 18px 42px}.profileImportBar{display:grid;grid-template-columns:1fr 1fr}.profileImportBar>div{grid-column:1/-1}.profileImportBar>*{min-width:0}.workspace.showPreview .paper{transform:scale(.58);margin-bottom:calc(-1123px * .42)}}
+@media(max-width:480px){.editorHead{gap:7px}.editorHead .editorLogo{width:44px}.mobileView{padding:9px 10px}.profileImportBar{grid-template-columns:1fr}.workspace.showPreview .paper{transform:scale(.45);margin-bottom:calc(-1123px * .55)}.workspace.showPreview .previewBar{font-size:10px}.grid2{grid-template-columns:1fr}}
+@media print{@page{size:A4;margin:0}.paper{width:210mm!important;min-height:297mm!important;box-shadow:none!important;transform:none!important;overflow:visible}.paper.essential{padding:18mm 18mm}.paper.modern{padding:16mm 18mm 18mm}.paper.executive{padding:18mm 20mm}.resumeItem{break-inside:avoid;page-break-inside:avoid}}
