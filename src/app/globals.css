@@ -373,3 +373,13 @@ body{background:#f7fafc;color:var(--cp-ink)}
  .profileHeroActions>*{width:100%}.profileBlock>header button{min-height:38px}
  .jobTargetHero p{font-size:13px;line-height:1.6}.jobAssisted h2{font-size:17px}
 }
+
+
+/* Template gallery — closer visual previews */
+.modelSheet{position:relative;padding:30px 25px 25px;overflow:hidden}
+.modelSheet .modelSectionTitle{width:42%;height:5px;margin:22px 0 10px;border-radius:4px;background:#8da0b2}
+.modelSheet .modelSectionTitle.short{width:30%;margin-top:18px}
+.modelSheet>p{height:4px;margin:6px 0;border-radius:4px;background:#e1e7ec}.modelSheet>p:nth-of-type(2n){width:78%}
+.modelSkillLines{display:flex;gap:5px;margin-top:12px}.modelSkillLines i{width:38px;height:12px;border-radius:999px;background:#edf1f5}
+.modelSheet.modern{border-top:6px solid #087cf0}.modelSheet.modern .modelHead i{border-radius:9px;background:#087cf0}.modelSheet.modern .modelSectionTitle{background:#087cf0}.modelSheet.modern .modelSkillLines i{background:#e5f3ff}
+.modelSheet.executive{font-family:Georgia,serif}.modelSheet.executive .modelHead{justify-content:center;text-align:center}.modelSheet.executive .modelHead i{display:none}.modelSheet.executive .modelHead>div{align-items:center;width:100%}.modelSheet.executive hr{background:#4d5662}.modelSheet.executive .modelSectionTitle{margin-left:auto;margin-right:auto;background:#4d5662}.modelSheet.executive .modelSectionTitle.short{margin-left:0}.modelSheet.executive .modelSkillLines i{border-radius:2px;background:#e5e6e8}
