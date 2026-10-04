@@ -301,3 +301,8 @@ body{background:#f7fafc;color:var(--cp-ink)}
  .editorHead .documentTitle{display:none}
  .editorHead .progress{margin-left:auto}
 }
+
+/* Free job-tailoring completion step */
+.jobNextStep{margin-top:16px;margin-bottom:54px;padding:22px 24px;border:1px solid #cfe2f2;border-radius:18px;background:linear-gradient(135deg,#f7fbff,#fff);display:flex;align-items:center;justify-content:space-between;gap:24px;box-shadow:0 10px 30px rgba(23,59,102,.05)}
+.jobNextStep>div{min-width:0}.jobNextStep small{display:block;margin-bottom:6px;font-size:9px;font-weight:900;letter-spacing:.9px;color:#0870d7}.jobNextStep h2{margin:0 0 7px;font-size:19px;color:#17324d}.jobNextStep p{margin:0;max-width:720px;font-size:11px;line-height:1.6;color:#60758a}.jobNextStep p b{color:#29445e}.jobNextStep>a{flex:0 0 auto;padding:11px 15px;border-radius:10px;background:#087cf0;color:#fff;text-decoration:none;font-size:11px;font-weight:850;box-shadow:0 9px 22px rgba(8,124,240,.18)}
+@media(max-width:650px){.jobNextStep{align-items:flex-start;flex-direction:column;padding:18px}.jobNextStep>a{width:100%;text-align:center}}
