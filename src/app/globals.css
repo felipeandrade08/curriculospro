@@ -342,3 +342,34 @@ body{background:#f7fafc;color:var(--cp-ink)}
 @media(max-width:620px){.side{padding:22px 18px 42px}.profileImportBar{display:grid;grid-template-columns:1fr 1fr}.profileImportBar>div{grid-column:1/-1}.profileImportBar>*{min-width:0}.workspace.showPreview .paper{transform:scale(.58);margin-bottom:calc(-1123px * .42)}}
 @media(max-width:480px){.editorHead{gap:7px}.editorHead .editorLogo{width:44px}.mobileView{padding:9px 10px}.profileImportBar{grid-template-columns:1fr}.workspace.showPreview .paper{transform:scale(.45);margin-bottom:calc(-1123px * .55)}.workspace.showPreview .previewBar{font-size:10px}.grid2{grid-template-columns:1fr}}
 @media print{@page{size:A4;margin:0}.paper{width:210mm!important;min-height:297mm!important;box-shadow:none!important;transform:none!important;overflow:visible}.paper.essential{padding:18mm 18mm}.paper.modern{padding:16mm 18mm 18mm}.paper.executive{padding:18mm 20mm}.resumeItem{break-inside:avoid;page-break-inside:avoid}}
+
+
+/* Global journey mobile/readability finishing pass */
+.jobTargetPage,.libraryPage,.modelsPage,.profilePage{overflow-x:hidden}
+.jobAssisted header p,.jobSelectionItem small,.jobSelectionItem em,.jobAssisted>footer span{font-size:10px;line-height:1.45}
+.jobSelectionItem b{font-size:11px;line-height:1.35}.jobSelectionItem{min-width:0}.jobSelectionItem>span{min-width:0;overflow-wrap:anywhere}
+.jobAssisted>header>div:last-child span{font-size:9px}.jobAssisted>footer button{font-size:11px;min-height:38px}
+.resumeCard,.resumeCardBody,.modelCard,.modelInfo,.profileBlock,.profileItem{min-width:0}
+.resumeCardBody h2,.resumeCardBody p,.modelInfo h2,.modelInfo p,.profileBlock p{overflow-wrap:anywhere}
+.resumeCardBody button,.resumeCardBody a{white-space:normal;line-height:1.25}
+.modelInfo p{font-size:12px;line-height:1.6}.modelInfoTop small{font-size:10px}.modelInfoTop>span{font-size:9px}
+.profileBlock>header{gap:12px;flex-wrap:wrap}.profileBlock>header>div{min-width:0;flex:1}.profileListRow{min-width:0}
+.profileListRow input{min-width:0}
+@media(max-width:700px){
+ .libraryUtility{gap:12px;flex-wrap:wrap}.libraryUtility>div{min-width:0}
+ .libraryStatusGrid{grid-template-columns:1fr}
+ .resumeCard{grid-template-columns:92px minmax(0,1fr)}
+ .resumeCardBody>div{grid-template-columns:1fr 1fr}
+ .resumeCardBody button,.resumeCardBody a{min-height:40px;font-size:10px}
+ .jobAssisted{padding:16px}.jobSelectionItem{padding:12px}
+ .jobSelectionItem b{font-size:12px}.jobSelectionItem small,.jobSelectionItem em{font-size:10px}
+}
+@media(max-width:520px){
+ .resumeCard{grid-template-columns:1fr}.resumeCardThumb{width:96px;height:132px}.resumeCardBody>div{grid-template-columns:1fr 1fr}.resumeCardBody .cardPrimary{grid-column:1/-1}
+ .resumeCardBody>div button,.resumeCardBody>div a{font-size:11px}
+ .modelsTrust{gap:8px}.modelsTrust span{font-size:10px;line-height:1.35}
+ .modelInfo{padding:18px}.modelInfo h2{font-size:21px}.modelInfo p{font-size:13px}
+ .profileCloudBar{align-items:flex-start;flex-direction:column}.profileHeroActions{display:grid;grid-template-columns:1fr;width:100%}
+ .profileHeroActions>*{width:100%}.profileBlock>header button{min-height:38px}
+ .jobTargetHero p{font-size:13px;line-height:1.6}.jobAssisted h2{font-size:17px}
+}
