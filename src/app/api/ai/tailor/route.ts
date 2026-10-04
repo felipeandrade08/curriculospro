@@ -4,6 +4,7 @@ import {db} from "@/lib/server/db";
 
 const MODEL=process.env.OPENAI_TAILOR_MODEL||"gpt-5.6-luna";
 export async function POST(request:Request){
+ if(process.env.ENABLE_PAID_AI!=="true")return Response.json({error:"paid_ai_disabled"},{status:503});
  const session=await getServerSession();
  if(!session)return Response.json({error:"unauthorized"},{status:401});
  const body=await request.json().catch(()=>null);
