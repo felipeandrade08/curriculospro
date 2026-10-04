@@ -42,7 +42,7 @@ export function CloudSync(){
   if(downloaded.length){local=[...downloaded.map(x=>x.document),...local];writeLocal(local);for(const x of downloaded)revisions[x.document.id]=x.revision}
   const remoteById=new Map(remote.map(x=>[x.document.id,x])),found:Conflict[]=[];let saved=0;
   for(const doc of local){
-   if(downloadedIds.has(doc.id))continue;
+   if(downloadedIds.has(doc.id)||blockedDeleted.has(doc.id))continue;
    const known=Number(revisions[doc.id]||0),cloud=remoteById.get(doc.id);
    if(cloud&&known&&cloud.revision!==known){found.push({local:doc,remote:cloud});continue}
    const res=await fetch("/api/resumes/"+encodeURIComponent(doc.id),{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({...doc,revision:known})});
