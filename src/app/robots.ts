@@ -1,0 +1,2 @@
+import type {MetadataRoute} from "next";
+export default function robots():MetadataRoute.Robots{return {rules:{userAgent:"*",allow:["/","/modelos"],disallow:["/api/","/editor","/curriculos","/perfil-profissional","/adaptar-vaga","/auth/"]},sitemap:"https://curriculospro.vercel.app/sitemap.xml"}}
