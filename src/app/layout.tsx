@@ -2,5 +2,5 @@ import "@neondatabase/auth-ui/css";
 import type { Metadata } from "next";
 import "./globals.css";
 import {Providers} from "./providers";
-export const metadata: Metadata={title:"CurriculosPRO — Seu currículo profissional",description:"Crie um currículo moderno, profissional e pronto para oportunidades em poucos minutos.",icons:{icon:"/brand/icon.png",shortcut:"/brand/icon.png",apple:"/brand/icon.png"}};
+export const metadata: Metadata={metadataBase:new URL("https://curriculospro.vercel.app"),title:{default:"CurriculosPRO — Seu currículo profissional",template:"%s | CurriculosPRO"},description:"Crie, organize e exporte currículos profissionais com modelos modernos e orientação sem engessar.",applicationName:"CurriculosPRO",manifest:"/manifest.webmanifest",alternates:{canonical:"/"},openGraph:{type:"website",locale:"pt_BR",siteName:"CurriculosPRO",title:"CurriculosPRO — Seu currículo profissional",description:"Crie, organize e exporte currículos profissionais com modelos modernos.",url:"/"},robots:{index:true,follow:true},icons:{icon:"/brand/icon.png",shortcut:"/brand/icon.png",apple:"/brand/icon.png"}};
 export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="pt-BR"><body><Providers>{children}</Providers></body></html>}
