@@ -9,7 +9,7 @@ type Template="essential"|"modern"|"executive";
 type SectionKey="summary"|"experiences"|"education"|"skills"|"languages"|"courses";
 const defaultOrder:SectionKey[]=["summary","experiences","education","skills","languages","courses"];
 const uid=()=>Math.random().toString(36).slice(2,9);
-const initial:CV={name:"Felipe Andrade",photo:"",role:"Desenvolvedor de Software",email:"felipe@email.com",phone:"(11) 99999-9999",city:"São Paulo, SP",summary:"Profissional apaixonado por tecnologia, com foco em criar soluções digitais modernas, eficientes e fáceis de usar.",experiences:[{id:"exp1",title:"Desenvolvedor Full Stack",subtitle:"Empresa Exemplo",period:"2024 — Atual",description:"Desenvolvimento de aplicações web, melhoria de experiências digitais e colaboração com equipes multidisciplinares."}],education:[{id:"edu1",title:"Análise e Desenvolvimento de Sistemas",subtitle:"Instituição de Ensino",period:"2023 — 2025",description:""}],courses:["Desenvolvimento Web"],skills:["JavaScript","TypeScript","React","Comunicação"],languages:["Português — Nativo"]};
+const initial:CV={name:"",photo:"",role:"",email:"",phone:"",city:"",summary:"",experiences:[],education:[],courses:[],skills:[],languages:[]};
 const tabs=["Conteúdo","Design"] as const;
 type ExperienceContext="pending"|"standard"|"first-job"|"informal"|"self-employed"|"partial";
 type EducationContext="pending"|"standard"|"in-progress"|"no-exact-date"|"none"|"partial";
