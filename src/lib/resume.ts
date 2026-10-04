@@ -28,7 +28,7 @@ export type JobEvidence={term:string;sources:string[]};
 export type JobAnalysis={matched:JobEvidence[];unverified:string[];profileFacts:string[]};
 export type JobSelectionKind="experience"|"education"|"skill"|"course"|"language";
 export type JobSelectionItem={id:string;kind:JobSelectionKind;label:string;detail:string;matchedTerms:string[]};
-export type JobSelection={version:1;resumeId:string;jobUpdatedAt:string;selectedIds:string[];updatedAt:string};
+export type JobSelection={version:1;resumeId:string;jobUpdatedAt:string;profileUpdatedAt?:string;selectedIds:string[];updatedAt:string};
 export const JOB_SELECTION_KEY="curriculospro.jobSelection.v1";
 export const JOB_TARGET_KEY="curriculospro.jobTarget.v1";
 export const emptyJobTarget=():JobTarget=>({version:1,title:"",company:"",description:"",updatedAt:new Date().toISOString()});
