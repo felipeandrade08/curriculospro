@@ -306,3 +306,16 @@ body{background:#f7fafc;color:var(--cp-ink)}
 .jobNextStep{margin-top:16px;margin-bottom:54px;padding:22px 24px;border:1px solid #cfe2f2;border-radius:18px;background:linear-gradient(135deg,#f7fbff,#fff);display:flex;align-items:center;justify-content:space-between;gap:24px;box-shadow:0 10px 30px rgba(23,59,102,.05)}
 .jobNextStep>div{min-width:0}.jobNextStep small{display:block;margin-bottom:6px;font-size:9px;font-weight:900;letter-spacing:.9px;color:#0870d7}.jobNextStep h2{margin:0 0 7px;font-size:19px;color:#17324d}.jobNextStep p{margin:0;max-width:720px;font-size:11px;line-height:1.6;color:#60758a}.jobNextStep p b{color:#29445e}.jobNextStep>a{flex:0 0 auto;padding:11px 15px;border-radius:10px;background:#087cf0;color:#fff;text-decoration:none;font-size:11px;font-weight:850;box-shadow:0 9px 22px rgba(8,124,240,.18)}
 @media(max-width:650px){.jobNextStep{align-items:flex-start;flex-direction:column;padding:18px}.jobNextStep>a{width:100%;text-align:center}}
+
+
+/* Package 5 — journey polish, safe actions and PDF handoff */
+.ghostAction:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}
+.libraryActions a.secondary,.emptyLibrary a.secondary{display:inline-flex;align-items:center;justify-content:center}
+.profileHeroActions{flex-wrap:wrap}
+.profileHeroActions>a,.profileHeroActions>button{min-height:40px;display:inline-flex;align-items:center;justify-content:center;white-space:normal;text-align:center;line-height:1.25}
+.profileCloudBar>div:first-child{min-width:0}.profileCloudBar span{overflow-wrap:anywhere}
+.pdfHint{position:fixed;z-index:80;top:88px;right:22px;width:min(390px,calc(100vw - 32px));padding:14px 15px;border:1px solid #cfe2f2;border-radius:14px;background:#fff;box-shadow:0 18px 50px rgba(17,45,78,.18);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;color:#17324d}
+.pdfHint b{font-size:12px}.pdfHint span{grid-column:1;font-size:10px;line-height:1.5;color:#60758a}.pdfHint button{grid-column:2;grid-row:1/3;align-self:center;border:1px solid #d7e5ef;border-radius:8px;background:#f7fbff;color:#075fc9;padding:8px 10px;font-size:10px;font-weight:800;cursor:pointer}
+@media(max-width:650px){.profileHeroActions{width:100%;display:grid;grid-template-columns:1fr 1fr}.profileHeroActions>*{width:100%}.pdfHint{top:78px;right:16px}.libraryActions{align-items:stretch}.libraryActions>*{text-align:center}}
+@media(max-width:430px){.profileHeroActions{grid-template-columns:1fr}}
+@media print{.pdfHint{display:none!important}}
