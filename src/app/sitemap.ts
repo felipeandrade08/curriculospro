@@ -1,0 +1,2 @@
+import type {MetadataRoute} from "next";
+export default function sitemap():MetadataRoute.Sitemap{const base="https://curriculospro.vercel.app";return ["","/modelos","/privacidade","/termos"].map(path=>({url:base+path,lastModified:new Date(),changeFrequency:"monthly" as const,priority:path===""?1:path==="/modelos"?.8:.4}))}
