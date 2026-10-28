@@ -399,3 +399,18 @@ body{background:#f7fafc;color:var(--cp-ink)}
  .editorHead .editorLogo{width:142px!important;min-width:142px!important;max-width:142px!important;height:60px!important;overflow:visible!important;flex-shrink:0!important;display:flex!important;align-items:center!important}
  .editorHead .editorLogo img{width:100%!important;height:auto!important;max-height:60px!important;object-fit:contain!important;object-position:left center!important}
 }
+
+/* Welcome dialog: first visit, accessible and mobile friendly */
+.welcomeBackdrop{position:fixed;inset:0;z-index:2000;background:rgba(11,30,53,.68);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px}
+.welcomeDialog{position:relative;width:min(100%,490px);max-height:min(92dvh,720px);overflow-y:auto;background:#fff;border:1px solid #d8e7f5;border-radius:24px;padding:35px;box-shadow:0 32px 90px rgba(0,0,0,.25);color:#18324d}
+.welcomeClose{position:absolute;top:13px;right:15px;width:36px;height:36px;border:1px solid #e2eaf1;border-radius:50%;background:#f8fafc;color:#506780;font-size:25px;cursor:pointer}
+.welcomeEyebrow{display:block;color:#3972bb;font-size:10px;font-weight:850;letter-spacing:1.1px;padding-right:30px}
+.welcomeFree{display:inline-flex;margin-top:19px;padding:8px 12px;border-radius:999px;background:#e8f7ee;color:#137545;font-size:11px;font-weight:900;letter-spacing:.6px}
+.welcomeDialog h2{margin:16px 0 12px;font-size:clamp(25px,5vw,34px);line-height:1.15;letter-spacing:-.9px;color:#142d49}
+.welcomeDialog>p:not(.welcomeCredit){font-size:14px;line-height:1.7;color:#586e85;margin:0}
+.welcomeHighlights{display:flex;flex-wrap:wrap;gap:8px;margin:19px 0 23px}.welcomeHighlights span{padding:7px 9px;border:1px solid #dfebf5;border-radius:8px;color:#37546e;font-size:11px;font-weight:700}
+.welcomeActions{display:grid;gap:10px}.welcomeActions a{display:flex;align-items:center;justify-content:center;min-height:47px;border-radius:12px;padding:12px;text-align:center;font-size:13px;font-weight:800;text-decoration:none}
+.welcomeStart{background:#087cf0;color:#fff!important}.welcomeWhatsapp{background:#f1faf5;color:#147344!important;border:1px solid #cde9d8}
+.welcomeCredit{margin:22px 0 0;text-align:center;color:#65798d;font-size:11px;line-height:1.6}.welcomeCredit strong{color:#234769}
+.welcomeDialog :focus-visible{outline:3px solid #80b7ff;outline-offset:3px}
+@media(max-width:520px){.welcomeBackdrop{padding:12px;align-items:center}.welcomeDialog{padding:26px 21px;border-radius:19px}.welcomeDialog h2{font-size:27px}.welcomeDialog>p:not(.welcomeCredit){font-size:13px}.welcomeHighlights span{font-size:10px}}
