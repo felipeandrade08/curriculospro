@@ -1,11 +1,13 @@
 import Link from "next/link";
 import {SiteHeader} from "@/components/site-header";
 import {SiteFooter} from "@/components/site-footer";
+import {WelcomeModal} from "@/components/welcome-modal";
 
 export default function Home() {
   return (
     <main>
       <SiteHeader />
+      <WelcomeModal />
 
       <section className="heroBrand">
         <div className="hero shell">
