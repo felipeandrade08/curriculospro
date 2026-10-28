@@ -414,3 +414,21 @@ body{background:#f7fafc;color:var(--cp-ink)}
 .welcomeCredit{margin:22px 0 0;text-align:center;color:#65798d;font-size:11px;line-height:1.6}.welcomeCredit strong{color:#234769}
 .welcomeDialog :focus-visible{outline:3px solid #80b7ff;outline-offset:3px}
 @media(max-width:520px){.welcomeBackdrop{padding:12px;align-items:center}.welcomeDialog{padding:26px 21px;border-radius:19px}.welcomeDialog h2{font-size:27px}.welcomeDialog>p:not(.welcomeCredit){font-size:13px}.welcomeHighlights span{font-size:10px}}
+
+/* Mobile A4 preview: zoom changes layout dimensions; transform does not. */
+.reviewPdfActions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:20px}.reviewPdfActions .download{min-height:46px;padding:12px 20px}.reviewPdfActions span{font-size:12px;line-height:1.5;color:#60758a;flex:1 1 180px}.mobilePdfAction{display:none}
+@media screen and (max-width:850px){
+ .workspace.showPreview .preview{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;overflow-x:hidden!important;min-width:0!important;width:100%!important;padding:18px 10px 36px!important;gap:12px!important}
+ .workspace.showPreview .previewBar{order:0;width:100%!important;max-width:794px!important;flex-shrink:0!important}
+ .workspace.showPreview .paper{order:1!important;position:static!important;display:block!important;flex:none!important;transform:none!important;transform-origin:initial!important;margin:0 auto!important;zoom:.85!important}
+ .mobilePdfAction{display:flex;order:2;width:100%;justify-content:center;margin-top:8px}.mobilePdfAction .download{min-height:46px;padding:12px 25px}
+}
+@media screen and (max-width:760px){.workspace.showPreview .paper{zoom:.8!important}}
+@media screen and (max-width:700px){.workspace.showPreview .paper{zoom:.75!important}}
+@media screen and (max-width:620px){.workspace.showPreview .paper{zoom:.68!important}}
+@media screen and (max-width:560px){.workspace.showPreview .paper{zoom:.6!important}}
+@media screen and (max-width:500px){.workspace.showPreview .paper{zoom:.52!important}}
+@media screen and (max-width:440px){.workspace.showPreview .paper{zoom:.46!important}}
+@media screen and (max-width:390px){.workspace.showPreview .paper{zoom:.42!important}}
+@media screen and (max-width:350px){.workspace.showPreview .paper{zoom:.37!important}}
+@media print{.mobilePdfAction,.reviewPdfActions{display:none!important}.paper{zoom:1!important;transform:none!important}}
