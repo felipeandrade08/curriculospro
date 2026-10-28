@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import {WelcomeModal} from "@/components/welcome-modal";
 import {useEffect,useMemo,useRef,useState,type ReactNode} from "react";
 import {ACTIVE_RESUME_KEY,JOB_SELECTION_KEY,LEGACY_RESUME_KEY,PROFESSIONAL_PROFILE_KEY,RESUME_LIBRARY_KEY,JobSelection,ResumeDocument,ProfessionalProfile,createResume,safeFilename,isProfessionalProfile,isResumeTemplate,migrateLegacyResume} from "@/lib/resume";
 
@@ -92,7 +93,7 @@ export default function Editor(){
  const visible=(key:SectionKey)=>!hidden.includes(key)&&!(key==="experiences"&&guidance.experience==="first-job")&&!(key==="courses"&&guidance.courses==="none")&&!(key==="languages"&&guidance.languages==="none")&&!(key==="education"&&guidance.education==="none");
  const formatPhone=(value:string)=>{let d=value.replace(/\D/g,"");if((d.length===12||d.length===13)&&d.startsWith("55"))d=d.slice(2);d=d.slice(0,11);if(!d)return"";if(d.length<3)return"("+d;if(d.length<=6)return"("+d.slice(0,2)+") "+d.slice(2);if(d.length<=10)return"("+d.slice(0,2)+") "+d.slice(2,6)+"-"+d.slice(6);return"("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7)};
  const formatCity=(value:string)=>value.replace(/\s*\/\s*/g," / ").replace(/\s{2,}/g," ");
- return <main className="editor">
+ return <main className="editor"><WelcomeModal/>
   <header className="editorHead"><a className="brand brandImage editorLogo" href="/"><Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={155} height={58} priority /></a><a className="backLibrary" href="/curriculos">← Meus currículos</a><input className="documentTitle" aria-label="Nome do currículo" value={documentTitle} onChange={e=>setDocumentTitle(e.target.value)}/><div className="progress" aria-label={completion+"% da trajetória organizada"}><i style={{width:completion+"%"}}/><span><b>{completion}%</b> da sua trajetória organizada <small>{assistant.done} de {assistant.total} áreas resolvidas</small></span></div><div className="save">● Salvo neste dispositivo</div><button className="mobileView" onClick={()=>setMobilePreview(!mobilePreview)}>{mobilePreview?"Editar":"Visualizar"}</button><button onClick={printResume} className="download">Preparar PDF ↓</button></header>{pdfHint&&<div className="pdfHint"><b>PDF pronto para salvar</b><span>Na janela que abrir, escolha <strong>Salvar como PDF</strong>. Revise a prévia antes de confirmar.</span><button type="button" onClick={()=>setPdfHint(false)}>Entendi</button></div>}
   <div className={"workspace "+(mobilePreview?"showPreview":"")}>
    <aside className="side">
