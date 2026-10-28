@@ -432,3 +432,12 @@ body{background:#f7fafc;color:var(--cp-ink)}
 @media screen and (max-width:390px){.workspace.showPreview .paper{zoom:.42!important}}
 @media screen and (max-width:350px){.workspace.showPreview .paper{zoom:.37!important}}
 @media print{.mobilePdfAction,.reviewPdfActions{display:none!important}.paper{zoom:1!important;transform:none!important}}
+
+/* v1.0 finishing: accessible image feedback and print-safe long resumes */
+.photoError{color:#a52b35!important;font-size:12px!important;font-weight:600;line-height:1.5!important;margin:9px 0 0!important}
+@media print{
+ html,body,main.editor,.workspace,.preview{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;display:block!important;background:#fff!important}
+ .paper{height:auto!important;min-height:297mm!important;max-height:none!important;overflow:visible!important;break-after:auto!important;page-break-after:auto!important}
+ .paper header,.paper section,.resumeItem,.resumeSection h3{break-inside:avoid;page-break-inside:avoid}
+ .pdfHint,.mobilePdfAction,.reviewPdfActions,.welcomeBackdrop{display:none!important}
+}
