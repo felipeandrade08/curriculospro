@@ -392,3 +392,10 @@ body{background:#f7fafc;color:var(--cp-ink)}
 /* Release audit — preview-only placeholders must never enter PDF */
 .previewPlaceholder{color:#aeb9c5!important}
 @media print{.previewPlaceholder{display:none!important}}
+
+/* Mobile editor branding: preserve full logo without clipping */
+@media (max-width: 760px){
+ .editorHead{min-width:0;overflow:visible!important}
+ .editorHead .editorLogo{width:142px!important;min-width:142px!important;max-width:142px!important;height:60px!important;overflow:visible!important;flex-shrink:0!important;display:flex!important;align-items:center!important}
+ .editorHead .editorLogo img{width:100%!important;height:auto!important;max-height:60px!important;object-fit:contain!important;object-position:left center!important}
+}
