@@ -19,13 +19,13 @@ export default function Home() {
               <Link href="/editor?new=blank" className="primary">Criar meu currículo grátis <b>→</b></Link>
               <Link href="/modelos" className="secondary">Ver modelos</Link>
             </div>
-            <small>✓ Sem cartão &nbsp; ✓ Fácil de editar &nbsp; ✓ Pronto para PDF</small>
+            <small>✓ Sem cadastro &nbsp; ✓ 100% gratuito &nbsp; ✓ Baixe em PDF</small>
           </div>
           <div className="heroVisual" aria-hidden="true" />
         </div>
       </section>
 
-      <section className="trustStrip shell"><span>GRÁTIS PARA COMEÇAR</span><b>Crie sem cartão</b><b>Edite quando quiser</b><b>Exporte em PDF</b><b>Conta opcional com nuvem</b></section>
+      <section className="trustStrip shell"><span>100% GRATUITO</span><b>Sem cadastro obrigatório</b><b>Edite quando quiser</b><b>Exporte em PDF</b><b>Conta opcional com nuvem</b></section>
 
       <section id="recursos" className="features shell">
         <div><span>01</span><h3>Preencha sem complicação</h3><p>Um editor organizado que guia você por cada parte do currículo.</p></div>
@@ -47,7 +47,7 @@ export default function Home() {
         <Link href="/modelos" className="primary">Escolher meu modelo →</Link>
       </section>
 
-      <section className="finalCta shell"><span>PRONTO PARA COMEÇAR?</span><h2>Transforme suas informações em um currículo que você tenha orgulho de enviar.</h2><p>Comece gratuitamente. Você pode editar, testar modelos e preparar seu PDF no seu ritmo.</p><div><Link className="primary" href="/editor?new=blank">Criar meu currículo grátis →</Link><Link className="secondary" href="/modelos">Conhecer os modelos</Link></div></section>
+      <section className="finalCta shell"><span>PRONTO PARA COMEÇAR?</span><h2>Transforme suas informações em um currículo que você tenha orgulho de enviar.</h2><p>Sem cadastro obrigatório. Crie, personalize e baixe seu currículo em PDF gratuitamente.</p><div><Link className="primary" href="/editor?new=blank">Criar meu currículo grátis →</Link><Link className="secondary" href="/modelos">Conhecer os modelos</Link></div></section>
 
       <SiteFooter />
     </main>
