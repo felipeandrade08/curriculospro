@@ -2,12 +2,13 @@ import Link from "next/link";
 import {SiteHeader} from "@/components/site-header";
 import {SiteFooter} from "@/components/site-footer";
 import {PixCopyButton} from "@/components/pix-copy-button";
+import {UsageBeacon} from "@/components/usage-beacon";
 
 export default function SupportPage() {
   const pixKey = process.env.NEXT_PUBLIC_PIX_KEY || "";
   const pixName = process.env.NEXT_PUBLIC_PIX_NAME || "";
   const pixCity = process.env.NEXT_PUBLIC_PIX_CITY || "";
-  return <main><SiteHeader/><section className="shell" style={{maxWidth:850,paddingTop:72,paddingBottom:90}}>
+  return <main><UsageBeacon event="donation_page_view"/><SiteHeader/><section className="shell" style={{maxWidth:850,paddingTop:72,paddingBottom:90}}>
     <Link href="/" style={{color:"#087cf0",fontWeight:700,textDecoration:"none"}}>← Voltar ao início</Link>
     <div style={{marginTop:24,background:"#eaf5ff",color:"#087cf0",display:"inline-block",padding:"8px 12px",borderRadius:999,fontSize:12,fontWeight:800}}>APOIO VOLUNTÁRIO</div>
     <h1 style={{fontSize:"clamp(38px,6vw,58px)",letterSpacing:"-2px",lineHeight:1.05,margin:"18px 0"}}>Gratuito para você. Feito com dedicação.</h1>
