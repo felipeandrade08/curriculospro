@@ -4,6 +4,7 @@ import Link from "next/link";
 import {useState} from "react";
 import {SiteHeader} from "@/components/site-header";
 import {SiteFooter} from "@/components/site-footer";
+import {trackUsage} from "@/lib/analytics";
 
 const inputStyle = {width:"100%", padding:"13px 14px", border:"1px solid #dce1e9", borderRadius:12, font:"inherit", background:"#fff", color:"#172033"} as const;
 
