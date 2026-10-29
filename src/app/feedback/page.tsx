@@ -28,6 +28,7 @@ export default function FeedbackPage() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Não foi possível enviar seu feedback.");
+      trackUsage("feedback_sent");
       setStatus("success");
       setMessage("");
     } catch (e) {
