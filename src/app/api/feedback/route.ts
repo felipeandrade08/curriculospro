@@ -4,7 +4,7 @@ import {NextResponse} from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const recentSubmissions = new Map<string, number>();
+const recentSubmissions = new Map<string, number[]>();
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 3;
 
@@ -24,14 +24,17 @@ export async function POST(request: Request) {
 
     const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     const now = Date.now();
-    const last = recentSubmissions.get(forwarded);
-    if (last && now - last < WINDOW_MS) {
-      return NextResponse.json({error: "Aguarde um minuto antes de enviar outro feedback."}, {status: 429});
+    const recent = (recentSubmissions.get(forwarded) || []).filter((timestamp) => now - timestamp < WINDOW_MS);
+    if (recent.length >= MAX_PER_WINDOW) {
+      return NextResponse.json({error: "Você atingiu o limite de 3 feedbacks por minuto. Tente novamente em instantes."}, {status: 429});
     }
-    recentSubmissions.set(forwarded, now);
+    recent.push(now);
+    recentSubmissions.set(forwarded, recent);
     if (recentSubmissions.size > 5000) {
-      for (const [key, timestamp] of recentSubmissions) {
-        if (now - timestamp > WINDOW_MS) recentSubmissions.delete(key);
+      for (const [key, timestamps] of recentSubmissions) {
+        const active = timestamps.filter((timestamp) => now - timestamp < WINDOW_MS);
+        if (active.length) recentSubmissions.set(key, active);
+        else recentSubmissions.delete(key);
       }
     }
 
