@@ -476,3 +476,19 @@ body{background:#f7fafc;color:var(--cp-ink)}
 .skillSuggestionGroup button.selected,.skillSuggestionGroup button:disabled{border-color:#b9d8f8;background:#eaf4ff;color:#0870d7;cursor:default}
 .objectiveSuggestions button:focus-visible,.skillSuggestionGroup button:focus-visible{outline:3px solid #80b7ff;outline-offset:2px}
 @media(max-width:560px){.objectiveSuggestions{grid-template-columns:1fr}.suggestionPanel{padding:11px}.skillSuggestionGroup button{font-size:10px}}
+
+/* Experience description examples by role */
+.experienceTaskSuggestions{margin-top:12px;padding:12px;border:1px solid #dce8f5;border-radius:13px;background:#f7fbff}
+.experienceRoleGroups{display:grid;gap:7px}
+.experienceRoleGroups details{overflow:hidden;border:1px solid #dce5ef;border-radius:10px;background:#fff}
+.experienceRoleGroups summary{display:flex;min-height:42px;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;color:#203b57;font-size:12px;font-weight:800;cursor:pointer;list-style:none}
+.experienceRoleGroups summary::-webkit-details-marker{display:none}
+.experienceRoleGroups summary:after{content:"＋";color:#087cf0;font-size:17px}
+.experienceRoleGroups details[open] summary:after{content:"−"}
+.experienceRoleGroups summary span{margin-left:auto;color:#0870d7;font-size:10px;font-weight:700}
+.experienceRoleGroups details>div{display:grid;gap:6px;padding:0 9px 9px}
+.experienceRoleGroups details>div button{padding:9px 10px;border:1px solid #e1eaf3;border-radius:8px;background:#f9fbfe;color:#40566e;text-align:left;font-size:11px;line-height:1.45;cursor:pointer}
+.experienceRoleGroups details>div button:hover{border-color:#8fc4fb;background:#eff7ff}
+.experienceRoleGroups details>div button:disabled{border-color:#cce6d7;background:#f0faf4;color:#34734c;cursor:default}
+.experienceRoleGroups summary:focus-visible,.experienceRoleGroups button:focus-visible{outline:3px solid #80b7ff;outline-offset:2px}
+@media(max-width:560px){.experienceTaskSuggestions{padding:10px}.experienceRoleGroups summary{font-size:11px}.experienceRoleGroups details>div button{font-size:10px}}
