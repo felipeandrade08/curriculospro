@@ -28,9 +28,10 @@ export default function Home() {
       <section className="trustStrip shell"><span>100% GRATUITO</span><b>Sem cadastro obrigatório</b><b>Edite quando quiser</b><b>Exporte em PDF</b><b>Conta opcional com nuvem</b></section>
 
       <section id="recursos" className="features shell">
-        <div><span>01</span><h3>Preencha sem complicação</h3><p>Um editor organizado que guia você por cada parte do currículo.</p></div>
-        <div><span>02</span><h3>Veja enquanto cria</h3><p>Acompanhe o resultado em tempo real e ajuste tudo com confiança.</p></div>
-        <div><span>03</span><h3>Baixe e envie</h3><p>Seu currículo profissional preparado para imprimir e compartilhar.</p></div>
+        <div><span>01</span><h3>Preencha sem complicação</h3><p>Um editor guiado organiza cada etapa e ajuda você a não esquecer informações importantes.</p></div>
+        <div><span>02</span><h3>Receba orientações úteis</h3><p>Sugestões de objetivos, competências e atividades para adaptar à sua experiência real.</p></div>
+        <div><span>03</span><h3>Personalize com liberdade</h3><p>Escolha modelos, cores, ordem das seções e o conteúdo que deseja apresentar.</p></div>
+        <div><span>04</span><h3>Revise e exporte em PDF</h3><p>Confira a prévia, receba alertas de preenchimento e prepare seu currículo para compartilhar.</p></div>
       </section>
 
       <section className="homeSectionIntro shell"><span>UMA EXPERIÊNCIA COMPLETA</span><h2>Do primeiro campo ao PDF final.</h2><p>Uma jornada simples para transformar suas informações em uma apresentação profissional.</p></section>
