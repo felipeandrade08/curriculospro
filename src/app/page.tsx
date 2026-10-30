@@ -18,6 +18,7 @@ export default function Home() {
             <div className="actions">
               <Link href="/editor?new=blank" className="primary">Criar meu currículo grátis <b>→</b></Link>
               <Link href="/modelos" className="secondary">Ver modelos</Link>
+              <Link href="/importar" className="secondary">Importar currículo antigo</Link>
             </div>
             <small>✓ Sem cadastro &nbsp; ✓ 100% gratuito &nbsp; ✓ Baixe em PDF</small>
           </div>
@@ -31,6 +32,8 @@ export default function Home() {
         <div className="profileSpotlightCopy"><span className="profileSpotlightEyebrow">SEU PONTO DE PARTIDA</span><h2>Conte sua trajetória uma vez. <em>Use em várias oportunidades.</em></h2><p>Monte seu Perfil Profissional com experiências, formação, cursos e competências reais. Depois, escolha o que aproveitar em cada currículo — sem sobrescrever suas versões.</p><div className="profileSpotlightActions"><Link href="/perfil-profissional" className="primary">Conhecer meu Perfil Profissional →</Link><Link href="/adaptar-vaga" className="secondary">Adaptar para uma vaga</Link></div><small>Gratuito e disponível sem cadastro. A conta é opcional para sincronizar entre dispositivos.</small></div>
         <div className="profileSpotlightSteps"><div><b>01</b><span><strong>Organize sua base</strong><small>Registre informações profissionais verdadeiras.</small></span></div><div><b>02</b><span><strong>Escolha o que destacar</strong><small>Selecione conteúdo adequado para cada oportunidade.</small></span></div><div><b>03</b><span><strong>Crie versões independentes</strong><small>Personalize e exporte cada currículo em PDF.</small></span></div></div>
       </section>
+
+      <section className="importSpotlight shell"><div><span>JÁ TEM UM CURRÍCULO?</span><h2>Não comece do zero.</h2><p>Traga seu currículo atual, confira as informações que identificamos e continue editando em um novo documento — sem perder suas versões anteriores.</p></div><Link href="/importar" className="primary">Importar meu currículo →</Link></section>
 
       <section id="recursos" className="features shell">
         <div><span>01</span><h3>Preencha sem complicação</h3><p>Um editor guiado organiza cada etapa e ajuda você a não esquecer informações importantes.</p></div>
