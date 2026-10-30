@@ -52,7 +52,7 @@ function structure(raw:string):ResumeData{
  for(let i=0;i<expLines.length;){
   const company=expLines[i];const detail=expLines[i+1]||"";
   const parts=detail.split(/\s{2,}|\s(?=[A-Z][a-záéíóúãõç]+\s+de\s+\d{4})/).map(clean).filter(Boolean);
-  const datePattern=/(?:janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\\.?\\s*(?:de\\s*)?\\d{4}|\\b\\d{1,2}\\/\\d{4}/i;
+  const datePattern=/(?:janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\.?\s*(?:de\s*)?\d{4}|\b\d{1,2}\/\d{4}/i;
   const dateStart=detail.search(datePattern);
   let title=detail,period="";
   if(dateStart>=0){title=clean(detail.slice(0,dateStart));period=clean(detail.slice(dateStart));}
