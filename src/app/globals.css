@@ -458,3 +458,21 @@ body{background:#f7fafc;color:var(--cp-ink)}
 @media(max-width:520px){.supportInvite{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:min(340px,calc(100vw - 24px));padding:15px;border-radius:16px}.supportInvite>strong{font-size:15px}.supportInvite>p{font-size:11px}.supportInviteActions a{font-size:10px;min-height:38px}}
 @media(prefers-reduced-motion:reduce){.supportInvite{animation:none}}
 @media print{.supportInvite{display:none!important}}
+
+/* Editor: objective and skill suggestion library */
+.objectiveBlock{display:grid;gap:12px}
+.suggestionPanel{margin:0 0 16px;padding:14px;border:1px solid #dce8f5;border-radius:14px;background:#f7fbff}
+.suggestionPanelHead{display:grid;gap:4px;margin-bottom:12px}
+.suggestionPanelHead b{color:#18324d;font-size:13px}
+.suggestionPanelHead small{color:#64758a;font-size:11px;line-height:1.45}
+.objectiveSuggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.objectiveSuggestions button{display:flex;min-height:58px;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;padding:10px;border:1px solid #d8e5f2;border-radius:10px;background:#fff;color:#19324b;text-align:left;font-size:12px;font-weight:800;cursor:pointer}
+.objectiveSuggestions button span{color:#087cf0;font-size:10px;font-weight:700}
+.objectiveSuggestions button:hover,.skillSuggestionGroup button:hover{border-color:#087cf0;background:#eff7ff}
+.skillSuggestionGroup{display:grid;gap:7px;margin-top:12px}
+.skillSuggestionGroup>b{color:#52677d;font-size:11px}
+.skillSuggestionGroup>div{display:flex;flex-wrap:wrap;gap:6px}
+.skillSuggestionGroup button{padding:7px 9px;border:1px solid #d7e4f1;border-radius:999px;background:#fff;color:#27435e;font-size:11px;cursor:pointer}
+.skillSuggestionGroup button.selected,.skillSuggestionGroup button:disabled{border-color:#b9d8f8;background:#eaf4ff;color:#0870d7;cursor:default}
+.objectiveSuggestions button:focus-visible,.skillSuggestionGroup button:focus-visible{outline:3px solid #80b7ff;outline-offset:2px}
+@media(max-width:560px){.objectiveSuggestions{grid-template-columns:1fr}.suggestionPanel{padding:11px}.skillSuggestionGroup button{font-size:10px}}
