@@ -1,5 +1,5 @@
 import Link from "next/link";
-import {notFound,redirect} from "next/navigation";
+import {redirect} from "next/navigation";
 import {SiteHeader} from "@/components/site-header";
 import {SiteFooter} from "@/components/site-footer";
 import {getServerSession} from "@/lib/server/session";
@@ -17,10 +17,21 @@ const labels:Record<string,string> = {
 
 export default async function AdminPage() {
   const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  if (!adminEmail) notFound();
+  if (!adminEmail) {
+    return <main><SiteHeader/><section className="shell" style={{paddingTop:60,paddingBottom:80}}><h1>Admin ainda não configurado</h1><p>Configure a variável ADMIN_EMAIL no ambiente Production da Vercel e publique um novo deployment.</p></section><SiteFooter/></main>;
+  }
   const session = await getServerSession();
   if (!session) redirect("/auth/sign-in?callbackURL=%2Fadmin");
-  if (session.email.toLowerCase() !== adminEmail) notFound();
+  const normalizedSessionEmail = session.email.trim().toLowerCase();
+  if (normalizedSessionEmail !== adminEmail) {
+    return <main><SiteHeader/><section className="shell" style={{paddingTop:60,paddingBottom:80}}>
+      <span style={{color:"#087cf0",fontWeight:800,fontSize:12}}>ACESSO RESTRITO</span>
+      <h1>Esta conta não é administradora</h1>
+      <p>O site reconheceu sua sessão como <strong>{session.email}</strong>, mas esse e-mail não corresponde ao ADMIN_EMAIL configurado na Vercel.</p>
+      <p>Entre com a conta administradora ou ajuste ADMIN_EMAIL para corresponder exatamente ao e-mail desta conta. Depois, faça um novo deployment em Production.</p>
+      <Link href="/auth/sign-in?callbackURL=%2Fadmin" style={{color:"#087cf0",fontWeight:700}}>Entrar com outra conta →</Link>
+    </section><SiteFooter/></main>;
+  }
 
   let metrics:{event_name:string;total:string}[]=[];
   let feedback:{id:string;rating:number;category:string;message:string;created_at:string}[]=[];
