@@ -628,3 +628,10 @@ body{background:#f7fafc;color:var(--cp-ink)}
 .qualityReviewChecks small{font-size:9px;line-height:1.4;color:#6a7d90}
 .qualityReviewNote{margin:11px 0 0;font-size:10px;line-height:1.5;color:#65798c}
 @media(max-width:520px){.qualityReviewChecks{grid-template-columns:1fr}.qualityReview{padding:11px}}
+
+
+.editorHead .save{white-space:nowrap;line-height:1.35}
+.editorHead .save small{display:block;margin-left:12px;font-size:10px;color:#8491a1;font-weight:500}
+.editorHead .save.saveSuccess{color:#267b58}
+.editorHead .save.saveError{color:#b42318;font-weight:800}
+@media(max-width:700px){.editorHead .save{font-size:10px;max-width:125px;white-space:normal}.editorHead .save small{margin-left:0;font-size:9px}}
