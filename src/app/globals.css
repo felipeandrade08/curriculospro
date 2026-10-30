@@ -635,3 +635,23 @@ body{background:#f7fafc;color:var(--cp-ink)}
 .editorHead .save.saveSuccess{color:#267b58}
 .editorHead .save.saveError{color:#b42318;font-weight:800}
 @media(max-width:700px){.editorHead .save{font-size:10px;max-width:125px;white-space:normal}.editorHead .save small{margin-left:0;font-size:9px}}
+
+
+/* Destaque do Perfil Profissional na página inicial */
+.profileSpotlight{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(260px,.7fr);gap:36px;align-items:center;margin-top:42px;margin-bottom:24px;padding:clamp(24px,4vw,42px);border:1px solid #d7e7f7;border-radius:22px;background:radial-gradient(ellipse at 95% 0%,rgba(64,155,226,.13),transparent 42%),linear-gradient(135deg,#f4f9ff,#fff 65%);box-shadow:var(--cp-shadow-sm)}
+.profileSpotlightEyebrow{font-size:9px;font-weight:900;letter-spacing:1.5px;color:#2375b9}
+.profileSpotlightCopy h2{max-width:620px;margin:12px 0;color:var(--cp-navy);font-size:clamp(25px,3.4vw,39px);line-height:1.12;letter-spacing:-1.1px}
+.profileSpotlightCopy h2 em{color:#1979c5;font-style:normal}
+.profileSpotlightCopy>p{max-width:650px;margin:0;color:var(--cp-muted);font-size:13px;line-height:1.75}
+.profileSpotlightActions{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 12px}
+.profileSpotlightCopy>small{color:#718399;font-size:10px;line-height:1.5}
+.profileSpotlightSteps{display:grid;gap:10px}
+.profileSpotlightSteps>div{display:flex;align-items:center;gap:13px;padding:14px;border:1px solid #e0eaf4;border-radius:13px;background:rgba(255,255,255,.85)}
+.profileSpotlightSteps>div>b{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:10px;background:#e9f3fd;color:#176db2;font-size:11px}
+.profileSpotlightSteps span{display:grid;gap:4px}
+.profileSpotlightSteps strong{font-size:12px;color:#203b55}
+.profileSpotlightSteps small{font-size:10px;line-height:1.45;color:#6a7d90}
+.profileProgressTrack{height:6px;width:100%;max-width:180px;overflow:hidden;border-radius:99px;background:#e5edf5}
+.profileProgressTrack i{display:block;height:100%;border-radius:99px;background:#2185c5}
+.professionalProfileCard .profileActions>a:not(.cardPrimary){align-self:center;color:#176db2;font-size:11px;font-weight:800;text-decoration:none}
+@media(max-width:720px){.profileSpotlight{grid-template-columns:1fr;gap:22px;margin-top:26px;padding:22px}.profileSpotlightCopy h2{font-size:28px}.profileSpotlightActions{display:grid}.profileSpotlightActions a{justify-content:center;text-align:center}}
