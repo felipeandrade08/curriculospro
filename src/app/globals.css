@@ -668,3 +668,36 @@ body{background:#f7fafc;color:var(--cp-ink)}
 .paper .courseEntry strong{font-size:12px;line-height:1.45;font-weight:700;color:#26364a}
 .paper .courseEntry small{font-size:10px;line-height:1.5;color:#758194}
 @media print{.paper .courseList{gap:9px}.paper .courseEntry{padding-bottom:8px}}
+
+/* Refinamento editorial da folha A4: hierarquia, ritmo e leitura profissional */
+.paper{font-family:Inter,Arial,sans-serif;line-height:1.55;color:#172b43}
+.paper header{padding-bottom:27px;border-bottom:1px solid #dce5ee;position:relative}
+.paper header:after{content:"";position:absolute;left:0;bottom:-2px;width:74px;height:3px;background:var(--accent);border-radius:3px}
+.paper h1{font-size:40px;line-height:1.08;letter-spacing:-1.5px;font-weight:800;color:#142b45;margin-bottom:8px}
+.paper header h2{font-size:15px;line-height:1.4;font-weight:700;letter-spacing:.15px;margin:0 0 13px}
+.paper header p{font-size:10px;line-height:1.65;color:#60748a;margin:0}
+.paper section{margin-top:29px}
+.paper h3{display:flex;align-items:center;gap:10px;font-size:9px;line-height:1.3;letter-spacing:1.65px;font-weight:850;color:#1e5d98;margin:0 0 15px;padding:0 0 9px;border-bottom:1px solid #e5ebf1}
+.paper h3:before{content:"";width:3px;height:13px;flex:0 0 3px;border-radius:3px;background:var(--accent)}
+.paper section p{font-size:11px;line-height:1.75;color:#4c5e72;margin:0}
+.paper .resumeItem{position:relative;margin:0 0 17px;padding:0 0 0 13px;border-left:2px solid #e5edf5}
+.paper .resumeItem:last-child{margin-bottom:0}
+.paper .resumeItem .row{gap:14px;align-items:baseline}
+.paper .resumeItem h4{font-size:12px;line-height:1.45;font-weight:750;color:#193653;margin:0 0 3px}
+.paper .resumeItem b{font-size:10px;line-height:1.5;font-weight:650;color:#536b83}
+.paper .resumeItem .row>span{font-size:9px;line-height:1.5;color:#71849a}
+.paper .resumeItem>p{font-size:10px;line-height:1.65;color:#56697d;margin:7px 0 0}
+.paper .chips{gap:7px}
+.paper .chips i{font-size:9px;line-height:1.35;padding:6px 9px;border:1px solid #e3ebf3;border-radius:5px;background:#f7fafd;color:#3d5872}
+.paper .courseList{gap:8px}
+.paper .courseEntry{padding:3px 0 8px 12px;border-left:2px solid color-mix(in srgb,var(--accent) 42%,white);border-bottom:1px solid #edf1f5}
+.paper .courseEntry .courseInstitution{font-size:8px;letter-spacing:.65px;color:#637d96}
+.paper .courseEntry strong{font-size:10px;line-height:1.5;font-weight:700;color:#203c59}
+.paper .courseEntry small{font-size:9px;line-height:1.45;color:#708197}
+.paper.minimal header:after,.paper.executive header:after{display:none}
+.paper.executive h3{display:flex;color:#253c54;text-align:left}
+@media print{
+ .paper{font-family:Arial,sans-serif}
+ .paper header,.paper section,.paper .resumeItem,.paper .courseEntry{break-inside:avoid;page-break-inside:avoid}
+ .paper h3{color:#1e5d98!important}
+}
