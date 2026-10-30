@@ -26,8 +26,8 @@ export default function SupportPage() {
       <div style={{marginTop:24,border:"1px solid #dbeafe",background:"#f8fbff",borderRadius:20,padding:28}}>
         <h2 style={{marginTop:0}}>Contribuir via Pix</h2>
         <p style={{color:"#687386",lineHeight:1.7}}>Escaneie o QR Code com o aplicativo do seu banco ou copie o código Pix. Você escolhe o valor do apoio; nenhum valor está fixado.</p>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",alignItems:"center",gap:24}}>
-          <div style={{background:"#fff",border:"1px solid #dce1e9",borderRadius:16,padding:18,textAlign:"center"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,230px),1fr))",alignItems:"center",gap:24}}>
+          <div style={{background:"#fff",border:"1px solid #dce1e9",borderRadius:16,padding:"clamp(12px,3vw,18px)",textAlign:"center",overflow:"hidden",minWidth:0}}>
             <PixQrCode pixKey={pixKey} pixName={pixName} pixCity={pixCity}/>
             <p style={{fontSize:12,color:"#687386",margin:"12px 0 0"}}>Pix • valor livre</p>
           </div>
