@@ -41,7 +41,7 @@ export default function Editor(){
   const resolved=[
    {ok:cv.name.trim().split(/\s+/).length>=2,label:"Identificação",tip:"Informe nome e sobrenome."},
    {ok:emailOk||phoneOk,label:"Contato",tip:"Informe pelo menos um contato válido."},
-   {ok:cv.role.trim().length>=3,label:"Objetivo profissional",tip:"Informe sua área, função ou objetivo."},
+   {ok:cv.role.trim().length>=3,label:"Título profissional",tip:"Informe sua profissão, área ou função de interesse."},
    {ok:cv.summary.trim().length>=60,label:"Objetivo profissional",tip:"Explique a área em que deseja atuar e como pretende contribuir."},
    {ok:guidance.experience==="first-job"||expHas||["informal","self-employed"].includes(guidance.experience)&&expHas,label:"Experiência",tip:guidance.experience==="pending"?"Diga qual é sua situação profissional.":"Complete apenas as informações que realmente existirem."},
    {ok:guidance.education==="none"||eduHas,label:"Formação",tip:guidance.education==="pending"?"Diga como está sua formação.":"Informe o que souber com segurança."},
