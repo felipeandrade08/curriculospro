@@ -27,6 +27,11 @@ export default function Home() {
 
       <section className="trustStrip shell"><span>100% GRATUITO</span><b>Sem cadastro obrigatório</b><b>Edite quando quiser</b><b>Exporte em PDF</b><b>Conta opcional com nuvem</b></section>
 
+      <section className="profileSpotlight shell">
+        <div className="profileSpotlightCopy"><span className="profileSpotlightEyebrow">SEU PONTO DE PARTIDA</span><h2>Conte sua trajetória uma vez. <em>Use em várias oportunidades.</em></h2><p>Monte seu Perfil Profissional com experiências, formação, cursos e competências reais. Depois, escolha o que aproveitar em cada currículo — sem sobrescrever suas versões.</p><div className="profileSpotlightActions"><Link href="/perfil-profissional" className="primary">Conhecer meu Perfil Profissional →</Link><Link href="/adaptar-vaga" className="secondary">Adaptar para uma vaga</Link></div><small>Gratuito e disponível sem cadastro. A conta é opcional para sincronizar entre dispositivos.</small></div>
+        <div className="profileSpotlightSteps"><div><b>01</b><span><strong>Organize sua base</strong><small>Registre informações profissionais verdadeiras.</small></span></div><div><b>02</b><span><strong>Escolha o que destacar</strong><small>Selecione conteúdo adequado para cada oportunidade.</small></span></div><div><b>03</b><span><strong>Crie versões independentes</strong><small>Personalize e exporte cada currículo em PDF.</small></span></div></div>
+      </section>
+
       <section id="recursos" className="features shell">
         <div><span>01</span><h3>Preencha sem complicação</h3><p>Um editor guiado organiza cada etapa e ajuda você a não esquecer informações importantes.</p></div>
         <div><span>02</span><h3>Receba orientações úteis</h3><p>Sugestões de objetivos, competências e atividades para adaptar à sua experiência real.</p></div>
