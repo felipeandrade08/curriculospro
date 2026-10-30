@@ -605,3 +605,7 @@ body{background:#f7fafc;color:var(--cp-ink)}
 .stepGuideSkip{background:transparent;color:#64778a;margin-left:auto}
 @media(max-width:520px){.stepByStepGuide{padding:13px}.stepGuideHeader b{font-size:14px}.stepGuideActions button{padding:9px 10px}}
 @media print{.stepByStepGuide{display:none!important}}
+
+.experienceShowMore{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:9px;padding:10px 12px;border:1px dashed #9fc5e9;border-radius:9px;background:#f2f8fe;color:#176bb2;font-size:11px;font-weight:850;cursor:pointer}
+.experienceShowMore:hover{border-style:solid;background:#eaf4ff}
+.experienceShowMore small{font-size:10px;font-weight:650;color:#607b95}
