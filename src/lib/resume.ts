@@ -1,4 +1,4 @@
-export type ResumeTemplate="essential"|"modern"|"executive";
+export type ResumeTemplate="essential"|"modern"|"executive"|"minimal"|"creative";
 export type ResumeDensity="comfortable"|"compact";
 export type ResumeSection="summary"|"experiences"|"education"|"skills"|"languages"|"courses";
 export type ResumeItem={id:string;title:string;subtitle:string;period:string;description:string};
@@ -73,7 +73,7 @@ export function isResumeDocument(x:unknown):x is ResumeDocument{
  return textFields.every(isText)&&Array.isArray(cv.experiences)&&cv.experiences.every(isItem)&&Array.isArray(cv.education)&&cv.education.every(isItem)&&Array.isArray(cv.courses)&&cv.courses.every(isText)&&Array.isArray(cv.skills)&&cv.skills.every(isText)&&Array.isArray(cv.languages)&&cv.languages.every(isText);
 }
 export function parseBackup(value:string):ResumeDocument[]{const raw=JSON.parse(value) as Partial<ResumeBackup>;if(raw.product!=="CurriculosPRO"||raw.version!==3||!Array.isArray(raw.resumes))throw new Error("invalid-backup");const docs=raw.resumes.filter(isResumeDocument);if(!docs.length)throw new Error("empty-backup");return docs}
-export function isResumeTemplate(value:string|null):value is ResumeTemplate{return value==="essential"||value==="modern"||value==="executive"}
+export function isResumeTemplate(value:string|null):value is ResumeTemplate{return value==="essential"||value==="modern"||value==="executive"||value==="minimal"||value==="creative"}
 export function cloneResume(source:ResumeDocument,title=source.title+" — cópia"):ResumeDocument{const now=new Date().toISOString();return{...source,id:uid(),title,createdAt:now,updatedAt:now,cv:{...source.cv,experiences:source.cv.experiences.map(x=>({...x,id:uid()})),education:source.cv.education.map(x=>({...x,id:uid()})),courses:[...source.cv.courses],skills:[...source.cv.skills],languages:[...source.cv.languages]},sectionOrder:[...source.sectionOrder],hidden:[...source.hidden]}}
 export function safeFilename(value:string){return (value||"curriculo").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9-_ ]/g,"").trim().replace(/\s+/g,"-").toLowerCase().slice(0,70)||"curriculo"}
 
