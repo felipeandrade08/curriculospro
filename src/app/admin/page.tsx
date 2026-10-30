@@ -38,11 +38,9 @@ export default async function AdminPage() {
   let daily:{day:string;event_name:string;total:string}[]=[];
   try {
     const sql=db();
-    [metrics,feedback,daily]=await Promise.all([
-      sql`SELECT event_name,count(*)::text AS total FROM usage_events WHERE created_at >= now()-interval '30 days' GROUP BY event_name` as Promise<typeof metrics>,
-      sql`SELECT id::text,rating,category,message,created_at::text FROM user_feedback ORDER BY created_at DESC LIMIT 30` as Promise<typeof feedback>,
-      sql`SELECT to_char((created_at AT TIME ZONE 'America/Sao_Paulo')::date,'YYYY-MM-DD') AS day,event_name,count(*)::text AS total FROM usage_events WHERE created_at >= now()-interval '7 days' GROUP BY 1,2 ORDER BY 1` as Promise<typeof daily>
-    ]);
+    metrics=await sql`SELECT event_name,count(*)::text AS total FROM usage_events WHERE created_at >= now()-interval '30 days' GROUP BY event_name` as typeof metrics;
+    feedback=await sql`SELECT id::text,rating,category,message,created_at::text FROM user_feedback ORDER BY created_at DESC LIMIT 30` as typeof feedback;
+    daily=await sql`SELECT to_char((created_at AT TIME ZONE 'America/Sao_Paulo')::date,'YYYY-MM-DD') AS day,event_name,count(*)::text AS total FROM usage_events WHERE created_at >= now()-interval '7 days' GROUP BY 1,2 ORDER BY 1` as typeof daily;
   } catch {
     return <main><SiteHeader/><section className="shell adminNotice"><h1>Painel temporariamente indisponível</h1><p>Não foi possível consultar as métricas. Confira a conexão e as migrações do banco de dados.</p></section><SiteFooter/></main>;
   }
