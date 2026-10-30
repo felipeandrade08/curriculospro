@@ -52,7 +52,7 @@ function structure(raw:string):ResumeData{
  for(let i=0;i<expLines.length;){
   const company=expLines[i];const detail=expLines[i+1]||"";
   const parts=detail.split(/\s{2,}|\s(?=[A-Z][a-záéíóúãõç]+\s+de\s+\d{4})/).map(clean).filter(Boolean);
-  const dateMatch=detail.match(/(?:jan(?:eiro)?|fev(?:ereiro)?|mar(?:ço|co)?|abr(?:il)?|mai(?:o)?|jun(?:ho)?|jul(?:ho)?|ago(?:sto)?|set(?:embro)?|out(?:ubro)?|nov(?:embro)?|dez(?:embro)?)(?:\.?\s+de)?\s+\d{4}\s*[–—-]\s*(?:(?:jan(?:eiro)?|fev(?:ereiro)?|mar(?:ço|co)?|abr(?:il)?|mai(?:o)?|jun(?:ho)?|jul(?:ho)?|ago(?:sto)?|set(?:embro)?|out(?:ubro)?|nov(?:embro)?|dez(?:embro)?)(?:\.?\s+de)?\s+)?(?:\d{4}|atual)|\d{1,2}\/\d{4}.*|\d{4}\s*[–—-]\s*(?:atual|\d{4}))/i);
+  const dateMatch=detail.match(/(?:janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\\s+(?:de\\s+)?\\d{4}\\s*[–—-]\\s*(?:(?:janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\\s+(?:de\\s+)?\\d{4}|\\d{4}|atual)|\\d{1,2}\\/\\d{4}.*|\\d{4}\\s*[–—-]\\s*(?:atual|\\d{4})/i);
   let title=detail,period="";
   if(dateMatch){period=clean(dateMatch[0]);title=clean(detail.replace(dateMatch[0],""));}
   experiences.push({id:"imp"+experiences.length,title:title||company,subtitle:title?company:"",period,description:""});
