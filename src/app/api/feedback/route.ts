@@ -10,7 +10,14 @@ const MAX_PER_WINDOW = 3;
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as {
+    const contentLength=Number(request.headers.get("content-length")||0);
+    if(contentLength>10_240) return NextResponse.json({error:"Requisição muito grande."},{status:413});
+    const origin=request.headers.get("origin");
+    const host=request.headers.get("host");
+    if(origin&&host&&new URL(origin).host!==host) return NextResponse.json({error:"Origem não autorizada."},{status:403});
+    const raw=await request.text();
+    if(raw.length>10_240) return NextResponse.json({error:"Requisição muito grande."},{status:413});
+    const body=JSON.parse(raw) as {
       rating?: unknown;
       category?: unknown;
       message?: unknown;
