@@ -22,7 +22,7 @@ async function docxText(file:File){
    if(parsed.querySelector("parsererror"))throw new Error("O documento Word contém uma estrutura inválida.");
    const w="http://schemas.openxmlformats.org/wordprocessingml/2006/main",body=parsed.getElementsByTagNameNS(w,"body")[0];
    if(!body)throw new Error("Não encontramos o conteúdo principal do documento.");
-   const paragraphText=(el:Element)=>{let out="";for(const node of Array.from(el.getElementsByTagNameNS(w,"t")))out+=node.textContent||"";const tabs=el.getElementsByTagNameNS(w,"tab").length;return clean(out)+(tabs?" ":"");};
+   const paragraphText=(el:Element)=>{let out="";const walk=(node:Node)=>{if(node.nodeType===Node.TEXT_NODE||node.nodeType!==Node.ELEMENT_NODE)return;const element=node as Element;if(element.namespaceURI===w&&element.localName==="t"){out+=element.textContent||"";return;}if(element.namespaceURI===w&&element.localName==="tab"){out+=" | ";return;}if(element.namespaceURI===w&&element.localName==="br"){out+=" ";return;}for(const child of Array.from(node.childNodes))walk(child);};walk(el);return clean(out);};
    const lines:string[]=[];
    for(const block of Array.from(body.children)){
     if(block.localName==="p"){const value=paragraphText(block);if(value)lines.push(value);}
@@ -52,7 +52,7 @@ function structure(raw:string):ResumeData{
  for(let i=0;i<expLines.length;){
   const company=expLines[i];const detail=expLines[i+1]||"";
   const parts=detail.split(/\s{2,}|\s(?=[A-Z][a-záéíóúãõç]+\s+de\s+\d{4})/).map(clean).filter(Boolean);
-  const dateMatch=detail.match(/(?:Jan|Fev|Mar|Abr|Mai|Jun|Jul|Ago|Set|Out|Nov|Dez)[a-zç]*\.?\s*\/?\s*\d{4}.*|\d{1,2}\/\d{4}.*|\d{4}\s*[–-]\s*(?:Atual|\d{4})/i);
+  const dateMatch=detail.match(/(?:jan(?:eiro)?|fev(?:ereiro)?|mar(?:ço|co)?|abr(?:il)?|mai(?:o)?|jun(?:ho)?|jul(?:ho)?|ago(?:sto)?|set(?:embro)?|out(?:ubro)?|nov(?:embro)?|dez(?:embro)?)(?:\\.?\\s+de)?\\s+\\d{4}\\s*[–—-]\\s*(?:(?:jan(?:eiro)?|fev(?:ereiro)?|mar(?:ço|co)?|abr(?:il)?|mai(?:o)?|jun(?:ho)?|jul(?:ho)?|ago(?:sto)?|set(?:embro)?|out(?:ubro)?|nov(?:embro)?|dez(?:embro)?)(?:\\.?\\s+de)?\\s+)?(?:\\d{4}|atual)|\\d{1,2}\\/\\d{4}.*|\\d{4}\\s*[–—-]\\s*(?:atual|\\d{4}))/i)
   let title=detail,period="";
   if(dateMatch){period=clean(dateMatch[0]);title=clean(detail.replace(dateMatch[0],""));}
   experiences.push({id:"imp"+experiences.length,title:title||company,subtitle:title?company:"",period,description:""});
