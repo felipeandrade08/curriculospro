@@ -51,8 +51,8 @@ export function PixQrCode({pixKey, pixName, pixCity}: {pixKey: string; pixName: 
     }
   }
 
-  return <div>
-    <QRCodeSVG value={payload} size={224} level="M" marginSize={2} title="QR Code Pix para apoio voluntário"/>
+  return <div style={{width:"100%",maxWidth:224,margin:"0 auto",minWidth:0}}>
+    <div style={{width:"100%",aspectRatio:"1 / 1",display:"grid",placeItems:"center",overflow:"hidden"}}><QRCodeSVG value={payload} size={224} level="M" marginSize={2} title="QR Code Pix para apoio voluntário" style={{display:"block",width:"100%",height:"auto",maxWidth:224}}/></div>
     <button type="button" onClick={copyPayload} style={{display:"block",width:"100%",marginTop:14,border:"1px solid #087cf0",borderRadius:11,padding:"12px 14px",background:"#fff",color:"#087cf0",fontWeight:800,cursor:"pointer"}}>
       {copied ? "Pix copia e cola copiado!" : "Copiar Pix copia e cola"}
     </button>
