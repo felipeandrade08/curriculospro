@@ -492,3 +492,12 @@ body{background:#f7fafc;color:var(--cp-ink)}
 .experienceRoleGroups details>div button:disabled{border-color:#cce6d7;background:#f0faf4;color:#34734c;cursor:default}
 .experienceRoleGroups summary:focus-visible,.experienceRoleGroups button:focus-visible{outline:3px solid #80b7ff;outline-offset:2px}
 @media(max-width:560px){.experienceTaskSuggestions{padding:10px}.experienceRoleGroups summary{font-size:11px}.experienceRoleGroups details>div button{font-size:10px}}
+
+
+/* Search field for the experience suggestion library */
+.experienceSearch{display:flex;gap:7px;margin:0 0 10px}
+.experienceSearch input{width:100%;min-width:0;padding:10px 12px;border:1px solid #d5e2ef;border-radius:9px;background:#fff;color:#203b57;font:inherit;font-size:12px;outline:none}
+.experienceSearch input:focus{border-color:#1688e8;box-shadow:0 0 0 3px #1688e81c}
+.experienceSearch button{flex-shrink:0;padding:0 11px;border:1px solid #d5e2ef;border-radius:9px;background:#fff;color:#0870d7;font-size:11px;font-weight:700;cursor:pointer}
+.experienceSearchEmpty{margin:0;padding:12px;border:1px dashed #cbd9e8;border-radius:9px;color:#64758a;font-size:11px;line-height:1.5}
+@media(max-width:560px){.experienceSearch input{font-size:11px}}
