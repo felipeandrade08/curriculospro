@@ -10,7 +10,14 @@ const WINDOW_MS = 60_000;
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as {event?: unknown};
+    const contentLength=Number(request.headers.get("content-length")||0);
+    if(contentLength>1024) return NextResponse.json({error:"Requisição muito grande."},{status:413});
+    const origin=request.headers.get("origin");
+    const host=request.headers.get("host");
+    if(origin&&host&&new URL(origin).host!==host) return NextResponse.json({error:"Origem não autorizada."},{status:403});
+    const raw=await request.text();
+    if(raw.length>1024) return NextResponse.json({error:"Requisição muito grande."},{status:413});
+    const body=JSON.parse(raw) as {event?: unknown};
     if (typeof body.event !== "string" || !allowed.has(body.event)) {
       return NextResponse.json({error:"Evento inválido."},{status:400});
     }
