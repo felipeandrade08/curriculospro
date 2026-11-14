@@ -919,11 +919,29 @@ export default function Editor() {
                     {stepGuideOpen ? "Recolher" : "Continuar"}
                   </button>
                 </div>
+                <nav className="stepGuideDots" aria-label="Etapas do currículo">
+                  {journey.map((step, index) => (
+                    <button
+                      type="button"
+                      key={step.id}
+                      title={step.label + (step.done ? " — concluído" : step.optional ? " — opcional" : "")}
+                      aria-label={
+                        "Etapa " + (index + 1) + ": " + step.label + (step.done ? ", concluída" : "")
+                      }
+                      aria-current={index === guideIndex ? "step" : undefined}
+                      className={(step.done ? "done " : "") + (index === guideIndex ? "current" : "")}
+                      onClick={() => {
+                        setGuideIndex(index);
+                        setStepGuideOpen(true);
+                        goToStep(step.id);
+                      }}
+                    >
+                      {step.done ? "✓" : index + 1}
+                    </button>
+                  ))}
+                </nav>
                 {stepGuideOpen && (
                   <>
-                    <div className="stepGuideProgress">
-                      <i style={{ width: ((guideIndex + 1) / journey.length) * 100 + "%" }} />
-                    </div>
                     <div className="stepGuideCurrent">
                       <div className="stepGuideCount">
                         ETAPA {guideIndex + 1} DE {journey.length}
@@ -981,31 +999,6 @@ export default function Editor() {
                   </>
                 )}
               </section>
-              <div className="guidedJourney" aria-label="Jornada de construção do currículo">
-                <div className="journeyIntro">
-                  <div>
-                    <small>JORNADA GUIADA</small>
-                    <b>Construa no seu ritmo</b>
-                  </div>
-                  <span>Você pode pular e voltar quando quiser.</span>
-                </div>
-                <div className="journeySteps">
-                  {journey.map((step, index) => (
-                    <button
-                      type="button"
-                      key={step.id}
-                      className={step.done ? "done" : step.id === "step-review" ? "review" : ""}
-                      onClick={() => goToStep(step.id)}
-                    >
-                      <i>{step.done ? "✓" : index + 1}</i>
-                      <span>
-                        <b>{step.label}</b>
-                        <small>{step.done ? "Concluído" : step.optional ? "Opcional" : "Essencial"}</small>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
               <div id="step-personal" className="journeyAnchor sectionTitle">
                 <span>01</span>
                 <div>

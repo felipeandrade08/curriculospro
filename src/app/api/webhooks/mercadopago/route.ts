@@ -35,7 +35,6 @@ export async function POST(request: Request) {
   try {
     const row = await findPayment(dataId);
     if (!row) return Response.json({ ok: true, ignored: true });
-    if (row.granted_at) return Response.json({ ok: true, alreadyGranted: true });
     const payment = await getPayment(dataId);
     const result = await applyProviderPayment(payment, row);
     return Response.json({ ok: true, status: result.status });

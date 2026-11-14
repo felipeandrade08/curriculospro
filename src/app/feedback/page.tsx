@@ -77,8 +77,8 @@ export default function FeedbackPage() {
           Conte como foi sua experiência.
         </h1>
         <p style={{ fontSize: 17, lineHeight: 1.7, color: "#687386", maxWidth: 620 }}>
-          O Currículos PRO é gratuito e queremos melhorá-lo com a ajuda de quem usa. Você não precisa criar
-          conta nem informar seu nome ou e-mail.
+          O CurriculosPRO evolui com a ajuda de quem usa. Você não precisa criar conta nem informar seu nome
+          ou e-mail.
         </p>
         {status === "success" ? (
           <div
@@ -199,7 +199,7 @@ export default function FeedbackPage() {
                 opacity: status === "sending" ? 0.7 : 1,
               }}
             >
-              {status === "sending" ? "Enviando…" : "Enviar feedback grátis →"}
+              {status === "sending" ? "Enviando…" : "Enviar feedback →"}
             </button>
             <p style={{ fontSize: 12, lineHeight: 1.6, color: "#7b8494", margin: 0 }}>
               Não pedimos dados pessoais. Sua mensagem e nota serão armazenadas para que possamos analisar

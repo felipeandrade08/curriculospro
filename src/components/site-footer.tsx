@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ACCESS_PRICE_LABEL } from "@/lib/billing";
+import { SUPPORT_WHATSAPP_URL } from "@/lib/site";
 
 const linkedinUrl = "https://www.linkedin.com/in/felipe-andrade-0331b9205/";
 
@@ -12,31 +14,34 @@ export function SiteFooter() {
             <Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={165} height={62} />
           </Link>
           <p>
-            Uma ferramenta gratuita para transformar sua trajetória em um currículo claro, organizado e
+            Uma ferramenta simples para transformar sua trajetória em um currículo claro, organizado e
             profissional.
           </p>
           <div className="footerTrust">
-            <span>Gratuito para criar</span>
+            <span>Crie e edite grátis</span>
             <span>Sem cadastro obrigatório</span>
-            <span>PDF pronto para compartilhar</span>
+            <span>PDF por {ACCESS_PRICE_LABEL} · 7 dias</span>
           </div>
         </div>
         <nav className="footerLinks" aria-label="Navegação do produto">
           <strong>PRODUTO</strong>
           <Link href="/modelos">Modelos de currículo</Link>
           <Link href="/curriculos">Meus currículos</Link>
-          <Link href="/editor?new=blank">Criar currículo grátis</Link>
+          <Link href="/editor?new=blank">Criar currículo</Link>
+          <Link href="/precos">Preços</Link>
           <Link href="/feedback">Enviar feedback</Link>
         </nav>
         <nav className="footerLinks" aria-label="Conta e recursos">
           <strong>SUA CONTA</strong>
           <Link href="/auth/sign-in">Entrar</Link>
-          <Link href="/auth/sign-up">Criar conta grátis</Link>
+          <Link href="/auth/sign-up">Criar conta</Link>
           <Link href="/curriculos">Sincronização em nuvem</Link>
         </nav>
         <nav className="footerLinks" aria-label="Informações do projeto">
           <strong>INFORMAÇÕES</strong>
-          <Link href="/apoie">Apoie o projeto</Link>
+          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+            Ajuda pelo WhatsApp
+          </a>
           <Link href="/privacidade">Política de privacidade</Link>
           <Link href="/termos">Termos de uso</Link>
         </nav>

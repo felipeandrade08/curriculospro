@@ -1,13 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { WelcomeModal } from "@/components/welcome-modal";
 
 export default function Home() {
   return (
     <main>
       <SiteHeader />
-      <WelcomeModal />
 
       <section className="heroBrand">
         <div className="hero shell">
@@ -22,7 +24,7 @@ export default function Home() {
             </p>
             <div className="actions">
               <Link href="/editor?new=blank" className="primary">
-                Criar meu currículo grátis <b>→</b>
+                Criar meu currículo <b>→</b>
               </Link>
               <Link href="/modelos" className="secondary">
                 Ver modelos
@@ -31,14 +33,14 @@ export default function Home() {
                 Importar currículo antigo
               </Link>
             </div>
-            <small>✓ Sem cadastro &nbsp; ✓ 100% gratuito &nbsp; ✓ Baixe em PDF</small>
+            <small>✓ Comece sem cadastro &nbsp; ✓ Edite grátis &nbsp; ✓ PDF por {ACCESS_PRICE_LABEL}</small>
           </div>
           <div className="heroVisual" aria-hidden="true" />
         </div>
       </section>
 
       <section className="trustStrip shell">
-        <span>100% GRATUITO</span>
+        <span>CRIE GRÁTIS</span>
         <b>Sem cadastro obrigatório</b>
         <b>Edite quando quiser</b>
         <b>Exporte em PDF</b>
@@ -64,7 +66,8 @@ export default function Home() {
             </Link>
           </div>
           <small>
-            Gratuito e disponível sem cadastro. A conta é opcional para sincronizar entre dispositivos.
+            Disponível sem cadastro. Com uma conta, seus currículos e seu acesso ficam salvos em qualquer
+            dispositivo.
           </small>
         </div>
         <div className="profileSpotlightSteps">
@@ -225,13 +228,43 @@ export default function Home() {
         </Link>
       </section>
 
+      <section className="pricingTeaser shell" aria-labelledby="pricingTeaserTitle">
+        <div className="pricingTeaserCopy">
+          <span>PREÇO JUSTO E TRANSPARENTE</span>
+          <h2 id="pricingTeaserTitle">Crie de graça. Pague só quando for baixar.</h2>
+          <p>
+            Monte, revise e personalize seu currículo sem pagar nada. Para baixar o PDF sem marca d&apos;água,
+            libere {ACCESS_DAYS} dias de acesso com um único Pix. Sem assinatura, sem renovação automática.
+          </p>
+          <Link href="/precos" className="secondary">
+            Ver como funciona →
+          </Link>
+        </div>
+        <div className="pricingTeaserCard">
+          <small>ACESSO DE {ACCESS_DAYS} DIAS</small>
+          <strong>{ACCESS_PRICE_LABEL}</strong>
+          <span>pagamento único via Pix</span>
+          <ul>
+            <li>Downloads ilimitados em PDF</li>
+            <li>Todos os modelos e cores</li>
+            <li>Ajustes para cada vaga sem pagar de novo</li>
+          </ul>
+          <Link href="/editor?new=blank" className="primary">
+            Começar meu currículo →
+          </Link>
+        </div>
+      </section>
+
       <section className="finalCta shell">
         <span>PRONTO PARA COMEÇAR?</span>
         <h2>Transforme suas informações em um currículo que você tenha orgulho de enviar.</h2>
-        <p>Sem cadastro obrigatório. Crie, personalize e baixe seu currículo em PDF gratuitamente.</p>
+        <p>
+          Comece agora, sem cadastro. Quando estiver pronto, libere o download em PDF por {ACCESS_PRICE_LABEL}{" "}
+          e baixe quantas vezes quiser durante {ACCESS_DAYS} dias.
+        </p>
         <div>
           <Link className="primary" href="/editor?new=blank">
-            Criar meu currículo grátis →
+            Criar meu currículo →
           </Link>
           <Link className="secondary" href="/modelos">
             Conhecer os modelos

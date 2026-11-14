@@ -4,23 +4,43 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { getServerSession } from "@/lib/server/session";
 import { db } from "@/lib/server/db";
+import { formatBRL } from "@/lib/billing";
 
 export const dynamic = "force-dynamic";
 
 const labels: Record<string, string> = {
   site_visit: "Visitas ao site",
   resume_started: "Editor iniciado",
-  pdf_print_requested: "PDF preparados",
-  feedback_sent: "Feedbacks enviados",
-  donation_page_view: "Visitas à página de apoio",
+  paywall_view: "Viram a oferta",
+  checkout_started: "Pix gerados",
+  pdf_print_requested: "PDFs baixados",
 };
 const descriptions: Record<string, string> = {
   site_visit: "Acessos registrados na página inicial",
   resume_started: "Aberturas do editor de currículos",
-  pdf_print_requested: "Solicitações de preparação do PDF",
-  feedback_sent: "Envios realizados pelo formulário",
-  donation_page_view: "Pessoas que abriram a página de apoio",
+  paywall_view: "Aberturas da janela de pagamento",
+  checkout_started: "Códigos Pix solicitados",
+  pdf_print_requested: "Downloads feitos com acesso ativo",
 };
+
+const statusLabel: Record<string, string> = {
+  approved: "Pago",
+  pending: "Aguardando",
+  in_process: "Em análise",
+  rejected: "Recusado",
+  cancelled: "Cancelado/expirado",
+  refunded: "Estornado",
+  charged_back: "Contestado",
+};
+
+const dateTime = (value: string | null) =>
+  value
+    ? new Date(value).toLocaleString("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: "America/Sao_Paulo",
+      })
+    : "—";
 
 export default async function AdminPage() {
   const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
@@ -56,6 +76,44 @@ export default async function AdminPage() {
   let metrics: { event_name: string; total: string }[] = [];
   let feedback: { id: string; rating: number; category: string; message: string; created_at: string }[] = [];
   let daily: { day: string; event_name: string; total: string }[] = [];
+  let sales = { approved: 0, revenue: 0, refunded: 0, activeAccess: 0 };
+  let salesDaily: { day: string; total: string }[] = [];
+  let recentPayments: {
+    id: string;
+    email: string;
+    amount_cents: number;
+    status: string;
+    created_at: string;
+    approved_at: string | null;
+    revoked_at: string | null;
+    access_until: string | null;
+  }[] = [];
+  let paymentsReady = true;
+  try {
+    const sql = db();
+    const [summary] = await sql`SELECT
+        count(*) FILTER (WHERE granted_at IS NOT NULL AND revoked_at IS NULL)::int AS approved,
+        COALESCE(sum(amount_cents) FILTER (WHERE granted_at IS NOT NULL AND revoked_at IS NULL), 0)::int AS revenue,
+        count(*) FILTER (WHERE revoked_at IS NOT NULL)::int AS refunded
+      FROM payments WHERE created_at >= now() - interval '30 days'`;
+    const [active] = await sql`SELECT count(*)::int AS total FROM app_users WHERE access_until > now()`;
+    sales = {
+      approved: Number(summary?.approved || 0),
+      revenue: Number(summary?.revenue || 0),
+      refunded: Number(summary?.refunded || 0),
+      activeAccess: Number(active?.total || 0),
+    };
+    salesDaily =
+      (await sql`SELECT to_char((approved_at AT TIME ZONE 'America/Sao_Paulo')::date,'YYYY-MM-DD') AS day, count(*)::text AS total
+      FROM payments WHERE granted_at IS NOT NULL AND revoked_at IS NULL AND approved_at >= now() - interval '7 days' GROUP BY 1`) as typeof salesDaily;
+    recentPayments =
+      (await sql`SELECT p.id, u.email, p.amount_cents, p.status, p.created_at::text, p.approved_at::text,
+        p.revoked_at::text, u.access_until::text
+      FROM payments p JOIN app_users u ON u.id = p.user_id
+      ORDER BY p.created_at DESC LIMIT 25`) as typeof recentPayments;
+  } catch {
+    paymentsReady = false;
+  }
   try {
     const sql = db();
     metrics =
@@ -97,13 +155,13 @@ export default async function AdminPage() {
         month: "2-digit",
       }).format(date),
       site: row.filter((x) => x.event_name === "site_visit").reduce((n, x) => n + Number(x.total), 0),
-      support: row
-        .filter((x) => x.event_name === "donation_page_view")
-        .reduce((n, x) => n + Number(x.total), 0),
+      sales: Number(salesDaily.find((x) => x.day === key)?.total || 0),
     };
   });
   const maxDaily = Math.max(1, ...days.map((x) => x.site));
   const totalEvents = metrics.reduce((sum, item) => sum + Number(item.total), 0);
+  const offers = totals.get("paywall_view") || 0;
+  const conversion = offers ? Math.round((sales.approved / offers) * 1000) / 10 : 0;
 
   return (
     <main className="adminPage">
@@ -113,18 +171,45 @@ export default async function AdminPage() {
           <div>
             <span className="adminEyebrow">CENTRAL DE CONTROLE</span>
             <h1>Painel administrativo</h1>
-            <p>Acompanhe a utilização do CurrículosPRO e as mensagens enviadas pelos usuários.</p>
+            <p>Acompanhe vendas, utilização do CurriculosPRO e as mensagens enviadas pelos usuários.</p>
           </div>
           <div className="adminPeriod">
             <span className="adminLiveDot" /> Dados atualizados a cada acesso <small>Últimos 30 dias</small>
           </div>
         </div>
+        {!paymentsReady && (
+          <div className="adminWarning">
+            Não foi possível ler as vendas. Rode <code>npm run db:migrate</code> com a DATABASE_URL de
+            produção.
+          </div>
+        )}
+        <div className="adminStats adminSalesStats">
+          <article className="adminStat supportStat">
+            <span>Faturamento</span>
+            <strong>{formatBRL(sales.revenue)}</strong>
+            <small>Pagamentos aprovados nos últimos 30 dias</small>
+          </article>
+          <article className="adminStat">
+            <span>Vendas</span>
+            <strong>{sales.approved}</strong>
+            <small>
+              {sales.refunded ? sales.refunded + " estorno(s) no período" : "Nenhum estorno no período"}
+            </small>
+          </article>
+          <article className="adminStat">
+            <span>Conversão</span>
+            <strong>{conversion.toLocaleString("pt-BR")}%</strong>
+            <small>Vendas ÷ pessoas que viram a oferta</small>
+          </article>
+          <article className="adminStat">
+            <span>Acessos ativos</span>
+            <strong>{sales.activeAccess}</strong>
+            <small>Contas com download liberado agora</small>
+          </article>
+        </div>
         <div className="adminStats">
           {Object.entries(labels).map(([key, label]) => (
-            <article
-              className={key === "donation_page_view" ? "adminStat supportStat" : "adminStat"}
-              key={key}
-            >
+            <article className="adminStat" key={key}>
               <span>{label}</span>
               <strong>{totals.get(key) || 0}</strong>
               <small>{descriptions[key]}</small>
@@ -148,7 +233,7 @@ export default async function AdminPage() {
                     <i style={{ width: (day.site / maxDaily) * 100 + "%" }} />
                   </div>
                   <b>{day.site}</b>
-                  <small title="Visitas à página de apoio">♡ {day.support}</small>
+                  <small title="Vendas aprovadas no dia">$ {day.sales}</small>
                 </div>
               ))}
             </div>
@@ -156,38 +241,91 @@ export default async function AdminPage() {
               <span>
                 <i /> Visitas ao site
               </span>
-              <span>♡ Visitas à página de apoio</span>
+              <span>$ Vendas aprovadas</span>
             </div>
           </section>
           <section className="adminPanel adminSummary">
             <div className="adminPanelHead">
               <div>
-                <h2>Resumo do período</h2>
-                <p>Atividade agregada</p>
+                <h2>Funil de vendas</h2>
+                <p>Últimos 30 dias</p>
               </div>
             </div>
             <div className="adminSummaryValue">
-              <strong>{totalEvents}</strong>
-              <span>eventos registrados</span>
+              <strong>{sales.approved}</strong>
+              <span>vendas confirmadas</span>
             </div>
             <div className="adminSummaryLine">
-              <span>Visitas à página de apoio</span>
-              <b>{totals.get("donation_page_view") || 0}</b>
-            </div>
-            <div className="adminSummaryLine">
-              <span>PDF preparados</span>
-              <b>{totals.get("pdf_print_requested") || 0}</b>
-            </div>
-            <div className="adminSummaryLine">
-              <span>Editor iniciado</span>
+              <span>1. Editor iniciado</span>
               <b>{totals.get("resume_started") || 0}</b>
             </div>
+            <div className="adminSummaryLine">
+              <span>2. Viram a oferta</span>
+              <b>{offers}</b>
+            </div>
+            <div className="adminSummaryLine">
+              <span>3. Geraram Pix</span>
+              <b>{totals.get("checkout_started") || 0}</b>
+            </div>
+            <div className="adminSummaryLine">
+              <span>4. Pagaram</span>
+              <b>{sales.approved}</b>
+            </div>
             <p className="adminDisclaimer">
-              Visitas à página de apoio não significam doações confirmadas. O Pix atual não fornece
-              confirmação automática de pagamento.
+              Vendas vêm da confirmação do Mercado Pago. As demais etapas são contagens aproximadas por
+              sessão.
             </p>
           </section>
         </div>
+        <section className="adminPanel adminPayments">
+          <div className="adminPanelHead">
+            <div>
+              <h2>Pagamentos recentes</h2>
+              <p>
+                Últimos 25 Pix gerados. Estornos são feitos no painel do Mercado Pago e removem o acesso
+                automaticamente.
+              </p>
+            </div>
+            <span className="adminTag">{recentPayments.length} REGISTROS</span>
+          </div>
+          {recentPayments.length === 0 ? (
+            <div className="adminEmpty">Nenhum pagamento ainda.</div>
+          ) : (
+            <div className="adminTableWrap">
+              <table className="adminTable">
+                <thead>
+                  <tr>
+                    <th>Criado em</th>
+                    <th>Conta</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Acesso até</th>
+                    <th>ID Mercado Pago</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentPayments.map((payment) => {
+                    const status = payment.revoked_at ? "refunded" : payment.status;
+                    return (
+                      <tr key={payment.id}>
+                        <td>{dateTime(payment.created_at)}</td>
+                        <td>{payment.email}</td>
+                        <td>{formatBRL(Number(payment.amount_cents))}</td>
+                        <td>
+                          <span className={"adminPayStatus " + status}>{statusLabel[status] || status}</span>
+                        </td>
+                        <td>{status === "approved" ? dateTime(payment.access_until) : "—"}</td>
+                        <td>
+                          <code>{payment.id}</code>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
         <section className="adminPanel adminFeedback">
           <div className="adminPanelHead">
             <div>
@@ -229,8 +367,8 @@ export default async function AdminPage() {
           </Link>
         </section>
         <footer className="adminFoot">
-          <span>CurrículosPRO · Administração</span>
-          <span>{totalEvents} eventos agregados · sem dados pessoais nas métricas</span>
+          <span>CurriculosPRO · Administração</span>
+          <span>{totalEvents} eventos agregados nos últimos 30 dias</span>
         </footer>
       </section>
       <SiteFooter />

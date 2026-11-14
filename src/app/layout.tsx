@@ -3,15 +3,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { UsageBeacon } from "@/components/usage-beacon";
-import { SupportInvite } from "@/components/support-invite";
 export const metadata: Metadata = {
   metadataBase: new URL("https://curriculospro.vercel.app"),
   title: { default: "CurriculosPRO — Seu currículo profissional", template: "%s | CurriculosPRO" },
   description:
-    "Crie, organize e exporte currículos profissionais com modelos modernos e orientação sem engessar.",
+    "Crie seu currículo profissional online com modelos modernos e editor guiado. Edite grátis e baixe em PDF por R$ 9,90 com 7 dias de acesso.",
   applicationName: "CurriculosPRO",
   manifest: "/manifest.webmanifest",
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "pt_BR",
@@ -28,10 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR">
       <body>
         <UsageBeacon />
-        <Providers>
-          {children}
-          <SupportInvite />
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

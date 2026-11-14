@@ -32,7 +32,7 @@ export async function insertPayment(row: {
   const sql = db();
   await sql`INSERT INTO payments(id,user_id,status,status_detail,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at)
     VALUES(${row.id},${row.userId},${row.status},${row.statusDetail},${row.amountCents},${row.accessDays},${row.qrCode},${row.qrCodeBase64},${row.ticketUrl},${row.expiresAt.toISOString()})
-    ON CONFLICT(id) DO NOTHING`;
+`;
 }
 
 export async function findPayment(id: string) {
@@ -91,6 +91,22 @@ export async function grantAccess(paymentId: string, statusDetail: string | null
   return granted;
 }
 
+/** Estorno ou contestação: remove os dias concedidos por este pagamento (uma única vez). */
+export async function revokeAccess(paymentId: string, status: string, statusDetail: string | null) {
+  const sql = db();
+  const rows = await sql`WITH p AS (
+      UPDATE payments
+      SET status=${status}, status_detail=${statusDetail}, revoked_at=now(), updated_at=now()
+      WHERE id=${paymentId} AND granted_at IS NOT NULL AND revoked_at IS NULL
+      RETURNING user_id, access_days
+    )
+    UPDATE app_users
+    SET access_until = app_users.access_until - make_interval(days => p.access_days), updated_at = now()
+    FROM p WHERE app_users.id = p.user_id
+    RETURNING app_users.access_until`;
+  return rows.length > 0;
+}
+
 export type ClientStatus = CheckoutPix["status"];
 
 export function clientStatus(status: string, expiresAt: string | null): ClientStatus {
@@ -113,6 +129,10 @@ export async function applyProviderPayment(payment: MercadoPagoPayment, row: Pay
   if (!sameOwner || !sameAmount) {
     console.error("Pagamento divergente ignorado", { id: row.id, sameOwner, sameAmount });
     return { status: clientStatus(row.status, iso(row.expires_at)), granted: false };
+  }
+  if (payment.status === "refunded" || payment.status === "charged_back") {
+    await revokeAccess(row.id, payment.status, payment.status_detail || null);
+    return { status: "cancelled" as const, granted: false };
   }
   if (payment.status === "approved") {
     const granted = await grantAccess(row.id, payment.status_detail || null, payment.date_approved || null);

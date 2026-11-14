@@ -320,7 +320,7 @@ export default function ImportResumePage() {
           ← Voltar ao início
         </a>
         <span className="importEyebrow">IMPORTAÇÃO ASSISTIDA</span>
-        <h1>Traga seu currículo para o CurrículosPRO.</h1>
+        <h1>Traga seu currículo para o CurriculosPRO.</h1>
         <p className="importLead">
           Envie um PDF, DOCX ou TXT. Vamos identificar algumas informações para você revisar antes de criar
           uma nova versão.
@@ -408,7 +408,7 @@ export default function ImportResumePage() {
             </button>
             <small className="importPreserve">
               Seus currículos anteriores não serão substituídos. O documento original não é armazenado pelo
-              CurrículosPRO.
+              CurriculosPRO.
             </small>
           </section>
         )}

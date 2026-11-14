@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS payments (
   expires_at timestamptz,
   approved_at timestamptz,
   granted_at timestamptz,
+  revoked_at timestamptz,
   access_until_after timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()

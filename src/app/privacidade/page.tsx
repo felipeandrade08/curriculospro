@@ -1,5 +1,11 @@
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Política de privacidade",
+  alternates: { canonical: "/privacidade" },
+};
 export default function Privacy() {
   return (
     <main>
@@ -25,6 +31,15 @@ export default function Privacy() {
             armazenados na infraestrutura do CurriculosPRO para permitir acesso em outros dispositivos. A
             sincronização é uma camada adicional; o produto informa quando os dados estão apenas neste
             dispositivo ou também na nuvem.
+          </p>
+        </section>
+        <section>
+          <h2>Pagamentos</h2>
+          <p>
+            Para liberar o download, o pagamento por Pix é processado pelo Mercado Pago. Compartilhamos com o
+            Mercado Pago o e-mail da sua conta e o valor da compra. Guardamos o identificador do pagamento, o
+            status, o valor e as datas, vinculados à sua conta, para liberar o acesso, prestar suporte e
+            cumprir obrigações legais. Não recebemos nem armazenamos dados bancários.
           </p>
         </section>
         <section>
@@ -55,9 +70,9 @@ export default function Privacy() {
         <section>
           <h2>Serviços externos</h2>
           <p>
-            A geração paga por inteligência artificial está desativada no produto atual. O site pode utilizar
-            provedores técnicos de hospedagem, banco de dados e autenticação necessários para operar a
-            aplicação.
+            O site utiliza provedores necessários para operar a aplicação: hospedagem, banco de dados,
+            autenticação e o Mercado Pago para pagamentos. A geração de texto por inteligência artificial está
+            desativada no produto atual.
           </p>
         </section>
         <section>
@@ -68,7 +83,7 @@ export default function Privacy() {
             que não sejam necessários para uma candidatura profissional.
           </p>
         </section>
-        <p className="legalUpdated">Última atualização: outubro de 2026.</p>
+        <p className="legalUpdated">Última atualização: novembro de 2026.</p>
       </article>
       <SiteFooter />
     </main>

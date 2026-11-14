@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export function SiteHeader({ active }: { active?: "modelos" | "curriculos" }) {
+export function SiteHeader({ active }: { active?: "modelos" | "curriculos" | "precos" }) {
   return (
     <header className="siteHeader">
       <div className="nav shell">
@@ -14,11 +14,14 @@ export function SiteHeader({ active }: { active?: "modelos" | "curriculos" }) {
           <Link className={active === "modelos" ? "active" : ""} href="/modelos">
             Modelos
           </Link>
+          <Link className={active === "precos" ? "active" : ""} href="/precos">
+            Preços
+          </Link>
           <Link className={active === "curriculos" ? "active" : ""} href="/curriculos">
             Meus currículos
           </Link>
           <Link href="/editor?new=blank" className="navCta">
-            Criar currículo grátis
+            Criar currículo
           </Link>
         </nav>
       </div>

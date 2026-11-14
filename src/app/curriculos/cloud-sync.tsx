@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth/client";
+import { ACCESS_PRICE_LABEL, formatAccessUntil } from "@/lib/billing";
 import { RESUME_LIBRARY_KEY, ResumeDocument, cloneResume, isResumeDocument } from "@/lib/resume";
 const REVISIONS = "curriculospro.cloudRevisions.v1";
 export const PENDING_DELETIONS = "curriculospro.pendingCloudDeletes.v1";
@@ -26,7 +27,7 @@ export function CloudSync() {
     [status, setStatus] = useState(""),
     [busy, setBusy] = useState(false),
     [conflicts, setConflicts] = useState<Conflict[]>([]),
-    [plan, setPlan] = useState<"free" | "pro" | null>(null);
+    [plan, setPlan] = useState<{ active: boolean; accessUntil: string | null } | null>(null);
   const userId = session.data?.user.id || session.data?.user.email || "anonymous",
     key = REVISIONS + ":" + userId,
     pendingKey = PENDING_DELETIONS + ":" + userId;
@@ -47,7 +48,8 @@ export function CloudSync() {
     fetch("/api/account", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => {
-        if (active) setPlan(data.account?.plan === "pro" ? "pro" : "free");
+        if (active)
+          setPlan({ active: !!data.account?.active, accessUntil: data.account?.accessUntil || null });
       })
       .catch(() => {
         if (active) setPlan(null);
@@ -204,9 +206,21 @@ export function CloudSync() {
         </div>
       </div>
       <div className="accountPlan">
-        <small>PLANO ATUAL</small>
-        <b>{plan ? plan.toUpperCase() : "—"}</b>
-        <span>{plan ? "Nuvem incluída" : "Consultando conta"}</span>
+        <small>DOWNLOAD EM PDF</small>
+        <b>{!plan ? "—" : plan.active ? "Liberado" : "Não liberado"}</b>
+        <span>
+          {!plan ? (
+            "Consultando conta"
+          ) : plan.active ? (
+            plan.accessUntil ? (
+              "Até " + formatAccessUntil(plan.accessUntil)
+            ) : (
+              "Acesso permanente"
+            )
+          ) : (
+            <a href="/precos">Liberar por {ACCESS_PRICE_LABEL}</a>
+          )}
+        </span>
       </div>
       <div className="accountCloud">
         <small>SINCRONIZAÇÃO</small>
