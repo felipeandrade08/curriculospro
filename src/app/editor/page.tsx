@@ -1,6 +1,8 @@
 "use client";
 import Image from "next/image";
-import { WelcomeModal } from "@/components/welcome-modal";
+import { CheckoutModal } from "@/components/checkout-modal";
+import { useAccess } from "@/lib/use-access";
+import { ACCESS_DAYS, ACCESS_PRICE_LABEL, formatAccessUntil } from "@/lib/billing";
 import { trackUsage } from "@/lib/analytics";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -67,6 +69,7 @@ type GuidanceContext = {
 const guidanceKey = (id: string) => "curriculospro.guidance.v1:" + id;
 
 export default function Editor() {
+  const { access, unlock } = useAccess();
   const hydrated = useRef(false),
     activeId = useRef("");
   const [documentTitle, setDocumentTitle] = useState("Meu currículo");
@@ -91,12 +94,17 @@ export default function Editor() {
     [sectionOrder, setSectionOrder] = useState<SectionKey[]>(defaultOrder),
     [hidden, setHidden] = useState<SectionKey[]>([]),
     [pdfHint, setPdfHint] = useState(false),
+    [checkoutOpen, setCheckoutOpen] = useState(false),
     [photoError, setPhotoError] = useState("");
   useEffect(() => {
     try {
       const params = new URLSearchParams(location.search),
         mode = params.get("new"),
         requested = params.get("template");
+      if (params.get("checkout") === "1") {
+        setCheckoutOpen(true);
+        history.replaceState({}, "", "/editor");
+      }
       let docs: ResumeDocument[] = JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY) || "[]");
       let doc: ResumeDocument | undefined;
       if (mode === "blank" || mode === "example") {
@@ -360,6 +368,10 @@ export default function Editor() {
     }
   };
   const printResume = () => {
+    if (!access.active) {
+      setCheckoutOpen(true);
+      return;
+    }
     trackUsage("pdf_print_requested");
     setPdfHint(true);
     const previous = document.title;
@@ -572,7 +584,7 @@ export default function Editor() {
     const qualityChecks = [
       {
         label: "Identificação",
-        ok: cv.name.trim().split(/\\s+/).length >= 2,
+        ok: cv.name.trim().split(/\s+/).length >= 2,
         tip: "Informe nome e sobrenome.",
       },
       {
@@ -709,8 +721,15 @@ export default function Editor() {
   };
   const formatCity = (value: string) => value.replace(/\s*\/\s*/g, " / ").replace(/\s{2,}/g, " ");
   return (
-    <main className="editor">
-      <WelcomeModal />
+    <main className={"editor " + (access.active ? "unlocked" : "locked")}>
+      <CheckoutModal
+        open={checkoutOpen}
+        access={access}
+        returnTo="/editor?checkout=1"
+        onClose={() => setCheckoutOpen(false)}
+        onUnlocked={unlock}
+        onDownload={() => window.setTimeout(printResume, 120)}
+      />
       <header className="editorHead">
         <a className="brand brandImage editorLogo" href="/">
           <Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={155} height={58} priority />
@@ -754,7 +773,7 @@ export default function Editor() {
           {mobilePreview ? "Editar" : "Visualizar"}
         </button>
         <button onClick={printResume} className="download">
-          Preparar PDF ↓
+          {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
         </button>
       </header>
       {pdfHint && (
@@ -1431,10 +1450,14 @@ export default function Editor() {
                 </p>
                 <div className="reviewPdfActions">
                   <button type="button" className="download" onClick={printResume}>
-                    Gerar PDF ↓
+                    {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
                   </button>
                   <span>
-                    Na janela de impressão, escolha “Salvar como PDF”. Confira o documento antes de enviar.
+                    {access.active
+                      ? "Na janela de impressão, escolha “Salvar como PDF”. Confira o documento antes de enviar."
+                      : "Edite e visualize grátis. Ao liberar o download, você baixa por " +
+                        ACCESS_DAYS +
+                        " dias quantas vezes quiser."}
                   </span>
                 </div>
               </div>
@@ -1526,11 +1549,21 @@ export default function Editor() {
         <section className="preview">
           <div className="mobilePdfAction">
             <button type="button" className="download" onClick={printResume}>
-              Gerar PDF ↓
+              {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
             </button>
           </div>
           <div className="previewBar">
-            <span>● Prévia em tempo real</span>
+            {access.active && access.accessUntil ? (
+              <span className="accessBadge active">
+                ✓ Download liberado até {formatAccessUntil(access.accessUntil)}
+              </span>
+            ) : access.loading ? (
+              <span>● Prévia em tempo real</span>
+            ) : (
+              <button type="button" className="accessBadge locked" onClick={() => setCheckoutOpen(true)}>
+                Prévia com marca d&apos;água · liberar download por {ACCESS_PRICE_LABEL} ({ACCESS_DAYS} dias)
+              </button>
+            )}
             <span>
               A4 ·{" "}
               {
@@ -1559,8 +1592,21 @@ export default function Editor() {
             {sectionOrder.filter(visible).map((key) => (
               <PreviewSection key={key} sectionKey={key} cv={cv} />
             ))}
+            {!access.active && !access.loading && <div className="paperWatermark" aria-hidden="true" />}
           </article>
+          <div className="printLockedNotice">
+            <strong>CurriculosPRO</strong>
+            <p>
+              Para baixar este currículo em PDF, libere o download no editor por {ACCESS_PRICE_LABEL} (
+              {ACCESS_DAYS} dias de acesso).
+            </p>
+          </div>
         </section>
+      </div>
+      <div className={"mobileDownloadBar " + (mobilePreview ? "inPreview" : "")}>
+        <button type="button" className="download" onClick={printResume}>
+          {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
+        </button>
       </div>
       <div className="devCredit">
         CurriculosPRO · Criado por <strong>Felipe Andrade Dev</strong>
@@ -2787,11 +2833,11 @@ function PreviewSection({ sectionKey, cv }: { sectionKey: SectionKey; cv: CV }) 
       <h3>CURSOS E CERTIFICAÇÕES</h3>
       <div className="courseList">
         {cv.courses
-          .flatMap((value) => value.split(/\\s*[•·]\\s*/))
+          .flatMap((value) => value.split(/\s*[•·]\s*/))
           .filter(Boolean)
           .map((entry, index) => {
             const parts = entry
-              .split(/\\s+[—–-]\\s+/)
+              .split(/\s+[—–-]\s+/)
               .map((part) => part.trim())
               .filter(Boolean);
             const institution = parts.length > 1 ? parts[0] : "";
