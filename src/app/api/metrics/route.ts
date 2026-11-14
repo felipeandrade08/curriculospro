@@ -10,6 +10,10 @@ const allowed = new Set([
   "pdf_print_requested",
   "feedback_sent",
   "donation_page_view",
+  "paywall_view",
+  "checkout_started",
+  "payment_approved",
+  "pricing_view",
 ]);
 const recent = new Map<string, number>();
 const WINDOW_MS = 60_000;

@@ -19,7 +19,19 @@ for (const name of files) {
     .replace(new RegExp("^\\s*BEGIN\\s*;?", "i"), "")
     .replace(new RegExp("COMMIT\\s*;?\\s*$", "i"), "")
     .trim();
-  if (!source) throw new Error("Migration " + name + " is empty");
-  await sql.transaction([sql.query(source), sql`INSERT INTO schema_migrations(name) VALUES(${name})`]);
+  // O driver HTTP do Neon executa um comando por consulta; separamos as instruções
+  // e aplicamos todas na mesma transação. Migrações não devem usar blocos $$ … $$.
+  const statements = source
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("--"))
+    .join("\n")
+    .split(/;\s*(?:\n|$)/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  if (!statements.length) throw new Error("Migration " + name + " is empty");
+  await sql.transaction([
+    ...statements.map((statement) => sql.query(statement)),
+    sql`INSERT INTO schema_migrations(name) VALUES(${name})`,
+  ]);
   console.log("applied", name);
 }
