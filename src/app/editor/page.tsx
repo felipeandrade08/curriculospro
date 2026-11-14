@@ -91,7 +91,7 @@ export default function Editor() {
   const [cv, setCv] = useState(initial),
     [tab, setTab] = useState<(typeof tabs)[number]>("Conteúdo"),
     [template, setTemplate] = useState<Template>("essential"),
-    [accent, setAccent] = useState("#087cf0"),
+    [accent, setAccent] = useState("#0b6bcb"),
     [mobilePreview, setMobilePreview] = useState(false),
     [density, setDensity] = useState<"comfortable" | "compact">("comfortable"),
     [sectionOrder, setSectionOrder] = useState<SectionKey[]>(defaultOrder),

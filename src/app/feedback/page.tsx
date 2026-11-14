@@ -49,14 +49,14 @@ export default function FeedbackPage() {
     <main>
       <SiteHeader />
       <section className="shell" style={{ maxWidth: 760, paddingTop: 72, paddingBottom: 80 }}>
-        <Link href="/" style={{ color: "#087cf0", fontWeight: 700, textDecoration: "none" }}>
+        <Link href="/" style={{ color: "#1553d6", fontWeight: 700, textDecoration: "none" }}>
           ← Voltar ao início
         </Link>
         <div
           style={{
             marginTop: 24,
             background: "#eaf5ff",
-            color: "#087cf0",
+            color: "#1553d6",
             display: "inline-block",
             padding: "8px 12px",
             borderRadius: 999,
@@ -131,9 +131,9 @@ export default function FeedbackPage() {
                       width: 52,
                       height: 48,
                       borderRadius: 12,
-                      border: rating === n ? "2px solid #087cf0" : "1px solid #dce1e9",
+                      border: rating === n ? "2px solid #1553d6" : "1px solid #dce1e9",
                       background: rating === n ? "#eaf5ff" : "#fff",
-                      color: rating === n ? "#087cf0" : "#526075",
+                      color: rating === n ? "#1553d6" : "#526075",
                       fontSize: 20,
                       cursor: "pointer",
                     }}
@@ -191,7 +191,7 @@ export default function FeedbackPage() {
                 border: 0,
                 borderRadius: 12,
                 padding: "15px 20px",
-                background: "#087cf0",
+                background: "#1553d6",
                 color: "#fff",
                 fontWeight: 800,
                 fontSize: 15,

@@ -1,273 +1,290 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
-
-export const metadata: Metadata = { alternates: { canonical: "/" } };
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { ResumeThumb } from "@/components/resume-view";
+import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
+import { EXAMPLE_CATEGORIES, RESUME_EXAMPLES, exampleById, type ResumeExample } from "@/lib/examples";
+import { TEMPLATES } from "@/lib/templates";
+import { defaultOrder, type ResumeData } from "@/lib/resume";
+
+export const metadata: Metadata = {
+  title: "CurriculosPRO — Crie seu currículo profissional online",
+  description: `Monte um currículo profissional em minutos com 10 modelos e 20 exemplos por profissão. Edite grátis e baixe o PDF por ${ACCESS_PRICE_LABEL}.`,
+  alternates: { canonical: "/" },
+};
+
+const toData = (example: ResumeExample): ResumeData => ({
+  ...example.data,
+  photo: "",
+  experiences: example.data.experiences.map((x, i) => ({ ...x, id: example.id + "-e" + i })),
+  education: example.data.education.map((x, i) => ({ ...x, id: example.id + "-d" + i })),
+});
+
+function Thumb({ example, width, template }: { example: ResumeExample; width: number; template?: string }) {
+  const t = TEMPLATES.find((x) => x.id === template);
+  return (
+    <ResumeThumb
+      width={width}
+      cv={toData(example)}
+      template={t ? t.id : example.template}
+      accent={t ? t.accent : example.accent}
+      density="comfortable"
+      sections={defaultOrder}
+    />
+  );
+}
+
+const featured = [
+  "first-job",
+  "retail",
+  "administrative",
+  "logistics",
+  "nursing-tech",
+  "technology",
+  "cashier",
+  "marketing",
+]
+  .map((id) => exampleById(id))
+  .filter((x): x is ResumeExample => !!x);
 
 export default function Home() {
+  const hrBase = exampleById("hr")!;
+  // Versão mais completa do exemplo para a vitrine do topo.
+  const hr: ResumeExample = {
+    ...hrBase,
+    data: {
+      ...hrBase.data,
+      experiences: [
+        ...hrBase.data.experiences.map((x, i) =>
+          i === 1
+            ? {
+                ...x,
+                description:
+                  "• Admissões, controle de ponto e apoio na folha de pagamento de 300 colaboradores\n• Organização de treinamentos obrigatórios e controle de exames periódicos",
+              }
+            : x,
+        ),
+        {
+          title: "Estagiária de Recursos Humanos",
+          subtitle: "Hospital Pequeno Príncipe",
+          period: "2018 — 2019",
+          description:
+            "• Triagem de currículos, agendamento de entrevistas e apoio em ações de endomarketing",
+        },
+      ],
+      courses: [...hrBase.data.courses, "FGV — Gestão de Pessoas — 30h"],
+    },
+  };
+  const logistics = exampleById("logistics")!;
+  const teacher = exampleById("teacher")!;
+  const gallerySample = exampleById("customer-service")!;
+
   return (
-    <main>
+    <main className="lp">
       <SiteHeader />
 
-      <section className="heroBrand">
-        <div className="hero shell">
-          <div className="heroCopy">
-            <div className="pill">✦ Simples, rápido e profissional</div>
-            <h1>
-              Seu currículo merece <em>abrir portas.</em>
-            </h1>
-            <p>
-              Crie um currículo profissional em poucos minutos, com design moderno e uma experiência feita
-              para você se destacar.
+      <section className="lp-hero">
+        <div className="wrap hero-grid">
+          <div className="hero-copy">
+            <h1>Um currículo que dá vontade de ler até o fim.</h1>
+            <p className="hero-lead">
+              Escolha um modelo, preencha com a ajuda do editor e baixe um PDF limpo, em uma página, pronto
+              para mandar para o recrutador.
             </p>
-            <div className="actions">
-              <Link href="/editor?new=blank" className="primary">
-                Criar meu currículo <b>→</b>
+            <div className="hero-actions">
+              <Link href="/editor?new=blank" className="btn btn-primary btn-lg">
+                Criar meu currículo
               </Link>
-              <Link href="/modelos" className="secondary">
-                Ver modelos
-              </Link>
-              <Link href="/importar" className="secondary">
-                Importar currículo antigo
+              <Link href="/exemplos" className="btn btn-ghost btn-lg">
+                Ver exemplos por profissão
               </Link>
             </div>
-            <small>✓ Comece sem cadastro &nbsp; ✓ Edite grátis &nbsp; ✓ PDF por {ACCESS_PRICE_LABEL}</small>
+            <ul className="hero-facts">
+              <li>Comece sem cadastro</li>
+              <li>Edite quantas vezes quiser</li>
+              <li>Pague {ACCESS_PRICE_LABEL} só para baixar</li>
+            </ul>
           </div>
-          <div className="heroVisual" aria-hidden="true" />
+          <div className="hero-stack" aria-hidden="true">
+            <div className="hero-paper hero-paper-back1">
+              <Thumb example={logistics} width={300} />
+            </div>
+            <div className="hero-paper hero-paper-back2">
+              <Thumb example={teacher} width={300} />
+            </div>
+            <div className="hero-paper hero-paper-front marked">
+              <Thumb example={hr} width={420} />
+              <span className="hero-note">
+                <b>1 página</b>
+                PDF pronto para enviar
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="trustStrip shell">
-        <span>CRIE GRÁTIS</span>
-        <b>Sem cadastro obrigatório</b>
-        <b>Edite quando quiser</b>
-        <b>Exporte em PDF</b>
-        <b>Conta opcional com nuvem</b>
-      </section>
-
-      <section className="profileSpotlight shell">
-        <div className="profileSpotlightCopy">
-          <span className="profileSpotlightEyebrow">SEU PONTO DE PARTIDA</span>
-          <h2>
-            Conte sua trajetória uma vez. <em>Use em várias oportunidades.</em>
-          </h2>
-          <p>
-            Monte seu Perfil Profissional com experiências, formação, cursos e competências reais. Depois,
-            escolha o que aproveitar em cada currículo — sem sobrescrever suas versões.
-          </p>
-          <div className="profileSpotlightActions">
-            <Link href="/perfil-profissional" className="primary">
-              Conhecer meu Perfil Profissional →
+      <section className="band band-models" aria-labelledby="models-title">
+        <div className="wrap">
+          <div className="band-head">
+            <div>
+              <h2 id="models-title">10 modelos, do clássico ao criativo</h2>
+              <p>Troque de modelo a qualquer momento: o conteúdo continua o mesmo, só a apresentação muda.</p>
+            </div>
+            <Link href="/modelos" className="btn btn-ghost">
+              Ver todos os modelos
             </Link>
-            <Link href="/adaptar-vaga" className="secondary">
-              Adaptar para uma vaga
+          </div>
+        </div>
+        <div className="models-rail" tabIndex={0} aria-label="Modelos de currículo">
+          {TEMPLATES.map((t) => (
+            <Link
+              key={t.id}
+              href={"/editor?new=example&example=" + gallerySample.id + "&template=" + t.id}
+              className="rail-item"
+            >
+              <Thumb example={gallerySample} width={210} template={t.id} />
+              <span className="rail-name">{t.name}</span>
+              <span className="rail-tag">{t.tag}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="wrap examples" aria-labelledby="examples-title">
+        <div className="band-head">
+          <div>
+            <h2 id="examples-title">Comece pelo exemplo da sua profissão</h2>
+            <p>
+              Currículos completos escritos para cada área. Troque pelos seus dados e ajuste o que for
+              diferente na sua história.
+            </p>
+          </div>
+        </div>
+        <div className="chip-row">
+          {EXAMPLE_CATEGORIES.map((c) => (
+            <Link key={c} href={"/exemplos?area=" + encodeURIComponent(c)} className="chip">
+              {c}
+            </Link>
+          ))}
+        </div>
+        <div className="example-grid">
+          {featured.map((ex) => (
+            <Link key={ex.id} href={"/exemplos/" + ex.id} className="example-card">
+              <div className="example-paper">
+                <Thumb example={ex} width={236} />
+              </div>
+              <span className="example-title">{ex.title}</span>
+              <span className="example-cat">{ex.category}</span>
+            </Link>
+          ))}
+        </div>
+        <p className="examples-more">
+          <Link href="/exemplos">Ver os {RESUME_EXAMPLES.length} exemplos</Link>
+        </p>
+      </section>
+
+      <section className="steps-band" aria-labelledby="steps-title">
+        <div className="wrap">
+          <h2 id="steps-title">Do zero ao PDF em três passos</h2>
+          <ol className="steps">
+            <li>
+              <h3>Escolha um ponto de partida</h3>
+              <p>Comece em branco, por um exemplo da sua área ou importando o currículo que você já tem.</p>
+            </li>
+            <li>
+              <h3>Preencha com orientação</h3>
+              <p>
+                O editor sugere objetivos, atividades e competências por área e avisa o que ainda falta. Você
+                vê o resultado em tempo real.
+              </p>
+            </li>
+            <li>
+              <h3>Baixe e envie</h3>
+              <p>
+                Libere o download com um Pix de {ACCESS_PRICE_LABEL} e baixe quantas vezes quiser durante{" "}
+                {ACCESS_DAYS} dias.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section className="wrap lp-features" aria-labelledby="features-title">
+        <div className="features-copy">
+          <h2 id="features-title">Feito para quem não tem tempo a perder</h2>
+          <dl className="feature-list">
+            <div>
+              <dt>Cabe em uma página</dt>
+              <dd>A prévia avisa quando o currículo passa de uma folha e ajusta o texto com um clique.</dd>
+            </div>
+            <div>
+              <dt>Sugestões por área</dt>
+              <dd>
+                Frases prontas de objetivo, atividades e competências para você adaptar à sua realidade.
+              </dd>
+            </div>
+            <div>
+              <dt>Uma versão para cada vaga</dt>
+              <dd>Guarde sua trajetória no Perfil Profissional e monte versões diferentes sem redigitar.</dd>
+            </div>
+            <div>
+              <dt>Nada inventado</dt>
+              <dd>
+                O CurriculosPRO organiza o que você conta. Nenhuma experiência ou habilidade é inventada no
+                seu lugar.
+              </dd>
+            </div>
+          </dl>
+        </div>
+        <div className="features-visual" aria-hidden="true">
+          <div className="fv-bar">
+            <i />
+            Cabe em 1 página
+          </div>
+          <Thumb example={exampleById("finance")!} width={360} />
+        </div>
+      </section>
+
+      <section className="price-band" aria-labelledby="price-title">
+        <div className="wrap price-grid">
+          <div>
+            <h2 id="price-title">Grátis para criar. {ACCESS_PRICE_LABEL} para baixar.</h2>
+            <p>
+              Sem assinatura e sem renovação automática. Um Pix libera {ACCESS_DAYS} dias de downloads
+              ilimitados de todos os seus currículos: ajuste para cada vaga e baixe de novo sem pagar outra
+              vez.
+            </p>
+            <Link href="/precos" className="price-link">
+              Como funciona o pagamento
             </Link>
           </div>
-          <small>
-            Disponível sem cadastro. Com uma conta, seus currículos e seu acesso ficam salvos em qualquer
-            dispositivo.
-          </small>
-        </div>
-        <div className="profileSpotlightSteps">
-          <div>
-            <b>01</b>
-            <span>
-              <strong>Organize sua base</strong>
-              <small>Registre informações profissionais verdadeiras.</small>
-            </span>
-          </div>
-          <div>
-            <b>02</b>
-            <span>
-              <strong>Escolha o que destacar</strong>
-              <small>Selecione conteúdo adequado para cada oportunidade.</small>
-            </span>
-          </div>
-          <div>
-            <b>03</b>
-            <span>
-              <strong>Crie versões independentes</strong>
-              <small>Personalize e exporte cada currículo em PDF.</small>
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <section className="importSpotlight shell">
-        <div>
-          <span>JÁ TEM UM CURRÍCULO?</span>
-          <h2>Não comece do zero.</h2>
-          <p>
-            Traga seu currículo atual, confira as informações que identificamos e continue editando em um novo
-            documento — sem perder suas versões anteriores.
-          </p>
-        </div>
-        <Link href="/importar" className="primary">
-          Importar meu currículo →
-        </Link>
-      </section>
-
-      <section id="recursos" className="features shell">
-        <div>
-          <span>01</span>
-          <h3>Preencha sem complicação</h3>
-          <p>Um editor guiado organiza cada etapa e ajuda você a não esquecer informações importantes.</p>
-        </div>
-        <div>
-          <span>02</span>
-          <h3>Receba orientações úteis</h3>
-          <p>Sugestões de objetivos, competências e atividades para adaptar à sua experiência real.</p>
-        </div>
-        <div>
-          <span>03</span>
-          <h3>Personalize com liberdade</h3>
-          <p>Escolha modelos, cores, ordem das seções e o conteúdo que deseja apresentar.</p>
-        </div>
-        <div>
-          <span>04</span>
-          <h3>Revise e exporte em PDF</h3>
-          <p>Confira a prévia, receba alertas de preenchimento e prepare seu currículo para compartilhar.</p>
-        </div>
-      </section>
-
-      <section className="homeSectionIntro shell">
-        <span>UMA EXPERIÊNCIA COMPLETA</span>
-        <h2>Do primeiro campo ao PDF final.</h2>
-        <p>Uma jornada simples para transformar suas informações em uma apresentação profissional.</p>
-      </section>
-      <section className="productProof shell">
-        <div className="proofCopy">
-          <span>FEITO PARA SER SIMPLES</span>
-          <h2>Você escreve. O CurriculosPRO organiza.</h2>
-          <p>
-            Preencha suas informações em um editor guiado, acompanhe o currículo em tempo real e escolha a
-            apresentação que combina com seu objetivo.
-          </p>
-          <div className="proofPoints">
-            <div>
-              <b>01</b>
-              <span>
-                <strong>Edite com segurança</strong>
-                <small>Suas alterações ficam salvas enquanto você trabalha.</small>
-              </span>
+          <div className="price-card">
+            <div className="price-amount">
+              <strong>{ACCESS_PRICE_LABEL}</strong>
+              <span>pagamento único via Pix</span>
             </div>
-            <div>
-              <b>02</b>
-              <span>
-                <strong>Veja antes de baixar</strong>
-                <small>O preview mostra exatamente a estrutura do currículo.</small>
-              </span>
-            </div>
-            <div>
-              <b>03</b>
-              <span>
-                <strong>Leve em PDF</strong>
-                <small>Finalize e salve uma versão pronta para compartilhar.</small>
-              </span>
-            </div>
+            <ul>
+              <li>PDF sem marca d&apos;água</li>
+              <li>Downloads ilimitados por {ACCESS_DAYS} dias</li>
+              <li>Todos os modelos e currículos da conta</li>
+              <li>Liberação automática em segundos</li>
+            </ul>
+            <Link href="/editor?new=blank" className="btn btn-primary btn-lg">
+              Criar meu currículo
+            </Link>
           </div>
-        </div>
-        <div className="proofWindow" aria-label="Prévia ilustrativa do editor CurriculosPRO">
-          <div className="proofWindowBar">
-            <i />
-            <i />
-            <i />
-            <span>CurriculosPRO · Editor</span>
-          </div>
-          <div className="proofWindowBody">
-            <aside>
-              <b>Conteúdo</b>
-              <span />
-              <span />
-              <span />
-              <span />
-            </aside>
-            <div className="proofPaper">
-              <strong>SEU NOME</strong>
-              <em>Título profissional</em>
-              <hr />
-              <b>PERFIL PROFISSIONAL</b>
-              <p />
-              <p />
-              <b>EXPERIÊNCIA</b>
-              <p />
-              <p />
-            </div>
-          </div>
-        </div>
-      </section>
-      <section className="privacyBand">
-        <div className="shell">
-          <div>
-            <span>PRIVACIDADE E CONTROLE</span>
-            <h2>Seu currículo continua sendo seu.</h2>
-          </div>
-          <p>
-            Você pode começar sem criar conta. No navegador, seus currículos ficam disponíveis neste
-            dispositivo; ao usar uma conta, você pode utilizar os recursos de sincronização em nuvem.
-          </p>
-          <Link href="/curriculos">Ver meus currículos →</Link>
         </div>
       </section>
 
-      <section id="modelos" className="statement shell">
-        <div className="pill">DESIGN QUE TRABALHA POR VOCÊ</div>
-        <h2>
-          Bonito para quem vê.
-          <br />
-          <em>Prático para quem cria.</em>
-        </h2>
-        <p>
-          Começamos com modelos limpos e profissionais. Você cuida da sua história; o CurriculosPRO cuida da
-          apresentação.
-        </p>
-        <Link href="/modelos" className="primary">
-          Escolher meu modelo →
-        </Link>
-      </section>
-
-      <section className="pricingTeaser shell" aria-labelledby="pricingTeaserTitle">
-        <div className="pricingTeaserCopy">
-          <span>PREÇO JUSTO E TRANSPARENTE</span>
-          <h2 id="pricingTeaserTitle">Crie de graça. Pague só quando for baixar.</h2>
-          <p>
-            Monte, revise e personalize seu currículo sem pagar nada. Para baixar o PDF sem marca d&apos;água,
-            libere {ACCESS_DAYS} dias de acesso com um único Pix. Sem assinatura, sem renovação automática.
-          </p>
-          <Link href="/precos" className="secondary">
-            Ver como funciona →
+      <section className="wrap closing">
+        <h2>Seu próximo emprego começa com uma boa primeira impressão.</h2>
+        <div className="hero-actions">
+          <Link href="/editor?new=blank" className="btn btn-primary btn-lg">
+            Criar meu currículo
           </Link>
-        </div>
-        <div className="pricingTeaserCard">
-          <small>ACESSO DE {ACCESS_DAYS} DIAS</small>
-          <strong>{ACCESS_PRICE_LABEL}</strong>
-          <span>pagamento único via Pix</span>
-          <ul>
-            <li>Downloads ilimitados em PDF</li>
-            <li>Todos os modelos e cores</li>
-            <li>Ajustes para cada vaga sem pagar de novo</li>
-          </ul>
-          <Link href="/editor?new=blank" className="primary">
-            Começar meu currículo →
-          </Link>
-        </div>
-      </section>
-
-      <section className="finalCta shell">
-        <span>PRONTO PARA COMEÇAR?</span>
-        <h2>Transforme suas informações em um currículo que você tenha orgulho de enviar.</h2>
-        <p>
-          Comece agora, sem cadastro. Quando estiver pronto, libere o download em PDF por {ACCESS_PRICE_LABEL}{" "}
-          e baixe quantas vezes quiser durante {ACCESS_DAYS} dias.
-        </p>
-        <div>
-          <Link className="primary" href="/editor?new=blank">
-            Criar meu currículo →
-          </Link>
-          <Link className="secondary" href="/modelos">
-            Conhecer os modelos
+          <Link href="/importar" className="btn btn-ghost btn-lg">
+            Importar currículo antigo
           </Link>
         </div>
       </section>

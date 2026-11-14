@@ -20,7 +20,8 @@ O **CurriculosPRO** é uma aplicação web para criação e organização de cur
 ## Recursos
 
 - Editor de currículo com prévia e personalização.
-- Modelos profissionais; prévia com marca d'água e exportação em PDF liberada após pagamento.
+- 10 modelos de currículo (`src/lib/templates.ts` + `src/app/resume.css`) e 20 exemplos prontos por profissão (`src/lib/examples.ts`), com páginas próprias em `/exemplos/[id]`.
+- Prévia com marca d'água, indicador de páginas e ajuste automático para caber em 1 folha A4; PDF liberado após pagamento.
 - Pagamento Pix via Mercado Pago com liberação automática (webhook + consulta).
 - Importação de currículo existente para continuar a edição.
 - Perfil Profissional reutilizável para criar versões direcionadas.

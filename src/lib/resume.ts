@@ -183,7 +183,7 @@ export function createResume(
     updatedAt: now,
     cv: mode === "example" ? exampleResumeData() : emptyResumeData(),
     template,
-    accent: "#087cf0",
+    accent: "#0b6bcb",
     density: "comfortable",
     sectionOrder: [...defaultOrder],
     hidden: [],
