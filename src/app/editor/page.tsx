@@ -1,255 +1,2879 @@
 "use client";
 import Image from "next/image";
-import {WelcomeModal} from "@/components/welcome-modal";
-import {trackUsage} from "@/lib/analytics";
-import {useEffect,useMemo,useRef,useState,type ReactNode} from "react";
-import {ACTIVE_RESUME_KEY,JOB_SELECTION_KEY,LEGACY_RESUME_KEY,PROFESSIONAL_PROFILE_KEY,RESUME_LIBRARY_KEY,JobSelection,ResumeDocument,ProfessionalProfile,createResume,exampleResumeDataFor,safeFilename,isProfessionalProfile,isResumeTemplate,migrateLegacyResume} from "@/lib/resume";
+import { CheckoutModal } from "@/components/checkout-modal";
+import { useAccess } from "@/lib/use-access";
+import { ACCESS_DAYS, ACCESS_PRICE_LABEL, formatAccessUntil } from "@/lib/billing";
+import { trackUsage } from "@/lib/analytics";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  ACTIVE_RESUME_KEY,
+  JOB_SELECTION_KEY,
+  LEGACY_RESUME_KEY,
+  PROFESSIONAL_PROFILE_KEY,
+  RESUME_LIBRARY_KEY,
+  JobSelection,
+  ResumeDocument,
+  ProfessionalProfile,
+  createResume,
+  exampleResumeDataFor,
+  safeFilename,
+  isProfessionalProfile,
+  isResumeTemplate,
+  migrateLegacyResume,
+} from "@/lib/resume";
 
-type Item={id:string;title:string;subtitle:string;period:string;description:string};
-type CV={name:string;role:string,email:string;phone:string;city:string;summary:string;photo:string;experiences:Item[];education:Item[];courses:string[];skills:string[];languages:string[]};
-type Template="essential"|"modern"|"executive"|"minimal"|"creative";
-type SectionKey="summary"|"experiences"|"education"|"skills"|"languages"|"courses";
-const defaultOrder:SectionKey[]=["summary","experiences","education","skills","languages","courses"];
-const uid=()=>Math.random().toString(36).slice(2,9);
-const initial:CV={name:"",photo:"",role:"",email:"",phone:"",city:"",summary:"",experiences:[],education:[],courses:[],skills:[],languages:[]};
-const tabs=["Conteúdo","Design"] as const;
-type ExperienceContext="pending"|"standard"|"first-job"|"informal"|"self-employed"|"partial";
-type EducationContext="pending"|"standard"|"in-progress"|"no-exact-date"|"none"|"partial";
-type CoursesContext="pending"|"standard"|"none"|"missing-details";
-type LanguagesContext="pending"|"standard"|"none"|"partial";
-type GuidanceContext={experience:ExperienceContext;education:EducationContext;courses:CoursesContext;languages:LanguagesContext};
-const guidanceKey=(id:string)=>"curriculospro.guidance.v1:"+id;
+type Item = { id: string; title: string; subtitle: string; period: string; description: string };
+type CV = {
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  city: string;
+  summary: string;
+  photo: string;
+  experiences: Item[];
+  education: Item[];
+  courses: string[];
+  skills: string[];
+  languages: string[];
+};
+type Template = "essential" | "modern" | "executive" | "minimal" | "creative";
+type SectionKey = "summary" | "experiences" | "education" | "skills" | "languages" | "courses";
+const defaultOrder: SectionKey[] = ["summary", "experiences", "education", "skills", "languages", "courses"];
+const uid = () => Math.random().toString(36).slice(2, 9);
+const initial: CV = {
+  name: "",
+  photo: "",
+  role: "",
+  email: "",
+  phone: "",
+  city: "",
+  summary: "",
+  experiences: [],
+  education: [],
+  courses: [],
+  skills: [],
+  languages: [],
+};
+const tabs = ["Conteúdo", "Design"] as const;
+type ExperienceContext = "pending" | "standard" | "first-job" | "informal" | "self-employed" | "partial";
+type EducationContext = "pending" | "standard" | "in-progress" | "no-exact-date" | "none" | "partial";
+type CoursesContext = "pending" | "standard" | "none" | "missing-details";
+type LanguagesContext = "pending" | "standard" | "none" | "partial";
+type GuidanceContext = {
+  experience: ExperienceContext;
+  education: EducationContext;
+  courses: CoursesContext;
+  languages: LanguagesContext;
+};
+const guidanceKey = (id: string) => "curriculospro.guidance.v1:" + id;
 
-export default function Editor(){
- const hydrated=useRef(false),activeId=useRef("");
- const [documentTitle,setDocumentTitle]=useState("Meu currículo");
- const [saveState,setSaveState]=useState<"saved"|"error">("saved"),[lastSavedAt,setLastSavedAt]=useState("");
- const [profilePicker,setProfilePicker]=useState<ProfessionalProfile|null>(null),[profileSelection,setProfileSelection]=useState<Set<string>>(new Set());
- const [guidance,setGuidance]=useState<GuidanceContext>({experience:"pending",education:"pending",courses:"pending",languages:"pending"});
- const [stepGuideOpen,setStepGuideOpen]=useState(true),[guideIndex,setGuideIndex]=useState(0);
- const [cv,setCv]=useState(initial),[tab,setTab]=useState<(typeof tabs)[number]>("Conteúdo"),[template,setTemplate]=useState<Template>("essential"),[accent,setAccent]=useState("#087cf0"),[mobilePreview,setMobilePreview]=useState(false),[density,setDensity]=useState<"comfortable"|"compact">("comfortable"),[sectionOrder,setSectionOrder]=useState<SectionKey[]>(defaultOrder),[hidden,setHidden]=useState<SectionKey[]>([]),[pdfHint,setPdfHint]=useState(false),[photoError,setPhotoError]=useState("");
- useEffect(()=>{try{const params=new URLSearchParams(location.search),mode=params.get("new"),requested=params.get("template");let docs:ResumeDocument[]=JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY)||"[]");let doc:ResumeDocument|undefined;if(mode==="blank"||mode==="example"){doc=createResume(mode,isResumeTemplate(requested)?requested:"essential");if(mode==="example"){const exampleId=params.get("example");if(exampleId){doc.cv=exampleResumeDataFor(exampleId);doc.title="Exemplo — "+doc.cv.role}}docs=[doc,...docs];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(docs));history.replaceState({},"","/editor")}else{const id=localStorage.getItem(ACTIVE_RESUME_KEY);doc=docs.find(x=>x.id===id)||docs[0]}if(doc){activeId.current=doc.id;try{const g=JSON.parse(localStorage.getItem(guidanceKey(doc.id))||"null") as GuidanceContext|null;if(g)setGuidance({experience:g.experience||"pending",education:g.education||"pending",courses:g.courses||"pending",languages:g.languages||"pending"})}catch{};setDocumentTitle(doc.title);localStorage.setItem(ACTIVE_RESUME_KEY,doc.id);setCv({...initial,...doc.cv});setTemplate(doc.template);setAccent(doc.accent);setDensity(doc.density);setSectionOrder(doc.sectionOrder||defaultOrder);setHidden(doc.hidden||[])}else{const s=localStorage.getItem(LEGACY_RESUME_KEY);if(s){doc=migrateLegacyResume(s);docs=[doc];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(docs));activeId.current=doc.id;setDocumentTitle(doc.title);localStorage.setItem(ACTIVE_RESUME_KEY,doc.id);setCv({...initial,...doc.cv});setTemplate(doc.template);setAccent(doc.accent);setDensity(doc.density);setSectionOrder(doc.sectionOrder);setHidden(doc.hidden)}}}catch{}finally{hydrated.current=true;trackUsage("resume_started")}},[]);
- useEffect(()=>{if(!hydrated.current)return;try{localStorage.setItem(LEGACY_RESUME_KEY,JSON.stringify({cv,template,accent,density,sectionOrder,hidden}));let docs:ResumeDocument[]=JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY)||"[]");let id=activeId.current;if(!id){const doc=createResume("blank",template);id=doc.id;activeId.current=id;docs=[doc,...docs];localStorage.setItem(ACTIVE_RESUME_KEY,id)}const now=new Date().toISOString(),found=docs.find(x=>x.id===id),next:ResumeDocument={id,title:documentTitle||found?.title||cv.name||"Meu currículo",createdAt:found?.createdAt||now,updatedAt:now,cv,template,accent,density,sectionOrder,hidden};docs=found?docs.map(x=>x.id===id?next:x):[next,...docs];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(docs));setLastSavedAt(now);setSaveState("saved")}catch{setSaveState("error")}},[cv,template,accent,density,sectionOrder,hidden,documentTitle]);
- const goToStep=(id:string)=>{setTab("Conteúdo");setMobilePreview(false);requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"}))};
- useEffect(()=>{if(hydrated.current&&activeId.current)try{localStorage.setItem(guidanceKey(activeId.current),JSON.stringify(guidance))}catch{}},[guidance]);
- const openProfilePicker=()=>{try{const raw=localStorage.getItem(PROFESSIONAL_PROFILE_KEY);if(!raw){alert("Crie seu Perfil Profissional primeiro.");return}const profile=JSON.parse(raw) as ProfessionalProfile;if(!isProfessionalProfile(profile)){alert("O Perfil Profissional salvo não pôde ser lido.");return}setProfileSelection(new Set());setProfilePicker(profile)}catch{alert("Não foi possível abrir o Perfil Profissional.")}};
- const toggleProfileChoice=(key:string)=>setProfileSelection(current=>{const next=new Set(current);next.has(key)?next.delete(key):next.add(key);return next});
- const applyProfileSelection=()=>{const profile=profilePicker;if(!profile||!profileSelection.size)return;const itemKey=(x:Item)=>[x.title,x.subtitle,x.period].map(v=>v.trim().toLowerCase()).join("|"),mergeItems=(current:Item[],incoming:Item[])=>{const known=new Set(current.map(itemKey));return[...current,...incoming.filter(x=>{const key=itemKey(x);if(!key||known.has(key))return false;known.add(key);return true}).map(x=>({...x,id:uid()}))]},mergeText=(current:string[],incoming:string[])=>{const known=new Set(current.map(x=>x.trim().toLowerCase()).filter(Boolean));return[...current,...incoming.filter(x=>{const key=x.trim().toLowerCase();if(!key||known.has(key))return false;known.add(key);return true})]};const chosen=(prefix:string)=>profileSelection.has(prefix),chosenItems=(prefix:string,items:Item[])=>items.filter(x=>chosen(prefix+x.id)),chosenText=(prefix:string,items:string[])=>items.filter((_,i)=>chosen(prefix+i));setCv({...cv,name:chosen("personal")?cv.name||profile.name:cv.name,email:chosen("personal")?cv.email||profile.email:cv.email,phone:chosen("personal")?cv.phone||profile.phone:cv.phone,city:chosen("personal")?cv.city||profile.city:cv.city,photo:chosen("personal")?cv.photo||profile.photo:cv.photo,experiences:mergeItems(cv.experiences,chosenItems("exp:",profile.experiences)),education:mergeItems(cv.education,chosenItems("edu:",profile.education)),courses:mergeText(cv.courses,chosenText("course:",profile.courses)),skills:mergeText(cv.skills,chosenText("skill:",profile.skills)),languages:mergeText(cv.languages,chosenText("lang:",profile.languages))});setProfilePicker(null);setProfileSelection(new Set())};
- const applyJobSelection=()=>{try{const id=activeId.current,raw=id?localStorage.getItem(JOB_SELECTION_KEY+":"+id):null,profileRaw=localStorage.getItem(PROFESSIONAL_PROFILE_KEY);if(!raw||!profileRaw){alert("Salve uma seleção na área Adaptar para vaga primeiro.");return}const selection=JSON.parse(raw) as JobSelection,profile=JSON.parse(profileRaw) as ProfessionalProfile;if(selection.version!==1||selection.resumeId!==id||!isProfessionalProfile(profile)){alert("Não foi possível ler a seleção desta vaga.");return}if(!selection.profileUpdatedAt||selection.profileUpdatedAt!==profile.updatedAt){alert("Seu Perfil Profissional mudou depois desta seleção. Volte em Adaptar para vaga e salve a seleção novamente antes de aplicar.");return}const chosen=new Set(selection.selectedIds),itemKey=(x:Item)=>[x.title,x.subtitle,x.period].map(v=>v.trim().toLowerCase()).join("|"),mergeItems=(current:Item[],incoming:Item[])=>{const known=new Set(current.map(itemKey));return[...current,...incoming.filter(x=>{const key=itemKey(x);if(!key||known.has(key))return false;known.add(key);return true}).map(x=>({...x,id:uid()}))]},mergeText=(current:string[],incoming:string[])=>{const known=new Set(current.map(x=>x.trim().toLowerCase()).filter(Boolean));return[...current,...incoming.filter(x=>{const key=x.trim().toLowerCase();if(!key||known.has(key))return false;known.add(key);return true})]};setCv({...cv,experiences:mergeItems(cv.experiences,profile.experiences.filter(x=>chosen.has("exp:"+x.id))),education:mergeItems(cv.education,profile.education.filter(x=>chosen.has("edu:"+x.id))),skills:mergeText(cv.skills,profile.skills.filter((_,i)=>chosen.has("skill:"+i))),courses:mergeText(cv.courses,profile.courses.filter((_,i)=>chosen.has("course:"+i))),languages:mergeText(cv.languages,profile.languages.filter((_,i)=>chosen.has("language:"+i)))});alert("Seleção da vaga adicionada. Revise o currículo e mantenha apenas o que fizer sentido.")}catch{alert("Não foi possível aplicar a seleção desta vaga.")}};
- const printResume=()=>{trackUsage("pdf_print_requested");setPdfHint(true);const previous=document.title;document.title=safeFilename(documentTitle||cv.name||"curriculo")+"-CurriculosPRO";setTimeout(()=>{window.print();setTimeout(()=>{document.title=previous},500)},80)};
- const assistant=useMemo(()=>{
-  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email),phoneOk=[10,11].includes(cv.phone.replace(/\D/g,"").length);
-  const expHas=cv.experiences.some(x=>x.title.trim()&&(x.subtitle.trim()||x.description.trim())),eduHas=cv.education.some(x=>x.title.trim()),skillsOk=cv.skills.filter(x=>x.trim()).length>=3;
-  const resolved=[
-   {ok:cv.name.trim().split(/\s+/).length>=2,label:"Identificação",tip:"Informe nome e sobrenome."},
-   {ok:emailOk||phoneOk,label:"Contato",tip:"Informe pelo menos um contato válido."},
-   {ok:cv.role.trim().length>=3,label:"Título profissional",tip:"Informe sua profissão, área ou função de interesse."},
-   {ok:cv.summary.trim().length>=60,label:"Objetivo profissional",tip:"Explique a área em que deseja atuar e como pretende contribuir."},
-   {ok:guidance.experience==="first-job"||expHas||["informal","self-employed"].includes(guidance.experience)&&expHas,label:"Experiência",tip:guidance.experience==="pending"?"Diga qual é sua situação profissional.":"Complete apenas as informações que realmente existirem."},
-   {ok:guidance.education==="none"||eduHas,label:"Formação",tip:guidance.education==="pending"?"Diga como está sua formação.":"Informe o que souber com segurança."},
-   {ok:skillsOk,label:"Competências",tip:"Liste habilidades que você realmente possui."}
-  ];
-  // Cursos e idiomas são complementos opcionais: não reduzem o progresso principal.
-  const done=resolved.filter(x=>x.ok).length,score=Math.round(done/resolved.length*100),next=resolved.filter(x=>!x.ok).slice(0,3);
-  const optional={courses:guidance.courses==="none"||cv.courses.some(x=>x.trim()),languages:guidance.languages==="none"||cv.languages.some(x=>x.trim())};
-  return{checks:resolved,score,next,done,total:resolved.length,optional}
- },[cv,guidance]); const completion=assistant.score;
- const journey=useMemo(()=>[
-  {id:"step-personal",label:"Dados pessoais",done:!!cv.name.trim()&&(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email)||[10,11].includes(cv.phone.replace(/\D/g,"").length)),optional:false},
-  {id:"step-summary",label:"Objetivo profissional",done:cv.summary.trim().length>=60,optional:true},
-  {id:"step-experience",label:"Experiência",done:guidance.experience==="first-job"||cv.experiences.some(x=>x.title.trim()&&(x.subtitle.trim()||x.description.trim())),optional:true},
-  {id:"step-education",label:"Formação",done:guidance.education==="none"||cv.education.some(x=>x.title.trim()),optional:true},
-  {id:"step-skills",label:"Competências",done:cv.skills.filter(x=>x.trim()).length>=3,optional:true},
-  {id:"step-complements",label:"Complementos",done:(guidance.courses==="none"||guidance.courses!=="pending"&&cv.courses.some(x=>x.trim()))&&(guidance.languages==="none"||guidance.languages!=="pending"&&cv.languages.some(x=>x.trim())),optional:true},
-  {id:"step-review",label:"Revisão",done:assistant.score===100,optional:false}
- ],[cv,guidance,assistant.score]);
- const currentGuideStep=journey[Math.min(guideIndex,journey.length-1)];
- const advanceGuide=(direction:1|-1)=>{const next=Math.max(0,Math.min(journey.length-1,guideIndex+direction));setGuideIndex(next);goToStep(journey[next].id)};
- const review=useMemo(()=>{
-  const issues:{level:"required"|"recommended"|"optional";title:string;text:string}[]=[];
-  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email),phoneDigits=cv.phone.replace(/\D/g,"");
-  if(!cv.name.trim())issues.push({level:"required",title:"Informe seu nome",text:"O currículo precisa identificar você."});
-  if(cv.email&&!emailOk)issues.push({level:"required",title:"Revise o e-mail",text:"O endereço informado não parece completo."});
-  if(cv.phone&&![10,11].includes(phoneDigits.length))issues.push({level:"required",title:"Revise o telefone",text:"Inclua DDD e o número completo."});
-  if(!cv.email&&!cv.phone)issues.push({level:"required",title:"Adicione um contato",text:"Informe pelo menos e-mail ou telefone para que possam falar com você."});
-  if(cv.summary.trim().length>0&&cv.summary.trim().length<60)issues.push({level:"recommended",title:"Desenvolva seu objetivo profissional",text:"Explique a área em que deseja atuar e como pretende contribuir."});
-  if(cv.summary.length>650)issues.push({level:"recommended",title:"Enxugue o objetivo profissional",text:"Um texto direto facilita a leitura inicial."});
-  const incompleteExp=guidance.experience==="first-job"?0:cv.experiences.filter(x=>x.title.trim()&&(!x.subtitle.trim()||!x.period.trim()||!x.description.trim())).length;
-  if(incompleteExp)issues.push({level:"recommended",title:incompleteExp+" experiência(s) podem ser detalhadas",text:"Confira empresa, período e atividades quando essas informações existirem."});
-  const reviewItems=[...(guidance.experience==="first-job"?[]:cv.experiences),...(guidance.education==="none"?[]:cv.education)];
-  const blankItems=reviewItems.filter(x=>!x.title.trim()&&!x.subtitle.trim()&&!x.period.trim()&&!x.description.trim()).length;
-  if(blankItems)issues.push({level:"optional",title:"Há itens vazios",text:"Remova itens que você adicionou mas decidiu não preencher."});
-  if(hasDuplicateSkills(cv.skills))issues.push({level:"recommended",title:"Competências repetidas",text:"Remova duplicatas para deixar a seção mais objetiva."});
-  const hiddenWithContent=hidden.filter(k=>k==="summary"?!!cv.summary.trim():k==="experiences"?guidance.experience!=="first-job"&&cv.experiences.length>0:k==="education"?guidance.education!=="none"&&cv.education.length>0:k==="skills"?cv.skills.some(Boolean):k==="languages"?guidance.languages!=="none"&&cv.languages.some(Boolean):guidance.courses!=="none"&&cv.courses.some(Boolean));
-  if(hiddenWithContent.length)issues.push({level:"optional",title:"Há conteúdo oculto",text:"Algumas informações preenchidas não aparecerão no PDF porque a seção está oculta."});
-  const qualityChecks=[
-   {label:"Identificação",ok:cv.name.trim().split(/\\s+/).length>=2,tip:"Informe nome e sobrenome."},
-   {label:"Contato",ok:emailOk||[10,11].includes(phoneDigits.length),tip:"Adicione um e-mail válido ou telefone com DDD."},
-   {label:"Título profissional",ok:cv.role.trim().length>=3,tip:"Informe a função ou área desejada."},
-   {label:"Objetivo profissional",ok:cv.summary.trim().length>=60&&cv.summary.trim().length<=650,tip:"Escreva um objetivo claro, direto e personalizado."},
-   {label:"Experiência ou primeiro emprego",ok:guidance.experience==="first-job"||cv.experiences.some(x=>x.title.trim()&&x.description.trim()),tip:"Descreva atividades reais ou indique que busca o primeiro emprego."},
-   {label:"Formação",ok:guidance.education==="none"||cv.education.some(x=>x.title.trim()),tip:"Informe sua formação ou indique que não há formação a incluir."},
-   {label:"Competências",ok:cv.skills.filter(x=>x.trim()).length>=3&&!hasDuplicateSkills(cv.skills),tip:"Inclua ao menos três competências reais e sem repetições."}
-  ];
-  const qualityScore=Math.round(qualityChecks.filter(x=>x.ok).length/qualityChecks.length*100);
-  return{issues,required:issues.filter(x=>x.level==="required").length,recommended:issues.filter(x=>x.level==="recommended").length,qualityChecks,qualityScore}
- },[cv,hidden,guidance]);
- const set=<K extends keyof CV>(k:K,v:CV[K])=>setCv({...cv,[k]:v});
- const updateItem=(section:"experiences"|"education",id:string,key:keyof Item,value:string)=>setCv({...cv,[section]:cv[section].map(x=>x.id===id?{...x,[key]:value}:x)});
- const addItem=(section:"experiences"|"education")=>setCv({...cv,[section]:[...cv[section],{id:uid(),title:"",subtitle:"",period:"",description:""}]});
- const removeItem=(section:"experiences"|"education",id:string)=>setCv({...cv,[section]:cv[section].filter(x=>x.id!==id)});
- const addList=(key:"courses"|"skills"|"languages")=>set(key,[...cv[key],""]);
- const updateList=(key:"courses"|"skills"|"languages",index:number,value:string)=>set(key,cv[key].map((x,i)=>i===index?value:x));
- const removeList=(key:"courses"|"skills"|"languages",index:number)=>set(key,cv[key].filter((_,i)=>i!==index));
- const move=(section:"experiences"|"education",index:number,dir:-1|1)=>{const next=[...cv[section]],target=index+dir;if(target<0||target>=next.length)return;[next[index],next[target]]=[next[target],next[index]];setCv({...cv,[section]:next})};
- const onPhoto=(file?:File)=>{if(!file)return;setPhotoError("");if(!file.type.startsWith("image/")){setPhotoError("Escolha um arquivo de imagem válido.");return}if(file.size>2_500_000){setPhotoError("A foto deve ter no máximo 2,5 MB. Tente uma imagem menor.");return}const reader=new FileReader();reader.onerror=()=>setPhotoError("Não foi possível abrir a foto. Tente outra imagem.");reader.onload=()=>{const img=new window.Image();img.onerror=()=>setPhotoError("Não foi possível processar a foto. Tente JPG ou PNG.");img.onload=()=>{try{const canvas=document.createElement("canvas"),max=480,scale=Math.min(1,max/Math.max(img.width,img.height));canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);const ctx=canvas.getContext("2d");if(!ctx)throw Error("canvas");ctx.drawImage(img,0,0,canvas.width,canvas.height);set("photo",canvas.toDataURL("image/jpeg",.82))}catch{setPhotoError("Não foi possível preparar a foto. Tente outra imagem.")}};img.src=String(reader.result)};reader.readAsDataURL(file)};
+export default function Editor() {
+  const { access, unlock } = useAccess();
+  const hydrated = useRef(false),
+    activeId = useRef("");
+  const [documentTitle, setDocumentTitle] = useState("Meu currículo");
+  const [saveState, setSaveState] = useState<"saved" | "error">("saved"),
+    [lastSavedAt, setLastSavedAt] = useState("");
+  const [profilePicker, setProfilePicker] = useState<ProfessionalProfile | null>(null),
+    [profileSelection, setProfileSelection] = useState<Set<string>>(new Set());
+  const [guidance, setGuidance] = useState<GuidanceContext>({
+    experience: "pending",
+    education: "pending",
+    courses: "pending",
+    languages: "pending",
+  });
+  const [stepGuideOpen, setStepGuideOpen] = useState(true),
+    [guideIndex, setGuideIndex] = useState(0);
+  const [cv, setCv] = useState(initial),
+    [tab, setTab] = useState<(typeof tabs)[number]>("Conteúdo"),
+    [template, setTemplate] = useState<Template>("essential"),
+    [accent, setAccent] = useState("#087cf0"),
+    [mobilePreview, setMobilePreview] = useState(false),
+    [density, setDensity] = useState<"comfortable" | "compact">("comfortable"),
+    [sectionOrder, setSectionOrder] = useState<SectionKey[]>(defaultOrder),
+    [hidden, setHidden] = useState<SectionKey[]>([]),
+    [pdfHint, setPdfHint] = useState(false),
+    [checkoutOpen, setCheckoutOpen] = useState(false),
+    [photoError, setPhotoError] = useState("");
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search),
+        mode = params.get("new"),
+        requested = params.get("template");
+      if (params.get("checkout") === "1") {
+        setCheckoutOpen(true);
+        history.replaceState({}, "", "/editor");
+      }
+      let docs: ResumeDocument[] = JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY) || "[]");
+      let doc: ResumeDocument | undefined;
+      if (mode === "blank" || mode === "example") {
+        doc = createResume(mode, isResumeTemplate(requested) ? requested : "essential");
+        if (mode === "example") {
+          const exampleId = params.get("example");
+          if (exampleId) {
+            doc.cv = exampleResumeDataFor(exampleId);
+            doc.title = "Exemplo — " + doc.cv.role;
+          }
+        }
+        docs = [doc, ...docs];
+        localStorage.setItem(RESUME_LIBRARY_KEY, JSON.stringify(docs));
+        history.replaceState({}, "", "/editor");
+      } else {
+        const id = localStorage.getItem(ACTIVE_RESUME_KEY);
+        doc = docs.find((x) => x.id === id) || docs[0];
+      }
+      if (doc) {
+        activeId.current = doc.id;
+        try {
+          const g = JSON.parse(localStorage.getItem(guidanceKey(doc.id)) || "null") as GuidanceContext | null;
+          if (g)
+            setGuidance({
+              experience: g.experience || "pending",
+              education: g.education || "pending",
+              courses: g.courses || "pending",
+              languages: g.languages || "pending",
+            });
+        } catch {}
+        setDocumentTitle(doc.title);
+        localStorage.setItem(ACTIVE_RESUME_KEY, doc.id);
+        setCv({ ...initial, ...doc.cv });
+        setTemplate(doc.template);
+        setAccent(doc.accent);
+        setDensity(doc.density);
+        setSectionOrder(doc.sectionOrder || defaultOrder);
+        setHidden(doc.hidden || []);
+      } else {
+        const s = localStorage.getItem(LEGACY_RESUME_KEY);
+        if (s) {
+          doc = migrateLegacyResume(s);
+          docs = [doc];
+          localStorage.setItem(RESUME_LIBRARY_KEY, JSON.stringify(docs));
+          activeId.current = doc.id;
+          setDocumentTitle(doc.title);
+          localStorage.setItem(ACTIVE_RESUME_KEY, doc.id);
+          setCv({ ...initial, ...doc.cv });
+          setTemplate(doc.template);
+          setAccent(doc.accent);
+          setDensity(doc.density);
+          setSectionOrder(doc.sectionOrder);
+          setHidden(doc.hidden);
+        }
+      }
+    } catch {
+    } finally {
+      hydrated.current = true;
+      trackUsage("resume_started");
+    }
+  }, []);
+  useEffect(() => {
+    if (!hydrated.current) return;
+    try {
+      localStorage.setItem(
+        LEGACY_RESUME_KEY,
+        JSON.stringify({ cv, template, accent, density, sectionOrder, hidden }),
+      );
+      let docs: ResumeDocument[] = JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY) || "[]");
+      let id = activeId.current;
+      if (!id) {
+        const doc = createResume("blank", template);
+        id = doc.id;
+        activeId.current = id;
+        docs = [doc, ...docs];
+        localStorage.setItem(ACTIVE_RESUME_KEY, id);
+      }
+      const now = new Date().toISOString(),
+        found = docs.find((x) => x.id === id),
+        next: ResumeDocument = {
+          id,
+          title: documentTitle || found?.title || cv.name || "Meu currículo",
+          createdAt: found?.createdAt || now,
+          updatedAt: now,
+          cv,
+          template,
+          accent,
+          density,
+          sectionOrder,
+          hidden,
+        };
+      docs = found ? docs.map((x) => (x.id === id ? next : x)) : [next, ...docs];
+      localStorage.setItem(RESUME_LIBRARY_KEY, JSON.stringify(docs));
+      setLastSavedAt(now);
+      setSaveState("saved");
+    } catch {
+      setSaveState("error");
+    }
+  }, [cv, template, accent, density, sectionOrder, hidden, documentTitle]);
+  const goToStep = (id: string) => {
+    setTab("Conteúdo");
+    setMobilePreview(false);
+    requestAnimationFrame(() =>
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  };
+  useEffect(() => {
+    if (hydrated.current && activeId.current)
+      try {
+        localStorage.setItem(guidanceKey(activeId.current), JSON.stringify(guidance));
+      } catch {}
+  }, [guidance]);
+  const openProfilePicker = () => {
+    try {
+      const raw = localStorage.getItem(PROFESSIONAL_PROFILE_KEY);
+      if (!raw) {
+        alert("Crie seu Perfil Profissional primeiro.");
+        return;
+      }
+      const profile = JSON.parse(raw) as ProfessionalProfile;
+      if (!isProfessionalProfile(profile)) {
+        alert("O Perfil Profissional salvo não pôde ser lido.");
+        return;
+      }
+      setProfileSelection(new Set());
+      setProfilePicker(profile);
+    } catch {
+      alert("Não foi possível abrir o Perfil Profissional.");
+    }
+  };
+  const toggleProfileChoice = (key: string) =>
+    setProfileSelection((current) => {
+      const next = new Set(current);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  const applyProfileSelection = () => {
+    const profile = profilePicker;
+    if (!profile || !profileSelection.size) return;
+    const itemKey = (x: Item) => [x.title, x.subtitle, x.period].map((v) => v.trim().toLowerCase()).join("|"),
+      mergeItems = (current: Item[], incoming: Item[]) => {
+        const known = new Set(current.map(itemKey));
+        return [
+          ...current,
+          ...incoming
+            .filter((x) => {
+              const key = itemKey(x);
+              if (!key || known.has(key)) return false;
+              known.add(key);
+              return true;
+            })
+            .map((x) => ({ ...x, id: uid() })),
+        ];
+      },
+      mergeText = (current: string[], incoming: string[]) => {
+        const known = new Set(current.map((x) => x.trim().toLowerCase()).filter(Boolean));
+        return [
+          ...current,
+          ...incoming.filter((x) => {
+            const key = x.trim().toLowerCase();
+            if (!key || known.has(key)) return false;
+            known.add(key);
+            return true;
+          }),
+        ];
+      };
+    const chosen = (prefix: string) => profileSelection.has(prefix),
+      chosenItems = (prefix: string, items: Item[]) => items.filter((x) => chosen(prefix + x.id)),
+      chosenText = (prefix: string, items: string[]) => items.filter((_, i) => chosen(prefix + i));
+    setCv({
+      ...cv,
+      name: chosen("personal") ? cv.name || profile.name : cv.name,
+      email: chosen("personal") ? cv.email || profile.email : cv.email,
+      phone: chosen("personal") ? cv.phone || profile.phone : cv.phone,
+      city: chosen("personal") ? cv.city || profile.city : cv.city,
+      photo: chosen("personal") ? cv.photo || profile.photo : cv.photo,
+      experiences: mergeItems(cv.experiences, chosenItems("exp:", profile.experiences)),
+      education: mergeItems(cv.education, chosenItems("edu:", profile.education)),
+      courses: mergeText(cv.courses, chosenText("course:", profile.courses)),
+      skills: mergeText(cv.skills, chosenText("skill:", profile.skills)),
+      languages: mergeText(cv.languages, chosenText("lang:", profile.languages)),
+    });
+    setProfilePicker(null);
+    setProfileSelection(new Set());
+  };
+  const applyJobSelection = () => {
+    try {
+      const id = activeId.current,
+        raw = id ? localStorage.getItem(JOB_SELECTION_KEY + ":" + id) : null,
+        profileRaw = localStorage.getItem(PROFESSIONAL_PROFILE_KEY);
+      if (!raw || !profileRaw) {
+        alert("Salve uma seleção na área Adaptar para vaga primeiro.");
+        return;
+      }
+      const selection = JSON.parse(raw) as JobSelection,
+        profile = JSON.parse(profileRaw) as ProfessionalProfile;
+      if (selection.version !== 1 || selection.resumeId !== id || !isProfessionalProfile(profile)) {
+        alert("Não foi possível ler a seleção desta vaga.");
+        return;
+      }
+      if (!selection.profileUpdatedAt || selection.profileUpdatedAt !== profile.updatedAt) {
+        alert(
+          "Seu Perfil Profissional mudou depois desta seleção. Volte em Adaptar para vaga e salve a seleção novamente antes de aplicar.",
+        );
+        return;
+      }
+      const chosen = new Set(selection.selectedIds),
+        itemKey = (x: Item) => [x.title, x.subtitle, x.period].map((v) => v.trim().toLowerCase()).join("|"),
+        mergeItems = (current: Item[], incoming: Item[]) => {
+          const known = new Set(current.map(itemKey));
+          return [
+            ...current,
+            ...incoming
+              .filter((x) => {
+                const key = itemKey(x);
+                if (!key || known.has(key)) return false;
+                known.add(key);
+                return true;
+              })
+              .map((x) => ({ ...x, id: uid() })),
+          ];
+        },
+        mergeText = (current: string[], incoming: string[]) => {
+          const known = new Set(current.map((x) => x.trim().toLowerCase()).filter(Boolean));
+          return [
+            ...current,
+            ...incoming.filter((x) => {
+              const key = x.trim().toLowerCase();
+              if (!key || known.has(key)) return false;
+              known.add(key);
+              return true;
+            }),
+          ];
+        };
+      setCv({
+        ...cv,
+        experiences: mergeItems(
+          cv.experiences,
+          profile.experiences.filter((x) => chosen.has("exp:" + x.id)),
+        ),
+        education: mergeItems(
+          cv.education,
+          profile.education.filter((x) => chosen.has("edu:" + x.id)),
+        ),
+        skills: mergeText(
+          cv.skills,
+          profile.skills.filter((_, i) => chosen.has("skill:" + i)),
+        ),
+        courses: mergeText(
+          cv.courses,
+          profile.courses.filter((_, i) => chosen.has("course:" + i)),
+        ),
+        languages: mergeText(
+          cv.languages,
+          profile.languages.filter((_, i) => chosen.has("language:" + i)),
+        ),
+      });
+      alert("Seleção da vaga adicionada. Revise o currículo e mantenha apenas o que fizer sentido.");
+    } catch {
+      alert("Não foi possível aplicar a seleção desta vaga.");
+    }
+  };
+  const printResume = () => {
+    if (!access.active) {
+      setCheckoutOpen(true);
+      return;
+    }
+    trackUsage("pdf_print_requested");
+    setPdfHint(true);
+    const previous = document.title;
+    document.title = safeFilename(documentTitle || cv.name || "curriculo") + "-CurriculosPRO";
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        document.title = previous;
+      }, 500);
+    }, 80);
+  };
+  const assistant = useMemo(() => {
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email),
+      phoneOk = [10, 11].includes(cv.phone.replace(/\D/g, "").length);
+    const expHas = cv.experiences.some((x) => x.title.trim() && (x.subtitle.trim() || x.description.trim())),
+      eduHas = cv.education.some((x) => x.title.trim()),
+      skillsOk = cv.skills.filter((x) => x.trim()).length >= 3;
+    const resolved = [
+      {
+        ok: cv.name.trim().split(/\s+/).length >= 2,
+        label: "Identificação",
+        tip: "Informe nome e sobrenome.",
+      },
+      { ok: emailOk || phoneOk, label: "Contato", tip: "Informe pelo menos um contato válido." },
+      {
+        ok: cv.role.trim().length >= 3,
+        label: "Título profissional",
+        tip: "Informe sua profissão, área ou função de interesse.",
+      },
+      {
+        ok: cv.summary.trim().length >= 60,
+        label: "Objetivo profissional",
+        tip: "Explique a área em que deseja atuar e como pretende contribuir.",
+      },
+      {
+        ok:
+          guidance.experience === "first-job" ||
+          expHas ||
+          (["informal", "self-employed"].includes(guidance.experience) && expHas),
+        label: "Experiência",
+        tip:
+          guidance.experience === "pending"
+            ? "Diga qual é sua situação profissional."
+            : "Complete apenas as informações que realmente existirem.",
+      },
+      {
+        ok: guidance.education === "none" || eduHas,
+        label: "Formação",
+        tip:
+          guidance.education === "pending"
+            ? "Diga como está sua formação."
+            : "Informe o que souber com segurança.",
+      },
+      { ok: skillsOk, label: "Competências", tip: "Liste habilidades que você realmente possui." },
+    ];
+    // Cursos e idiomas são complementos opcionais: não reduzem o progresso principal.
+    const done = resolved.filter((x) => x.ok).length,
+      score = Math.round((done / resolved.length) * 100),
+      next = resolved.filter((x) => !x.ok).slice(0, 3);
+    const optional = {
+      courses: guidance.courses === "none" || cv.courses.some((x) => x.trim()),
+      languages: guidance.languages === "none" || cv.languages.some((x) => x.trim()),
+    };
+    return { checks: resolved, score, next, done, total: resolved.length, optional };
+  }, [cv, guidance]);
+  const completion = assistant.score;
+  const journey = useMemo(
+    () => [
+      {
+        id: "step-personal",
+        label: "Dados pessoais",
+        done:
+          !!cv.name.trim() &&
+          (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email) ||
+            [10, 11].includes(cv.phone.replace(/\D/g, "").length)),
+        optional: false,
+      },
+      {
+        id: "step-summary",
+        label: "Objetivo profissional",
+        done: cv.summary.trim().length >= 60,
+        optional: true,
+      },
+      {
+        id: "step-experience",
+        label: "Experiência",
+        done:
+          guidance.experience === "first-job" ||
+          cv.experiences.some((x) => x.title.trim() && (x.subtitle.trim() || x.description.trim())),
+        optional: true,
+      },
+      {
+        id: "step-education",
+        label: "Formação",
+        done: guidance.education === "none" || cv.education.some((x) => x.title.trim()),
+        optional: true,
+      },
+      {
+        id: "step-skills",
+        label: "Competências",
+        done: cv.skills.filter((x) => x.trim()).length >= 3,
+        optional: true,
+      },
+      {
+        id: "step-complements",
+        label: "Complementos",
+        done:
+          (guidance.courses === "none" ||
+            (guidance.courses !== "pending" && cv.courses.some((x) => x.trim()))) &&
+          (guidance.languages === "none" ||
+            (guidance.languages !== "pending" && cv.languages.some((x) => x.trim()))),
+        optional: true,
+      },
+      { id: "step-review", label: "Revisão", done: assistant.score === 100, optional: false },
+    ],
+    [cv, guidance, assistant.score],
+  );
+  const currentGuideStep = journey[Math.min(guideIndex, journey.length - 1)];
+  const advanceGuide = (direction: 1 | -1) => {
+    const next = Math.max(0, Math.min(journey.length - 1, guideIndex + direction));
+    setGuideIndex(next);
+    goToStep(journey[next].id);
+  };
+  const review = useMemo(() => {
+    const issues: { level: "required" | "recommended" | "optional"; title: string; text: string }[] = [];
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email),
+      phoneDigits = cv.phone.replace(/\D/g, "");
+    if (!cv.name.trim())
+      issues.push({
+        level: "required",
+        title: "Informe seu nome",
+        text: "O currículo precisa identificar você.",
+      });
+    if (cv.email && !emailOk)
+      issues.push({
+        level: "required",
+        title: "Revise o e-mail",
+        text: "O endereço informado não parece completo.",
+      });
+    if (cv.phone && ![10, 11].includes(phoneDigits.length))
+      issues.push({ level: "required", title: "Revise o telefone", text: "Inclua DDD e o número completo." });
+    if (!cv.email && !cv.phone)
+      issues.push({
+        level: "required",
+        title: "Adicione um contato",
+        text: "Informe pelo menos e-mail ou telefone para que possam falar com você.",
+      });
+    if (cv.summary.trim().length > 0 && cv.summary.trim().length < 60)
+      issues.push({
+        level: "recommended",
+        title: "Desenvolva seu objetivo profissional",
+        text: "Explique a área em que deseja atuar e como pretende contribuir.",
+      });
+    if (cv.summary.length > 650)
+      issues.push({
+        level: "recommended",
+        title: "Enxugue o objetivo profissional",
+        text: "Um texto direto facilita a leitura inicial.",
+      });
+    const incompleteExp =
+      guidance.experience === "first-job"
+        ? 0
+        : cv.experiences.filter(
+            (x) => x.title.trim() && (!x.subtitle.trim() || !x.period.trim() || !x.description.trim()),
+          ).length;
+    if (incompleteExp)
+      issues.push({
+        level: "recommended",
+        title: incompleteExp + " experiência(s) podem ser detalhadas",
+        text: "Confira empresa, período e atividades quando essas informações existirem.",
+      });
+    const reviewItems = [
+      ...(guidance.experience === "first-job" ? [] : cv.experiences),
+      ...(guidance.education === "none" ? [] : cv.education),
+    ];
+    const blankItems = reviewItems.filter(
+      (x) => !x.title.trim() && !x.subtitle.trim() && !x.period.trim() && !x.description.trim(),
+    ).length;
+    if (blankItems)
+      issues.push({
+        level: "optional",
+        title: "Há itens vazios",
+        text: "Remova itens que você adicionou mas decidiu não preencher.",
+      });
+    if (hasDuplicateSkills(cv.skills))
+      issues.push({
+        level: "recommended",
+        title: "Competências repetidas",
+        text: "Remova duplicatas para deixar a seção mais objetiva.",
+      });
+    const hiddenWithContent = hidden.filter((k) =>
+      k === "summary"
+        ? !!cv.summary.trim()
+        : k === "experiences"
+          ? guidance.experience !== "first-job" && cv.experiences.length > 0
+          : k === "education"
+            ? guidance.education !== "none" && cv.education.length > 0
+            : k === "skills"
+              ? cv.skills.some(Boolean)
+              : k === "languages"
+                ? guidance.languages !== "none" && cv.languages.some(Boolean)
+                : guidance.courses !== "none" && cv.courses.some(Boolean),
+    );
+    if (hiddenWithContent.length)
+      issues.push({
+        level: "optional",
+        title: "Há conteúdo oculto",
+        text: "Algumas informações preenchidas não aparecerão no PDF porque a seção está oculta.",
+      });
+    const qualityChecks = [
+      {
+        label: "Identificação",
+        ok: cv.name.trim().split(/\s+/).length >= 2,
+        tip: "Informe nome e sobrenome.",
+      },
+      {
+        label: "Contato",
+        ok: emailOk || [10, 11].includes(phoneDigits.length),
+        tip: "Adicione um e-mail válido ou telefone com DDD.",
+      },
+      {
+        label: "Título profissional",
+        ok: cv.role.trim().length >= 3,
+        tip: "Informe a função ou área desejada.",
+      },
+      {
+        label: "Objetivo profissional",
+        ok: cv.summary.trim().length >= 60 && cv.summary.trim().length <= 650,
+        tip: "Escreva um objetivo claro, direto e personalizado.",
+      },
+      {
+        label: "Experiência ou primeiro emprego",
+        ok:
+          guidance.experience === "first-job" ||
+          cv.experiences.some((x) => x.title.trim() && x.description.trim()),
+        tip: "Descreva atividades reais ou indique que busca o primeiro emprego.",
+      },
+      {
+        label: "Formação",
+        ok: guidance.education === "none" || cv.education.some((x) => x.title.trim()),
+        tip: "Informe sua formação ou indique que não há formação a incluir.",
+      },
+      {
+        label: "Competências",
+        ok: cv.skills.filter((x) => x.trim()).length >= 3 && !hasDuplicateSkills(cv.skills),
+        tip: "Inclua ao menos três competências reais e sem repetições.",
+      },
+    ];
+    const qualityScore = Math.round((qualityChecks.filter((x) => x.ok).length / qualityChecks.length) * 100);
+    return {
+      issues,
+      required: issues.filter((x) => x.level === "required").length,
+      recommended: issues.filter((x) => x.level === "recommended").length,
+      qualityChecks,
+      qualityScore,
+    };
+  }, [cv, hidden, guidance]);
+  const set = <K extends keyof CV>(k: K, v: CV[K]) => setCv({ ...cv, [k]: v });
+  const updateItem = (section: "experiences" | "education", id: string, key: keyof Item, value: string) =>
+    setCv({ ...cv, [section]: cv[section].map((x) => (x.id === id ? { ...x, [key]: value } : x)) });
+  const addItem = (section: "experiences" | "education") =>
+    setCv({
+      ...cv,
+      [section]: [...cv[section], { id: uid(), title: "", subtitle: "", period: "", description: "" }],
+    });
+  const removeItem = (section: "experiences" | "education", id: string) =>
+    setCv({ ...cv, [section]: cv[section].filter((x) => x.id !== id) });
+  const addList = (key: "courses" | "skills" | "languages") => set(key, [...cv[key], ""]);
+  const updateList = (key: "courses" | "skills" | "languages", index: number, value: string) =>
+    set(
+      key,
+      cv[key].map((x, i) => (i === index ? value : x)),
+    );
+  const removeList = (key: "courses" | "skills" | "languages", index: number) =>
+    set(
+      key,
+      cv[key].filter((_, i) => i !== index),
+    );
+  const move = (section: "experiences" | "education", index: number, dir: -1 | 1) => {
+    const next = [...cv[section]],
+      target = index + dir;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    setCv({ ...cv, [section]: next });
+  };
+  const onPhoto = (file?: File) => {
+    if (!file) return;
+    setPhotoError("");
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Escolha um arquivo de imagem válido.");
+      return;
+    }
+    if (file.size > 2_500_000) {
+      setPhotoError("A foto deve ter no máximo 2,5 MB. Tente uma imagem menor.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => setPhotoError("Não foi possível abrir a foto. Tente outra imagem.");
+    reader.onload = () => {
+      const img = new window.Image();
+      img.onerror = () => setPhotoError("Não foi possível processar a foto. Tente JPG ou PNG.");
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas"),
+            max = 480,
+            scale = Math.min(1, max / Math.max(img.width, img.height));
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d");
+          if (!ctx) throw Error("canvas");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          set("photo", canvas.toDataURL("image/jpeg", 0.82));
+        } catch {
+          setPhotoError("Não foi possível preparar a foto. Tente outra imagem.");
+        }
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
 
- const moveSection=(key:SectionKey,dir:-1|1)=>{const i=sectionOrder.indexOf(key),target=i+dir;if(target<0||target>=sectionOrder.length)return;const next=[...sectionOrder];[next[i],next[target]]=[next[target],next[i]];setSectionOrder(next)};
- const toggleSection=(key:SectionKey)=>setHidden(hidden.includes(key)?hidden.filter(x=>x!==key):[...hidden,key]);
- const visible=(key:SectionKey)=>!hidden.includes(key)&&!(key==="experiences"&&guidance.experience==="first-job")&&!(key==="courses"&&guidance.courses==="none")&&!(key==="languages"&&guidance.languages==="none")&&!(key==="education"&&guidance.education==="none");
- const formatPhone=(value:string)=>{let d=value.replace(/\D/g,"");if((d.length===12||d.length===13)&&d.startsWith("55"))d=d.slice(2);d=d.slice(0,11);if(!d)return"";if(d.length<3)return"("+d;if(d.length<=6)return"("+d.slice(0,2)+") "+d.slice(2);if(d.length<=10)return"("+d.slice(0,2)+") "+d.slice(2,6)+"-"+d.slice(6);return"("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7)};
- const formatCity=(value:string)=>value.replace(/\s*\/\s*/g," / ").replace(/\s{2,}/g," ");
- return <main className="editor"><WelcomeModal/>
-  <header className="editorHead"><a className="brand brandImage editorLogo" href="/"><Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={155} height={58} priority /></a><a className="backLibrary" href="/curriculos">← Meus currículos</a><input className="documentTitle" aria-label="Nome do currículo" value={documentTitle} onChange={e=>setDocumentTitle(e.target.value)}/><div className="progress" aria-label={completion+"% da trajetória organizada"}><i style={{width:completion+"%"}}/><span><b>{completion}%</b> da sua trajetória organizada <small>{assistant.done} de {assistant.total} áreas resolvidas</small></span></div><div className={"save "+(saveState==="error"?"saveError":"saveSuccess")} role="status" aria-live="polite" title={saveState==="error"?"O navegador não confirmou o salvamento. Libere espaço no dispositivo e tente novamente.":lastSavedAt?"Último salvamento: "+new Date(lastSavedAt).toLocaleTimeString("pt-BR"):"Salvamento local automático"}>{saveState==="error"?"! Não foi possível salvar":"● Salvo neste dispositivo"}{saveState==="saved"&&lastSavedAt&&<small> às {new Date(lastSavedAt).toLocaleTimeString("pt-BR")}</small>}</div><button className="mobileView" onClick={()=>setMobilePreview(!mobilePreview)}>{mobilePreview?"Editar":"Visualizar"}</button><button onClick={printResume} className="download">Preparar PDF ↓</button></header>{pdfHint&&<div className="pdfHint"><b>PDF pronto para salvar</b><span>Na janela que abrir, escolha <strong>Salvar como PDF</strong>. Para currículos longos, confira todas as páginas antes de salvar.</span><button type="button" onClick={()=>setPdfHint(false)}>Entendi</button></div>}
-  <div className={"workspace "+(mobilePreview?"showPreview":"")}>
-   <aside className="side">
-    <div className="editorTabs">{tabs.map(x=><button className={tab===x?"active":""} onClick={()=>setTab(x)} key={x}>{x}</button>)}</div>
-    {tab==="Conteúdo"?<div className="formBody">
-      <div className="profileImportBar"><div><b>Perfil Profissional</b><span>Reaproveite sua trajetória sem substituir o que já está neste currículo.</span></div><button type="button" onClick={openProfilePicker}>＋ Trazer do perfil</button><a href="/perfil-profissional">Editar perfil</a><a href="/adaptar-vaga">Adaptar para vaga</a><button type="button" onClick={applyJobSelection}>Aplicar seleção da vaga</button></div>{profilePicker&&<div className="profilePicker"><div className="profilePickerHead"><div><small>SELECIONAR DO PERFIL</small><b>O que você quer trazer para este currículo?</b><span>Nada é removido ou substituído. Dados pessoais só preenchem campos vazios.</span></div><button type="button" onClick={()=>setProfilePicker(null)}>Fechar</button></div><ProfilePick label="Dados pessoais" detail="Nome, contato, cidade e foto" checked={profileSelection.has("personal")} onChange={()=>toggleProfileChoice("personal")}/><ProfilePickGroup title="Experiências">{profilePicker.experiences.filter(x=>x.title.trim()||x.subtitle.trim()||x.period.trim()||x.description.trim()).map(x=><ProfilePick key={x.id} label={x.title||"Experiência sem título"} detail={[x.subtitle,x.period].filter(Boolean).join(" · ")} checked={profileSelection.has("exp:"+x.id)} onChange={()=>toggleProfileChoice("exp:"+x.id)}/>)}</ProfilePickGroup><ProfilePickGroup title="Formação">{profilePicker.education.filter(x=>x.title.trim()||x.subtitle.trim()||x.period.trim()||x.description.trim()).map(x=><ProfilePick key={x.id} label={x.title||"Formação sem título"} detail={[x.subtitle,x.period].filter(Boolean).join(" · ")} checked={profileSelection.has("edu:"+x.id)} onChange={()=>toggleProfileChoice("edu:"+x.id)}/>)}</ProfilePickGroup><ProfilePickGroup title="Competências">{profilePicker.skills.map((x,i)=>[x,i] as const).filter(([x])=>x.trim()).map(([x,i])=><ProfilePick key={i} label={x||"Competência sem nome"} checked={profileSelection.has("skill:"+i)} onChange={()=>toggleProfileChoice("skill:"+i)}/>)}</ProfilePickGroup><ProfilePickGroup title="Cursos">{profilePicker.courses.map((x,i)=>[x,i] as const).filter(([x])=>x.trim()).map(([x,i])=><ProfilePick key={i} label={x||"Curso sem nome"} checked={profileSelection.has("course:"+i)} onChange={()=>toggleProfileChoice("course:"+i)}/>)}</ProfilePickGroup><ProfilePickGroup title="Idiomas">{profilePicker.languages.map((x,i)=>[x,i] as const).filter(([x])=>x.trim()).map(([x,i])=><ProfilePick key={i} label={x||"Idioma sem nome"} checked={profileSelection.has("lang:"+i)} onChange={()=>toggleProfileChoice("lang:"+i)}/>)}</ProfilePickGroup><div className="profilePickerFoot"><span>{profileSelection.size} selecionado(s)</span><button type="button" disabled={!profileSelection.size} onClick={applyProfileSelection}>Adicionar ao currículo</button></div></div>}<section className="stepByStepGuide" aria-label="Assistente passo a passo">
-       <div className="stepGuideHeader"><div><small>ASSISTENTE PASSO A PASSO</small><b>Vamos montar seu currículo juntos</b><span>Uma etapa de cada vez. Você pode pular qualquer parte e voltar depois.</span></div><button type="button" onClick={()=>setStepGuideOpen(!stepGuideOpen)}>{stepGuideOpen?"Recolher":"Continuar"}</button></div>
-       {stepGuideOpen&&<><div className="stepGuideProgress"><i style={{width:((guideIndex+1)/journey.length*100)+"%"}}/></div><div className="stepGuideCurrent"><div className="stepGuideCount">ETAPA {guideIndex+1} DE {journey.length}</div><b>{currentGuideStep.label}</b><p>{currentGuideStep.id==="step-personal"?"Conte como as empresas podem identificar e entrar em contato com você.":currentGuideStep.id==="step-summary"?"Explique que tipo de oportunidade procura e como pode contribuir.":currentGuideStep.id==="step-experience"?"Conte sobre empregos, trabalhos informais, projetos ou indique que busca o primeiro emprego.":currentGuideStep.id==="step-education"?"Informe sua escolaridade ou formação, mesmo que esteja em andamento.":currentGuideStep.id==="step-skills"?"Escolha habilidades que você realmente possui.":currentGuideStep.id==="step-complements"?"Cursos e idiomas ajudam quando forem relevantes, mas você pode pular esta etapa.":"Confira os dados e a prévia antes de gerar o PDF."}</p><span className={currentGuideStep.done?"stepGuideStatus complete":currentGuideStep.optional?"stepGuideStatus optional":"stepGuideStatus"}>{currentGuideStep.done?"✓ Etapa concluída":currentGuideStep.optional?"Opcional — pode pular":"Etapa importante"}</span></div><div className="stepGuideActions"><button type="button" className="stepGuideBack" disabled={guideIndex===0} onClick={()=>advanceGuide(-1)}>← Voltar</button><button type="button" className="stepGuideNext" onClick={()=>advanceGuide(1)}>{guideIndex===journey.length-1?"Revisar novamente":"Próxima etapa →"}</button>{currentGuideStep.optional&&!currentGuideStep.done&&<button type="button" className="stepGuideSkip" onClick={()=>advanceGuide(1)}>Pular</button>}</div></>}
-      </section>
-      <div className="guidedJourney" aria-label="Jornada de construção do currículo"><div className="journeyIntro"><div><small>JORNADA GUIADA</small><b>Construa no seu ritmo</b></div><span>Você pode pular e voltar quando quiser.</span></div><div className="journeySteps">{journey.map((step,index)=><button type="button" key={step.id} className={step.done?"done":step.id==="step-review"?"review":""} onClick={()=>goToStep(step.id)}><i>{step.done?"✓":index+1}</i><span><b>{step.label}</b><small>{step.done?"Concluído":step.optional?"Opcional":"Essencial"}</small></span></button>)}</div></div>
-      <div id="step-personal" className="journeyAnchor sectionTitle"><span>01</span><div><h2>Informações pessoais</h2><p>Comece pelo essencial.</p></div></div>
-      <div className="resumeAssistant"><div className="assistantTop"><div><small>ASSISTENTE DE CURRÍCULO</small><b>{assistant.score===100?"Trajetória organizada para revisão":assistant.score>=70?"Poucas áreas faltam organizar":assistant.score>=40?"Sua trajetória está tomando forma":"Organize sua trajetória no seu ritmo"}</b></div><strong>{assistant.done} de {assistant.total}</strong></div><div className="assistantMeter"><i style={{width:assistant.score+"%"}}/></div>{assistant.next.length>0?<div className="assistantNext"><span>PRÓXIMAS ÁREAS PARA ORGANIZAR</span>{assistant.next.map(x=><div key={x.label}><i>○</i><p><b>{x.label}</b><small>{x.tip}</small></p></div>)}</div>:<div className="assistantReady">✓ As áreas principais estão organizadas. Cursos e idiomas são complementos opcionais; inclua-os somente se forem relevantes para você. Faça uma última revisão da prévia antes do PDF.</div>}<p className="assistantRule">Sugestões baseadas apenas no que você preencheu. O CurriculosPRO não inventa informações profissionais.</p></div>
-      <div className="formGuidance"><b>Preenchimento guiado</b><span>Os campos ajudam a manter telefone, contato e informações profissionais em um formato claro.</span></div><div className="photoControl"><div className="photoPreview">{cv.photo?<img src={cv.photo} alt="Foto do currículo"/>:<span>{cv.name.split(" ").slice(0,2).map(x=>x[0]).join("")||"CV"}</span>}</div><div><b>Foto no currículo <small>opcional</small></b><p>Não precisa adicionar foto. Se preferir incluir uma, escolha uma imagem profissional; você pode removê-la quando quiser.</p><label className="photoButton">Escolher foto<input type="file" accept="image/*" onChange={e=>onPhoto(e.target.files?.[0])}/></label>{cv.photo&&<button className="removePhoto" onClick={()=>set("photo","")}>Remover foto</button>}{photoError&&<p className="photoError" role="alert">{photoError}</p>}</div></div><div className="grid2"><Field label="Nome completo" placeholder="Ex.: Mariana Costa" autoComplete="name" value={cv.name} onChange={v=>set("name",v)}/><Field label="Título profissional" placeholder="Ex.: Analista Administrativo" value={cv.role} onChange={v=>set("role",v)}/><Field label="E-mail" type="email" inputMode="email" autoComplete="email" placeholder="nome@exemplo.com" hint="Use um e-mail profissional que você acessa." value={cv.email} onChange={v=>set("email",v.trim())}/><Field label="Telefone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(16) 99999-1234" maxLength={15} hint="DDD + número. A formatação é automática." value={cv.phone} onChange={v=>set("phone",formatPhone(v))}/></div><Field label="Cidade / Estado" autoComplete="address-level2" placeholder="Ex.: Matão / SP" hint="Cidade e UF onde você mora ou busca oportunidades." value={cv.city} onChange={v=>set("city",formatCity(v))}/><div id="step-summary" className="journeyAnchor"/><div className="objectiveBlock"><Field area label="Objetivo profissional" placeholder="Ex.: Busco uma oportunidade na área administrativa para aplicar minhas habilidades e contribuir com a equipe..." hint="Escolha uma sugestão como ponto de partida e personalize com seu objetivo real." value={cv.summary} onChange={v=>set("summary",v)}/><ObjectiveSuggestions onChoose={value=>set("summary",value)}/>{cv.summary.trim()&&cv.summary.trim().length<60&&<CoachTip title="Deixe seu objetivo mais claro" text="Diga a área ou função desejada, uma ou duas contribuições reais e o tipo de oportunidade que procura."/>}</div>
-      <div id="step-experience" className="journeyAnchor"><SectionHead n="02" title="Experiência" subtitle="Vale emprego formal, trabalho autônomo, estágio, projeto ou experiência informal relevante." action={guidance.experience==="first-job"?undefined:()=>addItem("experiences")}/><ContextChoice label="Qual situação combina mais com você?" value={guidance.experience} onChange={value=>setGuidance({...guidance,experience:value as ExperienceContext})} options={[["pending","Ainda vou preencher"],["standard","Tenho experiência"],["first-job","Busco primeiro emprego"],["informal","Experiência informal"],["self-employed","Trabalho por conta própria"],["partial","Tenho informação parcial"]]}/>{guidance.experience==="first-job"&&<CoachTip title="Primeiro emprego também tem conteúdo" text="Você pode destacar formação, cursos, projetos, atividades voluntárias e competências reais. Não é necessário inventar uma experiência profissional."/>}{guidance.experience==="informal"&&<CoachTip title="Experiência informal é experiência" text="Descreva o serviço que você realmente realizou, para quem ou em qual contexto e quais eram suas responsabilidades."/>}{guidance.experience==="self-employed"&&<CoachTip title="Trabalho autônomo pode entrar no currículo" text="Use um título que represente seu trabalho e descreva serviços, responsabilidades e resultados reais. Empresa formal não é obrigatória."/>}{guidance.experience==="partial"&&<CoachTip title="Use somente o que você sabe" text="Preencha cargo, contexto, período ou atividades apenas quando souber. Informação parcial verdadeira é melhor que completar no chute."/>}</div>{guidance.experience!=="first-job"&&cv.experiences.map((x,i)=><ItemEditor kind="experience" key={x.id} item={x} index={i} onChange={(k,v)=>updateItem("experiences",x.id,k,v)} onRemove={()=>removeItem("experiences",x.id)} onUp={()=>move("experiences",i,-1)} onDown={()=>move("experiences",i,1)}/>)}
-      <div id="step-education" className="journeyAnchor"><SectionHead n="03" title="Formação" subtitle="Inclua cursos concluídos ou em andamento. Não é obrigatório informar datas exatas se você não souber." action={guidance.education==="none"?undefined:()=>addItem("education")}/><ContextChoice label="Como está sua formação?" value={guidance.education} onChange={value=>setGuidance({...guidance,education:value as EducationContext})} options={[["pending","Ainda vou preencher"],["standard","Informar normalmente"],["in-progress","Em andamento"],["no-exact-date","Não sei a data exata"],["none","Não tenho formação para informar"],["partial","Tenho informação parcial"]]}/>{guidance.education==="in-progress"&&<CoachTip title="Formação em andamento é válida" text="No período, você pode escrever “Em andamento” ou informar a previsão de conclusão, se souber."/>}{guidance.education==="no-exact-date"&&<CoachTip title="A data não precisa ser inventada" text="Se você não souber o período exato, informe somente o ano quando souber ou deixe o período em branco."/>}{guidance.education==="none"&&<CoachTip title="A formação pode ficar fora deste currículo" text="Não invente escolaridade ou curso. Você pode fortalecer o currículo com experiência, projetos e competências reais."/>}{guidance.education==="partial"&&<CoachTip title="Informação parcial também pode ser usada" text="Informe curso ou instituição apenas quando souber. Período e outros detalhes podem ficar em branco."/>}</div>{guidance.education!=="none"&&cv.education.map((x,i)=><ItemEditor kind="education" key={x.id} item={x} index={i} onChange={(k,v)=>updateItem("education",x.id,k,v)} onRemove={()=>removeItem("education",x.id)} onUp={()=>move("education",i,-1)} onDown={()=>move("education",i,1)}/>)}
-      {hasDuplicateSkills(cv.skills)&&<CoachTip title="Há competências repetidas" text="Remova duplicatas para deixar a leitura mais objetiva. Mantenha apenas habilidades que você realmente possui."/>}<div id="step-skills" className="journeyAnchor sectionTitle compact"><span>04</span><div><h2>Competências</h2><p>Escolha sugestões relevantes ou adicione suas próprias habilidades.</p></div></div><SkillSuggestions selected={cv.skills} role={cv.role} onAdd={value=>{if(!cv.skills.some(x=>x.trim().toLocaleLowerCase("pt-BR")===value.toLocaleLowerCase("pt-BR")))set("skills",[...cv.skills,value])}}/><ListEditor title="Habilidades" items={cv.skills} onAdd={()=>addList("skills")} onChange={(i,v)=>updateList("skills",i,v)} onRemove={i=>removeList("skills",i)}/><div id="step-complements" className="journeyAnchor subGuidance"><ContextChoice label="Cursos e certificações" value={guidance.courses} onChange={value=>setGuidance({...guidance,courses:value as CoursesContext})} options={[["pending","Ainda vou preencher"],["standard","Tenho cursos para informar"],["none","Não tenho no momento"],["missing-details","Tenho, mas faltam detalhes"]]}/>{guidance.courses==="none"&&<CoachTip title="Tudo bem não ter cursos extras" text="Essa seção é opcional. O currículo pode ser forte com formação, experiências, projetos e competências reais."/>}{guidance.courses==="none"&&cv.courses.some(x=>x.trim())&&<CoachTip title="Seus cursos preenchidos foram preservados" text="Nada foi apagado. Se não quiser mostrá-los neste currículo, você pode ocultar a seção em Design."/>}{guidance.courses==="missing-details"&&<CoachTip title="Não invente datas ou instituições" text="Informe o nome do curso e apenas os detalhes que você souber com segurança. Uma data exata não é obrigatória."/>}</div>{guidance.courses!=="none"&&<ListEditor title="Cursos e certificações" items={cv.courses} onAdd={()=>addList("courses")} onChange={(i,v)=>updateList("courses",i,v)} onRemove={i=>removeList("courses",i)}/>} <div className="subGuidance"><ContextChoice label="Idiomas" value={guidance.languages} onChange={value=>setGuidance({...guidance,languages:value as LanguagesContext})} options={[["pending","Ainda vou preencher"],["standard","Tenho idioma(s) para informar"],["none","Não quero informar idiomas"],["partial","Não sei meu nível exato"]]}/>{guidance.languages==="none"&&<CoachTip title="Idiomas são opcionais" text="Se essa informação não for relevante para seu currículo agora, você pode deixar a seção de fora."/>}{guidance.languages==="partial"&&<CoachTip title="Não aumente seu nível no currículo" text="Se não souber classificar seu nível com precisão, descreva somente o que consegue afirmar com segurança."/>}</div>{guidance.languages!=="none"&&<ListEditor title="Idiomas" items={cv.languages} onAdd={()=>addList("languages")} onChange={(i,v)=>updateList("languages",i,v)} onRemove={i=>removeList("languages",i)}/>} 
-      <div id="step-review" className={"journeyAnchor finalReview "+(review.required?"hasRequired":"ready")}><div className="reviewHead"><div><small>REVISÃO ANTES DO PDF</small><b>{review.required?review.required+" ponto(s) importante(s) para revisar":review.issues.length?"Currículo pronto para uma última conferência":"Tudo certo para revisar a prévia"}</b></div><span>{review.required?"Revisar":"✓"}</span></div>{review.issues.length>0&&<div className="reviewIssues">{review.issues.slice(0,4).map((x,i)=><div className={"reviewIssue "+x.level} key={x.title+i}><i>{x.level==="required"?"!":x.level==="recommended"?"•":"i"}</i><p><b>{x.title}</b><small>{x.text}</small></p></div>)}</div>}<div className="qualityReview">
-       <div className="qualityReviewTop"><div><small>ÍNDICE DE QUALIDADE</small><b>{review.qualityScore}%</b><span>Baseado em 7 critérios de organização e preenchimento</span></div><div className="qualityReviewMeter"><i style={{width:review.qualityScore+"%"}}/></div></div>
-       <div className="qualityReviewChecks">{review.qualityChecks.map(check=><div className={check.ok?"passed":"pending"} key={check.label}><i>{check.ok?"✓":"○"}</i><span><b>{check.label}</b>{!check.ok&&<small>{check.tip}</small>}</span></div>)}</div>
-       <p className="qualityReviewNote">A pontuação é uma orientação de preenchimento, não uma avaliação da sua capacidade profissional. Não inclui cursos ou idiomas, que são opcionais.</p>
+  const moveSection = (key: SectionKey, dir: -1 | 1) => {
+    const i = sectionOrder.indexOf(key),
+      target = i + dir;
+    if (target < 0 || target >= sectionOrder.length) return;
+    const next = [...sectionOrder];
+    [next[i], next[target]] = [next[target], next[i]];
+    setSectionOrder(next);
+  };
+  const toggleSection = (key: SectionKey) =>
+    setHidden(hidden.includes(key) ? hidden.filter((x) => x !== key) : [...hidden, key]);
+  const visible = (key: SectionKey) =>
+    !hidden.includes(key) &&
+    !(key === "experiences" && guidance.experience === "first-job") &&
+    !(key === "courses" && guidance.courses === "none") &&
+    !(key === "languages" && guidance.languages === "none") &&
+    !(key === "education" && guidance.education === "none");
+  const formatPhone = (value: string) => {
+    let d = value.replace(/\D/g, "");
+    if ((d.length === 12 || d.length === 13) && d.startsWith("55")) d = d.slice(2);
+    d = d.slice(0, 11);
+    if (!d) return "";
+    if (d.length < 3) return "(" + d;
+    if (d.length <= 6) return "(" + d.slice(0, 2) + ") " + d.slice(2);
+    if (d.length <= 10) return "(" + d.slice(0, 2) + ") " + d.slice(2, 6) + "-" + d.slice(6);
+    return "(" + d.slice(0, 2) + ") " + d.slice(2, 7) + "-" + d.slice(7);
+  };
+  const formatCity = (value: string) => value.replace(/\s*\/\s*/g, " / ").replace(/\s{2,}/g, " ");
+  return (
+    <main className={"editor " + (access.active ? "unlocked" : "locked")}>
+      <CheckoutModal
+        open={checkoutOpen}
+        access={access}
+        returnTo="/editor?checkout=1"
+        onClose={() => setCheckoutOpen(false)}
+        onUnlocked={unlock}
+        onDownload={() => window.setTimeout(printResume, 120)}
+      />
+      <header className="editorHead">
+        <a className="brand brandImage editorLogo" href="/">
+          <Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={155} height={58} priority />
+        </a>
+        <a className="backLibrary" href="/curriculos">
+          ← Meus currículos
+        </a>
+        <input
+          className="documentTitle"
+          aria-label="Nome do currículo"
+          value={documentTitle}
+          onChange={(e) => setDocumentTitle(e.target.value)}
+        />
+        <div className="progress" aria-label={completion + "% da trajetória organizada"}>
+          <i style={{ width: completion + "%" }} />
+          <span>
+            <b>{completion}%</b> da sua trajetória organizada{" "}
+            <small>
+              {assistant.done} de {assistant.total} áreas resolvidas
+            </small>
+          </span>
+        </div>
+        <div
+          className={"save " + (saveState === "error" ? "saveError" : "saveSuccess")}
+          role="status"
+          aria-live="polite"
+          title={
+            saveState === "error"
+              ? "O navegador não confirmou o salvamento. Libere espaço no dispositivo e tente novamente."
+              : lastSavedAt
+                ? "Último salvamento: " + new Date(lastSavedAt).toLocaleTimeString("pt-BR")
+                : "Salvamento local automático"
+          }
+        >
+          {saveState === "error" ? "! Não foi possível salvar" : "● Salvo neste dispositivo"}
+          {saveState === "saved" && lastSavedAt && (
+            <small> às {new Date(lastSavedAt).toLocaleTimeString("pt-BR")}</small>
+          )}
+        </div>
+        <button className="mobileView" onClick={() => setMobilePreview(!mobilePreview)}>
+          {mobilePreview ? "Editar" : "Visualizar"}
+        </button>
+        <button onClick={printResume} className="download">
+          {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
+        </button>
+      </header>
+      {pdfHint && (
+        <div className="pdfHint">
+          <b>PDF pronto para salvar</b>
+          <span>
+            Na janela que abrir, escolha <strong>Salvar como PDF</strong>. Para currículos longos, confira
+            todas as páginas antes de salvar.
+          </span>
+          <button type="button" onClick={() => setPdfHint(false)}>
+            Entendi
+          </button>
+        </div>
+      )}
+      <div className={"workspace " + (mobilePreview ? "showPreview" : "")}>
+        <aside className="side">
+          <div className="editorTabs">
+            {tabs.map((x) => (
+              <button className={tab === x ? "active" : ""} onClick={() => setTab(x)} key={x}>
+                {x}
+              </button>
+            ))}
+          </div>
+          {tab === "Conteúdo" ? (
+            <div className="formBody">
+              <div className="profileImportBar">
+                <div>
+                  <b>Perfil Profissional</b>
+                  <span>Reaproveite sua trajetória sem substituir o que já está neste currículo.</span>
+                </div>
+                <button type="button" onClick={openProfilePicker}>
+                  ＋ Trazer do perfil
+                </button>
+                <a href="/perfil-profissional">Editar perfil</a>
+                <a href="/adaptar-vaga">Adaptar para vaga</a>
+                <button type="button" onClick={applyJobSelection}>
+                  Aplicar seleção da vaga
+                </button>
+              </div>
+              {profilePicker && (
+                <div className="profilePicker">
+                  <div className="profilePickerHead">
+                    <div>
+                      <small>SELECIONAR DO PERFIL</small>
+                      <b>O que você quer trazer para este currículo?</b>
+                      <span>Nada é removido ou substituído. Dados pessoais só preenchem campos vazios.</span>
+                    </div>
+                    <button type="button" onClick={() => setProfilePicker(null)}>
+                      Fechar
+                    </button>
+                  </div>
+                  <ProfilePick
+                    label="Dados pessoais"
+                    detail="Nome, contato, cidade e foto"
+                    checked={profileSelection.has("personal")}
+                    onChange={() => toggleProfileChoice("personal")}
+                  />
+                  <ProfilePickGroup title="Experiências">
+                    {profilePicker.experiences
+                      .filter(
+                        (x) => x.title.trim() || x.subtitle.trim() || x.period.trim() || x.description.trim(),
+                      )
+                      .map((x) => (
+                        <ProfilePick
+                          key={x.id}
+                          label={x.title || "Experiência sem título"}
+                          detail={[x.subtitle, x.period].filter(Boolean).join(" · ")}
+                          checked={profileSelection.has("exp:" + x.id)}
+                          onChange={() => toggleProfileChoice("exp:" + x.id)}
+                        />
+                      ))}
+                  </ProfilePickGroup>
+                  <ProfilePickGroup title="Formação">
+                    {profilePicker.education
+                      .filter(
+                        (x) => x.title.trim() || x.subtitle.trim() || x.period.trim() || x.description.trim(),
+                      )
+                      .map((x) => (
+                        <ProfilePick
+                          key={x.id}
+                          label={x.title || "Formação sem título"}
+                          detail={[x.subtitle, x.period].filter(Boolean).join(" · ")}
+                          checked={profileSelection.has("edu:" + x.id)}
+                          onChange={() => toggleProfileChoice("edu:" + x.id)}
+                        />
+                      ))}
+                  </ProfilePickGroup>
+                  <ProfilePickGroup title="Competências">
+                    {profilePicker.skills
+                      .map((x, i) => [x, i] as const)
+                      .filter(([x]) => x.trim())
+                      .map(([x, i]) => (
+                        <ProfilePick
+                          key={i}
+                          label={x || "Competência sem nome"}
+                          checked={profileSelection.has("skill:" + i)}
+                          onChange={() => toggleProfileChoice("skill:" + i)}
+                        />
+                      ))}
+                  </ProfilePickGroup>
+                  <ProfilePickGroup title="Cursos">
+                    {profilePicker.courses
+                      .map((x, i) => [x, i] as const)
+                      .filter(([x]) => x.trim())
+                      .map(([x, i]) => (
+                        <ProfilePick
+                          key={i}
+                          label={x || "Curso sem nome"}
+                          checked={profileSelection.has("course:" + i)}
+                          onChange={() => toggleProfileChoice("course:" + i)}
+                        />
+                      ))}
+                  </ProfilePickGroup>
+                  <ProfilePickGroup title="Idiomas">
+                    {profilePicker.languages
+                      .map((x, i) => [x, i] as const)
+                      .filter(([x]) => x.trim())
+                      .map(([x, i]) => (
+                        <ProfilePick
+                          key={i}
+                          label={x || "Idioma sem nome"}
+                          checked={profileSelection.has("lang:" + i)}
+                          onChange={() => toggleProfileChoice("lang:" + i)}
+                        />
+                      ))}
+                  </ProfilePickGroup>
+                  <div className="profilePickerFoot">
+                    <span>{profileSelection.size} selecionado(s)</span>
+                    <button type="button" disabled={!profileSelection.size} onClick={applyProfileSelection}>
+                      Adicionar ao currículo
+                    </button>
+                  </div>
+                </div>
+              )}
+              <section className="stepByStepGuide" aria-label="Assistente passo a passo">
+                <div className="stepGuideHeader">
+                  <div>
+                    <small>ASSISTENTE PASSO A PASSO</small>
+                    <b>Vamos montar seu currículo juntos</b>
+                    <span>Uma etapa de cada vez. Você pode pular qualquer parte e voltar depois.</span>
+                  </div>
+                  <button type="button" onClick={() => setStepGuideOpen(!stepGuideOpen)}>
+                    {stepGuideOpen ? "Recolher" : "Continuar"}
+                  </button>
+                </div>
+                <nav className="stepGuideDots" aria-label="Etapas do currículo">
+                  {journey.map((step, index) => (
+                    <button
+                      type="button"
+                      key={step.id}
+                      title={step.label + (step.done ? " — concluído" : step.optional ? " — opcional" : "")}
+                      aria-label={
+                        "Etapa " + (index + 1) + ": " + step.label + (step.done ? ", concluída" : "")
+                      }
+                      aria-current={index === guideIndex ? "step" : undefined}
+                      className={(step.done ? "done " : "") + (index === guideIndex ? "current" : "")}
+                      onClick={() => {
+                        setGuideIndex(index);
+                        setStepGuideOpen(true);
+                        goToStep(step.id);
+                      }}
+                    >
+                      {step.done ? "✓" : index + 1}
+                    </button>
+                  ))}
+                </nav>
+                {stepGuideOpen && (
+                  <>
+                    <div className="stepGuideCurrent">
+                      <div className="stepGuideCount">
+                        ETAPA {guideIndex + 1} DE {journey.length}
+                      </div>
+                      <b>{currentGuideStep.label}</b>
+                      <p>
+                        {currentGuideStep.id === "step-personal"
+                          ? "Conte como as empresas podem identificar e entrar em contato com você."
+                          : currentGuideStep.id === "step-summary"
+                            ? "Explique que tipo de oportunidade procura e como pode contribuir."
+                            : currentGuideStep.id === "step-experience"
+                              ? "Conte sobre empregos, trabalhos informais, projetos ou indique que busca o primeiro emprego."
+                              : currentGuideStep.id === "step-education"
+                                ? "Informe sua escolaridade ou formação, mesmo que esteja em andamento."
+                                : currentGuideStep.id === "step-skills"
+                                  ? "Escolha habilidades que você realmente possui."
+                                  : currentGuideStep.id === "step-complements"
+                                    ? "Cursos e idiomas ajudam quando forem relevantes, mas você pode pular esta etapa."
+                                    : "Confira os dados e a prévia antes de gerar o PDF."}
+                      </p>
+                      <span
+                        className={
+                          currentGuideStep.done
+                            ? "stepGuideStatus complete"
+                            : currentGuideStep.optional
+                              ? "stepGuideStatus optional"
+                              : "stepGuideStatus"
+                        }
+                      >
+                        {currentGuideStep.done
+                          ? "✓ Etapa concluída"
+                          : currentGuideStep.optional
+                            ? "Opcional — pode pular"
+                            : "Etapa importante"}
+                      </span>
+                    </div>
+                    <div className="stepGuideActions">
+                      <button
+                        type="button"
+                        className="stepGuideBack"
+                        disabled={guideIndex === 0}
+                        onClick={() => advanceGuide(-1)}
+                      >
+                        ← Voltar
+                      </button>
+                      <button type="button" className="stepGuideNext" onClick={() => advanceGuide(1)}>
+                        {guideIndex === journey.length - 1 ? "Revisar novamente" : "Próxima etapa →"}
+                      </button>
+                      {currentGuideStep.optional && !currentGuideStep.done && (
+                        <button type="button" className="stepGuideSkip" onClick={() => advanceGuide(1)}>
+                          Pular
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </section>
+              <div id="step-personal" className="journeyAnchor sectionTitle">
+                <span>01</span>
+                <div>
+                  <h2>Informações pessoais</h2>
+                  <p>Comece pelo essencial.</p>
+                </div>
+              </div>
+              <div className="resumeAssistant">
+                <div className="assistantTop">
+                  <div>
+                    <small>ASSISTENTE DE CURRÍCULO</small>
+                    <b>
+                      {assistant.score === 100
+                        ? "Trajetória organizada para revisão"
+                        : assistant.score >= 70
+                          ? "Poucas áreas faltam organizar"
+                          : assistant.score >= 40
+                            ? "Sua trajetória está tomando forma"
+                            : "Organize sua trajetória no seu ritmo"}
+                    </b>
+                  </div>
+                  <strong>
+                    {assistant.done} de {assistant.total}
+                  </strong>
+                </div>
+                <div className="assistantMeter">
+                  <i style={{ width: assistant.score + "%" }} />
+                </div>
+                {assistant.next.length > 0 ? (
+                  <div className="assistantNext">
+                    <span>PRÓXIMAS ÁREAS PARA ORGANIZAR</span>
+                    {assistant.next.map((x) => (
+                      <div key={x.label}>
+                        <i>○</i>
+                        <p>
+                          <b>{x.label}</b>
+                          <small>{x.tip}</small>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="assistantReady">
+                    ✓ As áreas principais estão organizadas. Cursos e idiomas são complementos opcionais;
+                    inclua-os somente se forem relevantes para você. Faça uma última revisão da prévia antes
+                    do PDF.
+                  </div>
+                )}
+                <p className="assistantRule">
+                  Sugestões baseadas apenas no que você preencheu. O CurriculosPRO não inventa informações
+                  profissionais.
+                </p>
+              </div>
+              <div className="formGuidance">
+                <b>Preenchimento guiado</b>
+                <span>
+                  Os campos ajudam a manter telefone, contato e informações profissionais em um formato claro.
+                </span>
+              </div>
+              <div className="photoControl">
+                <div className="photoPreview">
+                  {cv.photo ? (
+                    <img src={cv.photo} alt="Foto do currículo" />
+                  ) : (
+                    <span>
+                      {cv.name
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((x) => x[0])
+                        .join("") || "CV"}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <b>
+                    Foto no currículo <small>opcional</small>
+                  </b>
+                  <p>
+                    Não precisa adicionar foto. Se preferir incluir uma, escolha uma imagem profissional; você
+                    pode removê-la quando quiser.
+                  </p>
+                  <label className="photoButton">
+                    Escolher foto
+                    <input type="file" accept="image/*" onChange={(e) => onPhoto(e.target.files?.[0])} />
+                  </label>
+                  {cv.photo && (
+                    <button className="removePhoto" onClick={() => set("photo", "")}>
+                      Remover foto
+                    </button>
+                  )}
+                  {photoError && (
+                    <p className="photoError" role="alert">
+                      {photoError}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid2">
+                <Field
+                  label="Nome completo"
+                  placeholder="Ex.: Mariana Costa"
+                  autoComplete="name"
+                  value={cv.name}
+                  onChange={(v) => set("name", v)}
+                />
+                <Field
+                  label="Título profissional"
+                  placeholder="Ex.: Analista Administrativo"
+                  value={cv.role}
+                  onChange={(v) => set("role", v)}
+                />
+                <Field
+                  label="E-mail"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="nome@exemplo.com"
+                  hint="Use um e-mail profissional que você acessa."
+                  value={cv.email}
+                  onChange={(v) => set("email", v.trim())}
+                />
+                <Field
+                  label="Telefone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="(16) 99999-1234"
+                  maxLength={15}
+                  hint="DDD + número. A formatação é automática."
+                  value={cv.phone}
+                  onChange={(v) => set("phone", formatPhone(v))}
+                />
+              </div>
+              <Field
+                label="Cidade / Estado"
+                autoComplete="address-level2"
+                placeholder="Ex.: Matão / SP"
+                hint="Cidade e UF onde você mora ou busca oportunidades."
+                value={cv.city}
+                onChange={(v) => set("city", formatCity(v))}
+              />
+              <div id="step-summary" className="journeyAnchor" />
+              <div className="objectiveBlock">
+                <Field
+                  area
+                  label="Objetivo profissional"
+                  placeholder="Ex.: Busco uma oportunidade na área administrativa para aplicar minhas habilidades e contribuir com a equipe..."
+                  hint="Escolha uma sugestão como ponto de partida e personalize com seu objetivo real."
+                  value={cv.summary}
+                  onChange={(v) => set("summary", v)}
+                />
+                <ObjectiveSuggestions onChoose={(value) => set("summary", value)} />
+                {cv.summary.trim() && cv.summary.trim().length < 60 && (
+                  <CoachTip
+                    title="Deixe seu objetivo mais claro"
+                    text="Diga a área ou função desejada, uma ou duas contribuições reais e o tipo de oportunidade que procura."
+                  />
+                )}
+              </div>
+              <div id="step-experience" className="journeyAnchor">
+                <SectionHead
+                  n="02"
+                  title="Experiência"
+                  subtitle="Vale emprego formal, trabalho autônomo, estágio, projeto ou experiência informal relevante."
+                  action={guidance.experience === "first-job" ? undefined : () => addItem("experiences")}
+                />
+                <ContextChoice
+                  label="Qual situação combina mais com você?"
+                  value={guidance.experience}
+                  onChange={(value) => setGuidance({ ...guidance, experience: value as ExperienceContext })}
+                  options={[
+                    ["pending", "Ainda vou preencher"],
+                    ["standard", "Tenho experiência"],
+                    ["first-job", "Busco primeiro emprego"],
+                    ["informal", "Experiência informal"],
+                    ["self-employed", "Trabalho por conta própria"],
+                    ["partial", "Tenho informação parcial"],
+                  ]}
+                />
+                {guidance.experience === "first-job" && (
+                  <CoachTip
+                    title="Primeiro emprego também tem conteúdo"
+                    text="Você pode destacar formação, cursos, projetos, atividades voluntárias e competências reais. Não é necessário inventar uma experiência profissional."
+                  />
+                )}
+                {guidance.experience === "informal" && (
+                  <CoachTip
+                    title="Experiência informal é experiência"
+                    text="Descreva o serviço que você realmente realizou, para quem ou em qual contexto e quais eram suas responsabilidades."
+                  />
+                )}
+                {guidance.experience === "self-employed" && (
+                  <CoachTip
+                    title="Trabalho autônomo pode entrar no currículo"
+                    text="Use um título que represente seu trabalho e descreva serviços, responsabilidades e resultados reais. Empresa formal não é obrigatória."
+                  />
+                )}
+                {guidance.experience === "partial" && (
+                  <CoachTip
+                    title="Use somente o que você sabe"
+                    text="Preencha cargo, contexto, período ou atividades apenas quando souber. Informação parcial verdadeira é melhor que completar no chute."
+                  />
+                )}
+              </div>
+              {guidance.experience !== "first-job" &&
+                cv.experiences.map((x, i) => (
+                  <ItemEditor
+                    kind="experience"
+                    key={x.id}
+                    item={x}
+                    index={i}
+                    onChange={(k, v) => updateItem("experiences", x.id, k, v)}
+                    onRemove={() => removeItem("experiences", x.id)}
+                    onUp={() => move("experiences", i, -1)}
+                    onDown={() => move("experiences", i, 1)}
+                  />
+                ))}
+              <div id="step-education" className="journeyAnchor">
+                <SectionHead
+                  n="03"
+                  title="Formação"
+                  subtitle="Inclua cursos concluídos ou em andamento. Não é obrigatório informar datas exatas se você não souber."
+                  action={guidance.education === "none" ? undefined : () => addItem("education")}
+                />
+                <ContextChoice
+                  label="Como está sua formação?"
+                  value={guidance.education}
+                  onChange={(value) => setGuidance({ ...guidance, education: value as EducationContext })}
+                  options={[
+                    ["pending", "Ainda vou preencher"],
+                    ["standard", "Informar normalmente"],
+                    ["in-progress", "Em andamento"],
+                    ["no-exact-date", "Não sei a data exata"],
+                    ["none", "Não tenho formação para informar"],
+                    ["partial", "Tenho informação parcial"],
+                  ]}
+                />
+                {guidance.education === "in-progress" && (
+                  <CoachTip
+                    title="Formação em andamento é válida"
+                    text="No período, você pode escrever “Em andamento” ou informar a previsão de conclusão, se souber."
+                  />
+                )}
+                {guidance.education === "no-exact-date" && (
+                  <CoachTip
+                    title="A data não precisa ser inventada"
+                    text="Se você não souber o período exato, informe somente o ano quando souber ou deixe o período em branco."
+                  />
+                )}
+                {guidance.education === "none" && (
+                  <CoachTip
+                    title="A formação pode ficar fora deste currículo"
+                    text="Não invente escolaridade ou curso. Você pode fortalecer o currículo com experiência, projetos e competências reais."
+                  />
+                )}
+                {guidance.education === "partial" && (
+                  <CoachTip
+                    title="Informação parcial também pode ser usada"
+                    text="Informe curso ou instituição apenas quando souber. Período e outros detalhes podem ficar em branco."
+                  />
+                )}
+              </div>
+              {guidance.education !== "none" &&
+                cv.education.map((x, i) => (
+                  <ItemEditor
+                    kind="education"
+                    key={x.id}
+                    item={x}
+                    index={i}
+                    onChange={(k, v) => updateItem("education", x.id, k, v)}
+                    onRemove={() => removeItem("education", x.id)}
+                    onUp={() => move("education", i, -1)}
+                    onDown={() => move("education", i, 1)}
+                  />
+                ))}
+              {hasDuplicateSkills(cv.skills) && (
+                <CoachTip
+                  title="Há competências repetidas"
+                  text="Remova duplicatas para deixar a leitura mais objetiva. Mantenha apenas habilidades que você realmente possui."
+                />
+              )}
+              <div id="step-skills" className="journeyAnchor sectionTitle compact">
+                <span>04</span>
+                <div>
+                  <h2>Competências</h2>
+                  <p>Escolha sugestões relevantes ou adicione suas próprias habilidades.</p>
+                </div>
+              </div>
+              <SkillSuggestions
+                selected={cv.skills}
+                role={cv.role}
+                onAdd={(value) => {
+                  if (
+                    !cv.skills.some(
+                      (x) => x.trim().toLocaleLowerCase("pt-BR") === value.toLocaleLowerCase("pt-BR"),
+                    )
+                  )
+                    set("skills", [...cv.skills, value]);
+                }}
+              />
+              <ListEditor
+                title="Habilidades"
+                items={cv.skills}
+                onAdd={() => addList("skills")}
+                onChange={(i, v) => updateList("skills", i, v)}
+                onRemove={(i) => removeList("skills", i)}
+              />
+              <div id="step-complements" className="journeyAnchor subGuidance">
+                <ContextChoice
+                  label="Cursos e certificações"
+                  value={guidance.courses}
+                  onChange={(value) => setGuidance({ ...guidance, courses: value as CoursesContext })}
+                  options={[
+                    ["pending", "Ainda vou preencher"],
+                    ["standard", "Tenho cursos para informar"],
+                    ["none", "Não tenho no momento"],
+                    ["missing-details", "Tenho, mas faltam detalhes"],
+                  ]}
+                />
+                {guidance.courses === "none" && (
+                  <CoachTip
+                    title="Tudo bem não ter cursos extras"
+                    text="Essa seção é opcional. O currículo pode ser forte com formação, experiências, projetos e competências reais."
+                  />
+                )}
+                {guidance.courses === "none" && cv.courses.some((x) => x.trim()) && (
+                  <CoachTip
+                    title="Seus cursos preenchidos foram preservados"
+                    text="Nada foi apagado. Se não quiser mostrá-los neste currículo, você pode ocultar a seção em Design."
+                  />
+                )}
+                {guidance.courses === "missing-details" && (
+                  <CoachTip
+                    title="Não invente datas ou instituições"
+                    text="Informe o nome do curso e apenas os detalhes que você souber com segurança. Uma data exata não é obrigatória."
+                  />
+                )}
+              </div>
+              {guidance.courses !== "none" && (
+                <ListEditor
+                  title="Cursos e certificações"
+                  items={cv.courses}
+                  onAdd={() => addList("courses")}
+                  onChange={(i, v) => updateList("courses", i, v)}
+                  onRemove={(i) => removeList("courses", i)}
+                />
+              )}{" "}
+              <div className="subGuidance">
+                <ContextChoice
+                  label="Idiomas"
+                  value={guidance.languages}
+                  onChange={(value) => setGuidance({ ...guidance, languages: value as LanguagesContext })}
+                  options={[
+                    ["pending", "Ainda vou preencher"],
+                    ["standard", "Tenho idioma(s) para informar"],
+                    ["none", "Não quero informar idiomas"],
+                    ["partial", "Não sei meu nível exato"],
+                  ]}
+                />
+                {guidance.languages === "none" && (
+                  <CoachTip
+                    title="Idiomas são opcionais"
+                    text="Se essa informação não for relevante para seu currículo agora, você pode deixar a seção de fora."
+                  />
+                )}
+                {guidance.languages === "partial" && (
+                  <CoachTip
+                    title="Não aumente seu nível no currículo"
+                    text="Se não souber classificar seu nível com precisão, descreva somente o que consegue afirmar com segurança."
+                  />
+                )}
+              </div>
+              {guidance.languages !== "none" && (
+                <ListEditor
+                  title="Idiomas"
+                  items={cv.languages}
+                  onAdd={() => addList("languages")}
+                  onChange={(i, v) => updateList("languages", i, v)}
+                  onRemove={(i) => removeList("languages", i)}
+                />
+              )}
+              <div
+                id="step-review"
+                className={"journeyAnchor finalReview " + (review.required ? "hasRequired" : "ready")}
+              >
+                <div className="reviewHead">
+                  <div>
+                    <small>REVISÃO ANTES DO PDF</small>
+                    <b>
+                      {review.required
+                        ? review.required + " ponto(s) importante(s) para revisar"
+                        : review.issues.length
+                          ? "Currículo pronto para uma última conferência"
+                          : "Tudo certo para revisar a prévia"}
+                    </b>
+                  </div>
+                  <span>{review.required ? "Revisar" : "✓"}</span>
+                </div>
+                {review.issues.length > 0 && (
+                  <div className="reviewIssues">
+                    {review.issues.slice(0, 4).map((x, i) => (
+                      <div className={"reviewIssue " + x.level} key={x.title + i}>
+                        <i>{x.level === "required" ? "!" : x.level === "recommended" ? "•" : "i"}</i>
+                        <p>
+                          <b>{x.title}</b>
+                          <small>{x.text}</small>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="qualityReview">
+                  <div className="qualityReviewTop">
+                    <div>
+                      <small>ÍNDICE DE QUALIDADE</small>
+                      <b>{review.qualityScore}%</b>
+                      <span>Baseado em 7 critérios de organização e preenchimento</span>
+                    </div>
+                    <div className="qualityReviewMeter">
+                      <i style={{ width: review.qualityScore + "%" }} />
+                    </div>
+                  </div>
+                  <div className="qualityReviewChecks">
+                    {review.qualityChecks.map((check) => (
+                      <div className={check.ok ? "passed" : "pending"} key={check.label}>
+                        <i>{check.ok ? "✓" : "○"}</i>
+                        <span>
+                          <b>{check.label}</b>
+                          {!check.ok && <small>{check.tip}</small>}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="qualityReviewNote">
+                    A pontuação é uma orientação de preenchimento, não uma avaliação da sua capacidade
+                    profissional. Não inclui cursos ou idiomas, que são opcionais.
+                  </p>
+                </div>
+                <p className="reviewFoot">
+                  Esta revisão verifica estrutura e preenchimento. Ela não decide se sua experiência é “boa”
+                  ou “ruim”.
+                </p>
+                <div className="reviewPdfActions">
+                  <button type="button" className="download" onClick={printResume}>
+                    {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
+                  </button>
+                  <span>
+                    {access.active
+                      ? "Na janela de impressão, escolha “Salvar como PDF”. Confira o documento antes de enviar."
+                      : "Edite e visualize grátis. Ao liberar o download, você baixa por " +
+                        ACCESS_DAYS +
+                        " dias quantas vezes quiser."}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="designPanel">
+              <div className="sectionTitle">
+                <span>✦</span>
+                <div>
+                  <h2>Personalize seu currículo</h2>
+                  <p>O conteúdo permanece igual ao trocar o visual.</p>
+                </div>
+              </div>
+              <h4>MODELO</h4>
+              <div className="templateGrid">
+                {(["essential", "modern", "executive", "minimal", "creative"] as Template[]).map((t) => (
+                  <button onClick={() => setTemplate(t)} className={template === t ? "selected" : ""} key={t}>
+                    <i className={"templateThumb " + t} />
+                    <b>
+                      {
+                        {
+                          essential: "Essencial",
+                          modern: "Moderno",
+                          executive: "Executivo",
+                          minimal: "Minimalista",
+                          creative: "Criativo",
+                        }[t]
+                      }
+                    </b>
+                  </button>
+                ))}
+              </div>
+              <h4>COR DE DESTAQUE</h4>
+              <div className="swatches">
+                {["#087cf0", "#2563eb", "#0f766e", "#b45309", "#be123c", "#202938"].map((c) => (
+                  <button
+                    aria-label={"Cor " + c}
+                    className={accent === c ? "selected" : ""}
+                    style={{ background: c }}
+                    onClick={() => setAccent(c)}
+                    key={c}
+                  />
+                ))}
+              </div>
+              <h4>ESPAÇAMENTO</h4>
+              <div className="densityToggle">
+                <button
+                  className={density === "comfortable" ? "selected" : ""}
+                  onClick={() => setDensity("comfortable")}
+                >
+                  Confortável
+                </button>
+                <button
+                  className={density === "compact" ? "selected" : ""}
+                  onClick={() => setDensity("compact")}
+                >
+                  Compacto
+                </button>
+              </div>
+              <h4>SEÇÕES DO CURRÍCULO</h4>
+              <div className="sectionManager">
+                {sectionOrder.map((key, i) => (
+                  <div className="sectionManageRow" key={key}>
+                    <span>{sectionLabel(key)}</span>
+                    <div>
+                      <button onClick={() => moveSection(key, -1)} disabled={i === 0}>
+                        ↑
+                      </button>
+                      <button onClick={() => moveSection(key, 1)} disabled={i === sectionOrder.length - 1}>
+                        ↓
+                      </button>
+                      <button
+                        className={visible(key) ? "visible" : "hidden"}
+                        onClick={() => toggleSection(key)}
+                      >
+                        {visible(key) ? "Visível" : "Oculta"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="designNote">
+                <b>Design independente do conteúdo</b>
+                <p>Troque modelo e cor quando quiser. Suas informações continuam intactas.</p>
+              </div>
+            </div>
+          )}
+        </aside>
+        <section className="preview">
+          <div className="mobilePdfAction">
+            <button type="button" className="download" onClick={printResume}>
+              {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
+            </button>
+          </div>
+          <div className="previewBar">
+            {access.active && access.accessUntil ? (
+              <span className="accessBadge active">
+                ✓ Download liberado até {formatAccessUntil(access.accessUntil)}
+              </span>
+            ) : access.loading ? (
+              <span>● Prévia em tempo real</span>
+            ) : (
+              <button type="button" className="accessBadge locked" onClick={() => setCheckoutOpen(true)}>
+                Prévia com marca d&apos;água · liberar download por {ACCESS_PRICE_LABEL} ({ACCESS_DAYS} dias)
+              </button>
+            )}
+            <span>
+              A4 ·{" "}
+              {
+                {
+                  essential: "Essencial",
+                  modern: "Moderno",
+                  executive: "Executivo",
+                  minimal: "Minimalista",
+                  creative: "Criativo",
+                }[template]
+              }
+            </span>
+          </div>
+          <article
+            className={"paper " + template + " " + density}
+            style={{ "--accent": accent } as React.CSSProperties}
+          >
+            <header>
+              {cv.photo ? <img className="resumePhoto" src={cv.photo} alt="" /> : <></>}
+              <div>
+                <h1 className={!cv.name ? "previewPlaceholder" : ""}>{cv.name || "Seu nome"}</h1>
+                <h2 className={!cv.role ? "previewPlaceholder" : ""}>{cv.role || "Título profissional"}</h2>
+                <p>{[cv.email, cv.phone, cv.city].filter(Boolean).join("  •  ")}</p>
+              </div>
+            </header>
+            {sectionOrder.filter(visible).map((key) => (
+              <PreviewSection key={key} sectionKey={key} cv={cv} />
+            ))}
+            {!access.active && !access.loading && <div className="paperWatermark" aria-hidden="true" />}
+          </article>
+          <div className="printLockedNotice">
+            <strong>CurriculosPRO</strong>
+            <p>
+              Para baixar este currículo em PDF, libere o download no editor por {ACCESS_PRICE_LABEL} (
+              {ACCESS_DAYS} dias de acesso).
+            </p>
+          </div>
+        </section>
       </div>
-      <p className="reviewFoot">Esta revisão verifica estrutura e preenchimento. Ela não decide se sua experiência é “boa” ou “ruim”.</p><div className="reviewPdfActions"><button type="button" className="download" onClick={printResume}>Gerar PDF ↓</button><span>Na janela de impressão, escolha “Salvar como PDF”. Confira o documento antes de enviar.</span></div></div>
-    </div>:<div className="designPanel"><div className="sectionTitle"><span>✦</span><div><h2>Personalize seu currículo</h2><p>O conteúdo permanece igual ao trocar o visual.</p></div></div><h4>MODELO</h4><div className="templateGrid">{(["essential","modern","executive","minimal","creative"] as Template[]).map(t=><button onClick={()=>setTemplate(t)} className={template===t?"selected":""} key={t}><i className={"templateThumb "+t}/><b>{{essential:"Essencial",modern:"Moderno",executive:"Executivo",minimal:"Minimalista",creative:"Criativo"}[t]}</b></button>)}</div><h4>COR DE DESTAQUE</h4><div className="swatches">{["#087cf0","#2563eb","#0f766e","#b45309","#be123c","#202938"].map(c=><button aria-label={"Cor "+c} className={accent===c?"selected":""} style={{background:c}} onClick={()=>setAccent(c)} key={c}/>)}</div><h4>ESPAÇAMENTO</h4><div className="densityToggle"><button className={density==="comfortable"?"selected":""} onClick={()=>setDensity("comfortable")}>Confortável</button><button className={density==="compact"?"selected":""} onClick={()=>setDensity("compact")}>Compacto</button></div><h4>SEÇÕES DO CURRÍCULO</h4><div className="sectionManager">{sectionOrder.map((key,i)=><div className="sectionManageRow" key={key}><span>{sectionLabel(key)}</span><div><button onClick={()=>moveSection(key,-1)} disabled={i===0}>↑</button><button onClick={()=>moveSection(key,1)} disabled={i===sectionOrder.length-1}>↓</button><button className={visible(key)?"visible":"hidden"} onClick={()=>toggleSection(key)}>{visible(key)?"Visível":"Oculta"}</button></div></div>)}</div><div className="designNote"><b>Design independente do conteúdo</b><p>Troque modelo e cor quando quiser. Suas informações continuam intactas.</p></div></div>}
-   </aside>
-   <section className="preview"><div className="mobilePdfAction"><button type="button" className="download" onClick={printResume}>Gerar PDF ↓</button></div><div className="previewBar"><span>● Prévia em tempo real</span><span>A4 · {{essential:"Essencial",modern:"Moderno",executive:"Executivo",minimal:"Minimalista",creative:"Criativo"}[template]}</span></div>
-    <article className={"paper "+template+" "+density} style={{"--accent":accent} as React.CSSProperties}><header>{cv.photo?<img className="resumePhoto" src={cv.photo} alt=""/>:<></>}<div><h1 className={!cv.name?"previewPlaceholder":""}>{cv.name||"Seu nome"}</h1><h2 className={!cv.role?"previewPlaceholder":""}>{cv.role||"Título profissional"}</h2><p>{[cv.email,cv.phone,cv.city].filter(Boolean).join("  •  ")}</p></div></header>{sectionOrder.filter(visible).map(key=><PreviewSection key={key} sectionKey={key} cv={cv}/>)}</article>
-   </section>
-  </div><div className="devCredit">CurriculosPRO · Criado por <strong>Felipe Andrade Dev</strong></div>
- </main>
+      <div className={"mobileDownloadBar " + (mobilePreview ? "inPreview" : "")}>
+        <button type="button" className="download" onClick={printResume}>
+          {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
+        </button>
+      </div>
+      <div className="devCredit">
+        CurriculosPRO · Criado por <strong>Felipe Andrade Dev</strong>
+      </div>
+    </main>
+  );
 }
-function Field({label,value,onChange,area=false,type="text",inputMode,autoComplete,placeholder,hint,maxLength}:{label:string,value:string,onChange:(v:string)=>void,area?:boolean,type?:string,inputMode?:React.HTMLAttributes<HTMLInputElement>["inputMode"],autoComplete?:string,placeholder?:string,hint?:string,maxLength?:number}){return <label className="guidedField"><span>{label}</span>{area?<textarea value={value} placeholder={placeholder} maxLength={maxLength} onChange={e=>onChange(e.target.value)}/>:<input type={type} inputMode={inputMode} autoComplete={autoComplete} placeholder={placeholder} maxLength={maxLength} value={value} onChange={e=>onChange(e.target.value)}/>} {hint&&<small>{hint}</small>}</label>}
-function SectionHead({n,title,subtitle,action}:{n:string,title:string,subtitle?:string,action?:()=>void}){return <><div className="sectionTitle withAction"><span>{n}</span><div><h2>{title}</h2>{subtitle&&<p>{subtitle}</p>}</div>{action&&<button onClick={action}>＋ Adicionar</button>}</div></>}
-
-const experienceTaskGroups=[
- ["Auxiliar administrativo",["Organização e arquivamento de documentos físicos e digitais.","Apoio no lançamento e na atualização de dados em planilhas e sistemas internos.","Atendimento telefônico, direcionamento de solicitações e suporte às rotinas do escritório.","Conferência de documentos e apoio ao controle de agendas, pedidos e relatórios."]],
- ["Vendedor",["Atendimento aos clientes, identificação de necessidades e apresentação de produtos.","Organização e reposição de mercadorias, mantendo a exposição dos produtos adequada.","Apoio no acompanhamento de metas, fechamento de vendas e registro de pedidos.","Esclarecimento de dúvidas e suporte ao cliente durante o processo de compra."]],
- ["Operador de caixa",["Abertura e fechamento de caixa, conferência de valores e registro de movimentações.","Registro de produtos e recebimento de pagamentos em dinheiro, cartão ou outros meios disponíveis.","Atendimento ao cliente e esclarecimento de dúvidas durante as operações de compra.","Organização do caixa e apoio à conferência de comprovantes e documentos."]],
- ["Motorista",["Condução de veículo conforme as normas de trânsito e os procedimentos de segurança.","Planejamento de rotas e cumprimento dos horários de coleta e entrega.","Conferência de mercadorias, documentos e condições do veículo antes das viagens.","Registro de entregas e comunicação de ocorrências durante o percurso."]],
- ["Atendente",["Recepção e orientação de clientes, presencialmente ou por telefone.","Esclarecimento de dúvidas e encaminhamento de solicitações aos setores responsáveis.","Organização do ambiente de atendimento e apoio às atividades diárias da equipe.","Registro de pedidos, informações e solicitações nos sistemas utilizados."]],
- ["Auxiliar de estoque",["Recebimento, conferência e armazenamento de mercadorias.","Separação e preparação de produtos para pedidos e expedição.","Organização do estoque e identificação de produtos e materiais.","Apoio em inventários e atualização de controles de entrada e saída."]],
- ["Repositor de mercadorias",["Reposição de produtos nas prateleiras conforme a demanda e orientação da loja.","Verificação de validade, integridade e apresentação dos produtos.","Organização de gôndolas, etiquetas e espaços de exposição.","Apoio no recebimento e na conferência de mercadorias."]],
- ["Auxiliar de produção",["Abastecimento e apoio à operação de máquinas e linhas de produção.","Separação e preparação de materiais conforme as ordens de produção.","Inspeção visual e organização dos produtos durante o processo.","Cumprimento de procedimentos de qualidade e segurança do trabalho."]],
- ["Auxiliar de limpeza",["Limpeza e conservação de salas, áreas comuns e instalações.","Reposição de materiais de higiene e organização dos ambientes.","Utilização adequada de produtos e equipamentos de limpeza.","Descarte de resíduos conforme as orientações do local."]],
- ["Recepcionista",["Recepção de visitantes e orientação sobre setores e serviços.","Atendimento telefônico e direcionamento de chamadas.","Organização de agendas, correspondências e registros de atendimento.","Atualização de cadastros e apoio às rotinas administrativas."]],
- ["Garçom / Garçonete",["Recepção de clientes e apresentação de cardápios e opções disponíveis.","Registro e encaminhamento de pedidos à cozinha e ao bar.","Serviço de alimentos e bebidas conforme os procedimentos do estabelecimento.","Organização de mesas e preparação do salão para atendimento."]],
- ["Auxiliar de cozinha",["Higienização e preparação de ingredientes conforme orientações da cozinha.","Apoio no preparo e na montagem de alimentos.","Limpeza e organização de utensílios, bancadas e equipamentos.","Armazenamento adequado de alimentos e cumprimento das normas de higiene."]],
- ["Entregador",["Realização de entregas conforme rotas e prazos estabelecidos.","Conferência de pedidos, volumes e endereços antes da saída.","Coleta de comprovantes e atualização do status das entregas.","Atendimento cordial aos clientes no momento da entrega."]],
- ["Vigilante / Segurança",["Controle de acesso de pessoas e veículos conforme os procedimentos do local.","Observação das áreas monitoradas e comunicação de situações incomuns.","Registro de ocorrências e elaboração de relatórios de turno.","Orientação de visitantes e apoio à preservação da segurança do ambiente."]],
- ["Pedreiro / Ajudante de obras",["Preparação de materiais, ferramentas e local de trabalho.","Apoio em atividades de alvenaria, acabamento e manutenção predial.","Organização e limpeza da área de trabalho após as atividades.","Cumprimento das orientações técnicas e dos procedimentos de segurança."]],
- ["Auxiliar de RH",["Apoio na organização de documentos e cadastros de colaboradores.","Suporte aos processos de admissão, integração e desligamento.","Atualização de planilhas e sistemas de controle de pessoal.","Atendimento a dúvidas e encaminhamento de solicitações dos colaboradores."]],
- ["Professor / Instrutor",["Planejamento de aulas e preparação de materiais didáticos.","Ministração de atividades conforme o conteúdo e o nível da turma.","Acompanhamento da aprendizagem e orientação dos alunos.","Registro de frequência, atividades e resultados de avaliações."]],
- ["Cuidador",["Apoio às atividades diárias conforme as necessidades e orientações recebidas.","Acompanhamento de rotinas, horários e compromissos da pessoa assistida.","Observação e comunicação de mudanças ou situações relevantes aos responsáveis.","Manutenção de um ambiente organizado, respeitoso e seguro."]],
- ["Técnico de informática",["Instalação e configuração de computadores, programas e periféricos.","Atendimento inicial a chamados e suporte aos usuários.","Identificação de falhas e execução de procedimentos básicos de manutenção.","Registro dos atendimentos e encaminhamento de problemas especializados."]],
- ["Auxiliar financeiro",["Organização e conferência de documentos financeiros.","Apoio no lançamento de contas a pagar e a receber em sistemas.","Conciliação de informações e atualização de planilhas de controle.","Organização de comprovantes e suporte à elaboração de relatórios."]],
- ["Secretária / Assistente executivo",["Organização de agendas, reuniões e compromissos.","Atendimento e encaminhamento de ligações, mensagens e correspondências.","Preparação e organização de documentos, apresentações e arquivos.","Apoio logístico a reuniões e atividades administrativas."]],
- ["Mecânico / Auxiliar de mecânica",["Inspeção inicial e apoio na identificação de falhas em veículos ou equipamentos.","Auxílio em serviços de manutenção preventiva e corretiva.","Organização de ferramentas, peças e materiais utilizados nos serviços.","Registro dos serviços executados e comunicação de necessidades de reparo."]],
- ["Farmácia / Atendente de farmácia",["Atendimento ao público e orientação sobre a localização de produtos.","Organização e reposição de mercadorias e materiais.","Conferência de validade e condições de armazenamento dos produtos.","Apoio ao controle de estoque e às rotinas da loja, respeitando as atribuições do cargo."]]
- ,["Conferente de mercadorias",["Conferência de quantidades, códigos e condições dos produtos recebidos.","Registro de divergências e comunicação de avarias aos responsáveis.","Organização de documentos e comprovantes de recebimento.","Apoio à identificação e ao direcionamento de mercadorias para armazenamento."]]
- ,["Auxiliar de expedição",["Separação, identificação e preparação de pedidos para envio.","Conferência de volumes, etiquetas e documentos de transporte.","Organização da área de expedição e apoio ao carregamento.","Atualização de controles e comunicação de pendências nos pedidos."]]
- ,["Separador de pedidos",["Localização e separação de produtos conforme listas de pedidos.","Conferência de códigos, quantidades e características dos itens separados.","Acondicionamento e identificação de mercadorias para expedição.","Organização do setor e comunicação de produtos indisponíveis."]]
- ,["Operador de empilhadeira",["Movimentação e armazenagem de materiais com empilhadeira, quando habilitado e autorizado.","Inspeção visual do equipamento e comunicação de irregularidades.","Organização de cargas e apoio ao abastecimento de áreas operacionais.","Cumprimento dos procedimentos de segurança e circulação interna."]]
- ,["Assistente de logística",["Acompanhamento de pedidos, coletas, entregas e prazos operacionais.","Atualização de planilhas e sistemas de controle logístico.","Contato com transportadoras, fornecedores e áreas internas.","Organização de comprovantes e apoio à resolução de ocorrências."]]
- ,["Operador de máquinas",["Operação de máquinas conforme treinamento, instruções e procedimentos da empresa.","Abastecimento de materiais e acompanhamento do processo produtivo.","Verificação visual da qualidade dos itens produzidos.","Comunicação de falhas e apoio à limpeza e organização do posto de trabalho."]]
- ,["Auxiliar de qualidade",["Apoio à inspeção visual de matérias-primas e produtos.","Preenchimento de registros e listas de verificação da qualidade.","Identificação e comunicação de não conformidades à equipe responsável.","Organização de amostras, documentos e materiais do setor."]]
- ,["Embalador",["Embalagem e identificação de produtos conforme padrões estabelecidos.","Conferência visual de integridade e apresentação dos itens.","Preparação de volumes para armazenamento ou expedição.","Organização de materiais e conservação do posto de trabalho."]]
- ,["Montador",["Montagem de peças e componentes conforme instruções de trabalho.","Separação e conferência de materiais e ferramentas necessários.","Verificação visual do conjunto montado e comunicação de ajustes necessários.","Organização da bancada e cumprimento dos procedimentos de segurança."]]
- ,["Auxiliar de manutenção",["Apoio à manutenção preventiva e corretiva de instalações e equipamentos.","Separação e organização de ferramentas, peças e materiais.","Acompanhamento de inspeções e comunicação de necessidades de reparo.","Registro de serviços e conservação das áreas de manutenção."]]
- ,["Fiscal de loja",["Acompanhamento da movimentação da loja e observação de situações fora do padrão.","Orientação ao público e apoio à organização dos ambientes.","Comunicação de ocorrências à liderança conforme os procedimentos internos.","Apoio à prevenção de perdas dentro das atribuições do cargo."]]
- ,["Promotor de vendas",["Apresentação e demonstração de produtos nos pontos de venda.","Organização de materiais promocionais e exposição de mercadorias.","Verificação de disponibilidade, preços e condições dos produtos.","Registro de visitas e informações de execução no ponto de venda."]]
- ,["Supervisor de loja",["Apoio à organização das rotinas e distribuição de atividades da equipe.","Acompanhamento de atendimento, operação e indicadores da loja.","Orientação de colaboradores e encaminhamento de demandas à gerência.","Apoio ao controle de estoque, abertura e fechamento da unidade."]]
- ,["Pintor",["Preparação de superfícies, incluindo limpeza, lixamento e proteção das áreas.","Preparação e aplicação de tintas e revestimentos conforme orientação técnica.","Organização de ferramentas, materiais e local de trabalho.","Verificação do acabamento e conservação dos equipamentos utilizados."]]
- ,["Eletricista",["Execução de serviços elétricos compatíveis com sua formação e autorização.","Apoio à instalação, inspeção e manutenção de componentes elétricos.","Identificação e comunicação de irregularidades nas instalações.","Cumprimento das normas técnicas e procedimentos de segurança aplicáveis."]]
- ,["Encanador / Bombeiro hidráulico",["Apoio à instalação e manutenção de tubulações e conexões hidráulicas.","Identificação de vazamentos e comunicação de necessidades de reparo.","Separação de ferramentas, peças e materiais para os serviços.","Verificação de funcionamento e organização do local após a execução."]]
- ,["Servente de obras",["Preparação e transporte de materiais para as frentes de serviço.","Apoio aos profissionais da obra conforme orientação recebida.","Organização, limpeza e conservação das áreas de trabalho.","Separação de ferramentas e cumprimento dos procedimentos de segurança."]]
- ,["Recepcionista de clínica",["Recepção e orientação de pacientes e visitantes.","Agendamento, confirmação e atualização de informações de consultas.","Organização de fichas, documentos e registros de atendimento.","Encaminhamento de solicitações à equipe responsável, preservando a confidencialidade."]]
- ,["Auxiliar de saúde bucal",["Preparação e organização de materiais e do ambiente de atendimento conforme orientação profissional.","Apoio à organização de instrumentais e materiais dentro das atribuições e capacitação do cargo.","Recepção e orientação inicial de pacientes sobre o fluxo de atendimento.","Higienização e organização do ambiente conforme protocolos do serviço."]]
- ,["Técnico de enfermagem",["Prestação de cuidados de enfermagem dentro das atribuições profissionais e sob orientação aplicável.","Verificação e registro de informações assistenciais conforme protocolos do serviço.","Organização de materiais e apoio à rotina da equipe de enfermagem.","Comunicação de alterações observadas à equipe responsável."]]
- ,["Agente de atendimento em saúde",["Recepção e orientação de usuários sobre serviços e fluxos de atendimento.","Apoio ao agendamento e à organização de filas e encaminhamentos.","Atualização de cadastros e registros administrativos do atendimento.","Encaminhamento de dúvidas e solicitações aos profissionais responsáveis."]]
- ,["Desenvolvedor de software",["Desenvolvimento e manutenção de funcionalidades conforme requisitos do projeto.","Correção de erros e realização de testes nas aplicações.","Utilização de controle de versão e colaboração com a equipe técnica.","Documentação de alterações e acompanhamento de tarefas de desenvolvimento."]]
- ,["Analista de suporte técnico",["Atendimento e registro de chamados de suporte a usuários.","Diagnóstico inicial de problemas de hardware, software e acesso.","Orientação aos usuários e encaminhamento de incidentes especializados.","Acompanhamento dos chamados até a conclusão e documentação das soluções."]]
- ,["Assistente de TI",["Apoio à instalação e configuração de computadores e periféricos.","Preparação de equipamentos e suporte básico aos colaboradores.","Organização de inventário de equipamentos e acessórios.","Registro de solicitações e apoio às rotinas da equipe de tecnologia."]]
- ,["Designer gráfico",["Criação e adaptação de peças gráficas conforme briefing e identidade visual.","Preparação de arquivos para mídias digitais e materiais impressos.","Organização de versões, imagens e arquivos de projetos.","Ajustes em layouts com base em orientações e retornos recebidos."]]
- ,["Jardineiro",["Manutenção e conservação de jardins, canteiros e áreas verdes.","Plantio, poda e irrigação conforme as necessidades das espécies e orientações recebidas.","Preparação do solo e organização de ferramentas e materiais.","Recolhimento de resíduos vegetais e conservação do ambiente."]]
- ,["Porteiro",["Controle de entrada e saída de pessoas conforme regras do local.","Recepção e orientação de visitantes e prestadores de serviço.","Registro de movimentações e comunicação de ocorrências à administração.","Atendimento telefônico e apoio à rotina de acesso e correspondências."]]
- ,["Costureiro",["Execução de ajustes, reparos e costuras conforme modelos e orientações.","Preparação de tecidos, linhas e aviamentos para a produção.","Operação de máquinas de costura conforme experiência e treinamento.","Conferência do acabamento e organização do espaço de trabalho."]]
- ,["Lavador de veículos",["Lavagem e limpeza interna e externa de veículos conforme procedimentos do estabelecimento.","Aplicação adequada de produtos e utilização de equipamentos de limpeza.","Secagem, acabamento e conferência visual do serviço realizado.","Organização dos materiais e conservação da área de lavagem."]]
- ,["Auxiliar de laboratório",["Preparação e organização de materiais e utensílios conforme procedimentos do laboratório.","Identificação e organização de amostras seguindo orientações recebidas.","Limpeza e conservação de bancadas e equipamentos conforme protocolos.","Apoio aos registros e controles internos, dentro do treinamento recebido."]]
-
-] as const;
-function ExperienceTaskSuggestions({value,onAdd}:{value:string;onAdd:(text:string)=>void}){
- const [query,setQuery]=useState("");
- const [showAll,setShowAll]=useState(false);
- const normalizedQuery=query.trim().toLocaleLowerCase("pt-BR");
- const filteredGroups=experienceTaskGroups.filter(([role,tasks])=>!normalizedQuery||role.toLocaleLowerCase("pt-BR").includes(normalizedQuery)||tasks.some(task=>task.toLocaleLowerCase("pt-BR").includes(normalizedQuery)));
- const visibleGroups=normalizedQuery||showAll?filteredGroups:filteredGroups.slice(0,6);
- const remaining=filteredGroups.length-visibleGroups.length;
- return <div className="experienceTaskSuggestions">
-  <div className="suggestionPanelHead"><b>Exemplos de atividades por função</b><small>Escolha apenas atividades que você realmente realizou. Você pode editar o texto depois.</small></div>
-  <div className="experienceSearch"><input type="search" value={query} onChange={event=>setQuery(event.target.value)} placeholder="Buscar profissão ou atividade..." aria-label="Buscar profissão ou atividade"/>{query&&<button type="button" onClick={()=>setQuery("")}>Limpar</button>}</div>
-  {filteredGroups.length? <><div className="experienceRoleGroups">{visibleGroups.map(([role,tasks])=><details key={role}><summary>{role}<span>Ver sugestões</span></summary><div>{tasks.filter(task=>!normalizedQuery||role.toLocaleLowerCase("pt-BR").includes(normalizedQuery)||task.toLocaleLowerCase("pt-BR").includes(normalizedQuery)).map(task=>{const active=value.toLocaleLowerCase("pt-BR").includes(task.toLocaleLowerCase("pt-BR"));return <button type="button" key={task} disabled={active} onClick={()=>onAdd(task)}>{active?"✓ Adicionada":"＋ "+task}</button>})}</div></details>)}</div>{!normalizedQuery&&filteredGroups.length>6&&<button type="button" className="experienceShowMore" onClick={()=>setShowAll(!showAll)}>{showAll?"Mostrar menos ↑":"Ver mais opções ↓"}{!showAll&&<small>{remaining} funções adicionais</small>}</button>}</>:<p className="experienceSearchEmpty">Nenhuma sugestão encontrada. Você pode descrever a atividade manualmente no campo acima.</p>}
- </div>
+function Field({
+  label,
+  value,
+  onChange,
+  area = false,
+  type = "text",
+  inputMode,
+  autoComplete,
+  placeholder,
+  hint,
+  maxLength,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  area?: boolean;
+  type?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  autoComplete?: string;
+  placeholder?: string;
+  hint?: string;
+  maxLength?: number;
+}) {
+  return (
+    <label className="guidedField">
+      <span>{label}</span>
+      {area ? (
+        <textarea
+          value={value}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      ) : (
+        <input
+          type={type}
+          inputMode={inputMode}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}{" "}
+      {hint && <small>{hint}</small>}
+    </label>
+  );
 }
-function ItemEditor({item,index,kind,onChange,onRemove,onUp,onDown}:{item:Item,index:number,kind:"experience"|"education",onChange:(k:keyof Item,v:string)=>void,onRemove:()=>void,onUp:()=>void,onDown:()=>void}){const current=kind==="experience"&&/\batual\b/i.test(item.period);return <div className="itemEditor"><div className="itemTop"><b>Item {index+1}</b><div className="itemActions"><button onClick={onUp} title="Mover para cima">↑</button><button onClick={onDown} title="Mover para baixo">↓</button><button className="danger" onClick={onRemove}>Remover</button></div></div><div className="grid2"><Field label="Cargo / Curso" placeholder={kind==="experience"?"Ex.: Assistente Administrativo":"Ex.: Análise e Desenvolvimento de Sistemas"} value={item.title} onChange={v=>onChange("title",v)}/><Field label="Empresa / Instituição" placeholder={kind==="experience"?"Ex.: Empresa Brasileira Ltda.":"Ex.: Faculdade ou instituição"} value={item.subtitle} onChange={v=>onChange("subtitle",v)}/></div><Field label="Período" placeholder="Ex.: jan/2023 — atual" hint="Pode usar mês/ano, somente o ano ou “Atual”." value={item.period} onChange={v=>onChange("period",v)}/>{kind==="experience"&&<button type="button" aria-pressed={current} className={"currentJob "+(current?"active":"")} onClick={()=>onChange("period",current?item.period.replace(/\s*[—-]?\s*Atual\s*$/i,"").trim():item.period.trim()?item.period.replace(/\s*[—-]?\s*$/,"")+" — Atual":"Atual")}>{current?"✓ Trabalho atualmente aqui":"Trabalho atualmente aqui"}</button>}<Field area label="Descrição" placeholder={kind==="experience"?"Ex.: Atendimento a clientes, organização de documentos e apoio às rotinas da equipe.":"Opcional: destaque área, projeto, atividade ou aprendizado relevante."} hint={kind==="experience"?"Prefira atividades, responsabilidades e resultados reais. Não invente informações.":"Use apenas quando acrescentar algo relevante à formação."} value={item.description} onChange={v=>onChange("description",v)}/>{kind==="experience"&&<ExperienceTaskSuggestions value={item.description} onAdd={task=>{const current=item.description.trim();if(!current.toLocaleLowerCase("pt-BR").includes(task.toLocaleLowerCase("pt-BR")))onChange("description",current?current+"\n"+task:task)}}/>}{kind==="experience"&&item.title.trim()&&item.subtitle.trim()&&!item.description.trim()&&<CoachTip title="Conte o que você fazia" text="Descreva atividades reais. Uma estrutura útil é: ação + atividade + resultado, quando houver um resultado que você possa comprovar."/>}{kind==="education"&&item.title.trim()&&!item.subtitle.trim()&&<CoachTip title="Falta a instituição" text="Se fizer sentido para sua formação, informe onde estudou. Se não houver instituição, você pode deixar em branco."/>}</div>}
-function ContextChoice({label,value,onChange,options}:{label:string,value:string,onChange:(value:string)=>void,options:[string,string][]}){return <div className="contextChoice"><b>{label}</b><div>{options.map(([id,text])=><button type="button" key={id} aria-pressed={value===id} className={value===id?"active":""} onClick={()=>onChange(id)}>{text}</button>)}</div></div>}
-function CoachTip({title,text}:{title:string,text:string}){return <div className="coachTip"><span>i</span><p><b>{title}</b><small>{text}</small></p></div>}
-function hasDuplicateSkills(items:string[]){const normalized=items.map(x=>x.trim().toLocaleLowerCase("pt-BR")).filter(Boolean);return new Set(normalized).size!==normalized.length}
-function ListEditor({title,items,onAdd,onChange,onRemove}:{title:string,items:string[],onAdd:()=>void,onChange:(i:number,v:string)=>void,onRemove:(i:number)=>void}){return <div className="listEditor"><div className="listHead"><b>{title}</b><button onClick={onAdd}>＋ Adicionar</button></div>{items.map((x,i)=><div className="listRow" key={i}><input value={x} onChange={e=>onChange(i,e.target.value)} placeholder={title==="Idiomas"?"Ex.: Inglês — Intermediário":title==="Habilidades"?"Ex.: Excel":"Ex.: Excel Avançado — SENAI, 2025"}/><button onClick={()=>onRemove(i)} aria-label="Remover">×</button></div>)}</div>}
+function SectionHead({
+  n,
+  title,
+  subtitle,
+  action,
+}: {
+  n: string;
+  title: string;
+  subtitle?: string;
+  action?: () => void;
+}) {
+  return (
+    <>
+      <div className="sectionTitle withAction">
+        <span>{n}</span>
+        <div>
+          <h2>{title}</h2>
+          {subtitle && <p>{subtitle}</p>}
+        </div>
+        {action && <button onClick={action}>＋ Adicionar</button>}
+      </div>
+    </>
+  );
+}
 
-const objectiveOptions=[
- ["Primeiro emprego","Busco minha primeira oportunidade profissional para desenvolver minhas habilidades, aprender novas atividades e contribuir com dedicação, responsabilidade e vontade de crescer."],
- ["Administrativo","Busco atuar na área administrativa, contribuindo com organização, atenção aos detalhes e apoio eficiente às rotinas e aos processos da equipe."],
- ["Atendimento ao cliente","Busco uma oportunidade em atendimento ao cliente, oferecendo comunicação cordial, escuta ativa e comprometimento com uma boa experiência para o público."],
- ["Operacional","Desejo atuar na área operacional, contribuindo com responsabilidade, agilidade, atenção aos procedimentos e compromisso com a qualidade e a segurança."],
- ["Tecnologia","Busco uma oportunidade na área de tecnologia para aplicar meus conhecimentos, desenvolver novas competências e colaborar com soluções e melhorias."],
- ["Objetivo geral","Busco uma oportunidade profissional em que eu possa aplicar minhas habilidades, aprender continuamente e contribuir de forma responsável para os resultados da equipe."]
+const experienceTaskGroups = [
+  [
+    "Auxiliar administrativo",
+    [
+      "Organização e arquivamento de documentos físicos e digitais.",
+      "Apoio no lançamento e na atualização de dados em planilhas e sistemas internos.",
+      "Atendimento telefônico, direcionamento de solicitações e suporte às rotinas do escritório.",
+      "Conferência de documentos e apoio ao controle de agendas, pedidos e relatórios.",
+    ],
+  ],
+  [
+    "Vendedor",
+    [
+      "Atendimento aos clientes, identificação de necessidades e apresentação de produtos.",
+      "Organização e reposição de mercadorias, mantendo a exposição dos produtos adequada.",
+      "Apoio no acompanhamento de metas, fechamento de vendas e registro de pedidos.",
+      "Esclarecimento de dúvidas e suporte ao cliente durante o processo de compra.",
+    ],
+  ],
+  [
+    "Operador de caixa",
+    [
+      "Abertura e fechamento de caixa, conferência de valores e registro de movimentações.",
+      "Registro de produtos e recebimento de pagamentos em dinheiro, cartão ou outros meios disponíveis.",
+      "Atendimento ao cliente e esclarecimento de dúvidas durante as operações de compra.",
+      "Organização do caixa e apoio à conferência de comprovantes e documentos.",
+    ],
+  ],
+  [
+    "Motorista",
+    [
+      "Condução de veículo conforme as normas de trânsito e os procedimentos de segurança.",
+      "Planejamento de rotas e cumprimento dos horários de coleta e entrega.",
+      "Conferência de mercadorias, documentos e condições do veículo antes das viagens.",
+      "Registro de entregas e comunicação de ocorrências durante o percurso.",
+    ],
+  ],
+  [
+    "Atendente",
+    [
+      "Recepção e orientação de clientes, presencialmente ou por telefone.",
+      "Esclarecimento de dúvidas e encaminhamento de solicitações aos setores responsáveis.",
+      "Organização do ambiente de atendimento e apoio às atividades diárias da equipe.",
+      "Registro de pedidos, informações e solicitações nos sistemas utilizados.",
+    ],
+  ],
+  [
+    "Auxiliar de estoque",
+    [
+      "Recebimento, conferência e armazenamento de mercadorias.",
+      "Separação e preparação de produtos para pedidos e expedição.",
+      "Organização do estoque e identificação de produtos e materiais.",
+      "Apoio em inventários e atualização de controles de entrada e saída.",
+    ],
+  ],
+  [
+    "Repositor de mercadorias",
+    [
+      "Reposição de produtos nas prateleiras conforme a demanda e orientação da loja.",
+      "Verificação de validade, integridade e apresentação dos produtos.",
+      "Organização de gôndolas, etiquetas e espaços de exposição.",
+      "Apoio no recebimento e na conferência de mercadorias.",
+    ],
+  ],
+  [
+    "Auxiliar de produção",
+    [
+      "Abastecimento e apoio à operação de máquinas e linhas de produção.",
+      "Separação e preparação de materiais conforme as ordens de produção.",
+      "Inspeção visual e organização dos produtos durante o processo.",
+      "Cumprimento de procedimentos de qualidade e segurança do trabalho.",
+    ],
+  ],
+  [
+    "Auxiliar de limpeza",
+    [
+      "Limpeza e conservação de salas, áreas comuns e instalações.",
+      "Reposição de materiais de higiene e organização dos ambientes.",
+      "Utilização adequada de produtos e equipamentos de limpeza.",
+      "Descarte de resíduos conforme as orientações do local.",
+    ],
+  ],
+  [
+    "Recepcionista",
+    [
+      "Recepção de visitantes e orientação sobre setores e serviços.",
+      "Atendimento telefônico e direcionamento de chamadas.",
+      "Organização de agendas, correspondências e registros de atendimento.",
+      "Atualização de cadastros e apoio às rotinas administrativas.",
+    ],
+  ],
+  [
+    "Garçom / Garçonete",
+    [
+      "Recepção de clientes e apresentação de cardápios e opções disponíveis.",
+      "Registro e encaminhamento de pedidos à cozinha e ao bar.",
+      "Serviço de alimentos e bebidas conforme os procedimentos do estabelecimento.",
+      "Organização de mesas e preparação do salão para atendimento.",
+    ],
+  ],
+  [
+    "Auxiliar de cozinha",
+    [
+      "Higienização e preparação de ingredientes conforme orientações da cozinha.",
+      "Apoio no preparo e na montagem de alimentos.",
+      "Limpeza e organização de utensílios, bancadas e equipamentos.",
+      "Armazenamento adequado de alimentos e cumprimento das normas de higiene.",
+    ],
+  ],
+  [
+    "Entregador",
+    [
+      "Realização de entregas conforme rotas e prazos estabelecidos.",
+      "Conferência de pedidos, volumes e endereços antes da saída.",
+      "Coleta de comprovantes e atualização do status das entregas.",
+      "Atendimento cordial aos clientes no momento da entrega.",
+    ],
+  ],
+  [
+    "Vigilante / Segurança",
+    [
+      "Controle de acesso de pessoas e veículos conforme os procedimentos do local.",
+      "Observação das áreas monitoradas e comunicação de situações incomuns.",
+      "Registro de ocorrências e elaboração de relatórios de turno.",
+      "Orientação de visitantes e apoio à preservação da segurança do ambiente.",
+    ],
+  ],
+  [
+    "Pedreiro / Ajudante de obras",
+    [
+      "Preparação de materiais, ferramentas e local de trabalho.",
+      "Apoio em atividades de alvenaria, acabamento e manutenção predial.",
+      "Organização e limpeza da área de trabalho após as atividades.",
+      "Cumprimento das orientações técnicas e dos procedimentos de segurança.",
+    ],
+  ],
+  [
+    "Auxiliar de RH",
+    [
+      "Apoio na organização de documentos e cadastros de colaboradores.",
+      "Suporte aos processos de admissão, integração e desligamento.",
+      "Atualização de planilhas e sistemas de controle de pessoal.",
+      "Atendimento a dúvidas e encaminhamento de solicitações dos colaboradores.",
+    ],
+  ],
+  [
+    "Professor / Instrutor",
+    [
+      "Planejamento de aulas e preparação de materiais didáticos.",
+      "Ministração de atividades conforme o conteúdo e o nível da turma.",
+      "Acompanhamento da aprendizagem e orientação dos alunos.",
+      "Registro de frequência, atividades e resultados de avaliações.",
+    ],
+  ],
+  [
+    "Cuidador",
+    [
+      "Apoio às atividades diárias conforme as necessidades e orientações recebidas.",
+      "Acompanhamento de rotinas, horários e compromissos da pessoa assistida.",
+      "Observação e comunicação de mudanças ou situações relevantes aos responsáveis.",
+      "Manutenção de um ambiente organizado, respeitoso e seguro.",
+    ],
+  ],
+  [
+    "Técnico de informática",
+    [
+      "Instalação e configuração de computadores, programas e periféricos.",
+      "Atendimento inicial a chamados e suporte aos usuários.",
+      "Identificação de falhas e execução de procedimentos básicos de manutenção.",
+      "Registro dos atendimentos e encaminhamento de problemas especializados.",
+    ],
+  ],
+  [
+    "Auxiliar financeiro",
+    [
+      "Organização e conferência de documentos financeiros.",
+      "Apoio no lançamento de contas a pagar e a receber em sistemas.",
+      "Conciliação de informações e atualização de planilhas de controle.",
+      "Organização de comprovantes e suporte à elaboração de relatórios.",
+    ],
+  ],
+  [
+    "Secretária / Assistente executivo",
+    [
+      "Organização de agendas, reuniões e compromissos.",
+      "Atendimento e encaminhamento de ligações, mensagens e correspondências.",
+      "Preparação e organização de documentos, apresentações e arquivos.",
+      "Apoio logístico a reuniões e atividades administrativas.",
+    ],
+  ],
+  [
+    "Mecânico / Auxiliar de mecânica",
+    [
+      "Inspeção inicial e apoio na identificação de falhas em veículos ou equipamentos.",
+      "Auxílio em serviços de manutenção preventiva e corretiva.",
+      "Organização de ferramentas, peças e materiais utilizados nos serviços.",
+      "Registro dos serviços executados e comunicação de necessidades de reparo.",
+    ],
+  ],
+  [
+    "Farmácia / Atendente de farmácia",
+    [
+      "Atendimento ao público e orientação sobre a localização de produtos.",
+      "Organização e reposição de mercadorias e materiais.",
+      "Conferência de validade e condições de armazenamento dos produtos.",
+      "Apoio ao controle de estoque e às rotinas da loja, respeitando as atribuições do cargo.",
+    ],
+  ],
+  [
+    "Conferente de mercadorias",
+    [
+      "Conferência de quantidades, códigos e condições dos produtos recebidos.",
+      "Registro de divergências e comunicação de avarias aos responsáveis.",
+      "Organização de documentos e comprovantes de recebimento.",
+      "Apoio à identificação e ao direcionamento de mercadorias para armazenamento.",
+    ],
+  ],
+  [
+    "Auxiliar de expedição",
+    [
+      "Separação, identificação e preparação de pedidos para envio.",
+      "Conferência de volumes, etiquetas e documentos de transporte.",
+      "Organização da área de expedição e apoio ao carregamento.",
+      "Atualização de controles e comunicação de pendências nos pedidos.",
+    ],
+  ],
+  [
+    "Separador de pedidos",
+    [
+      "Localização e separação de produtos conforme listas de pedidos.",
+      "Conferência de códigos, quantidades e características dos itens separados.",
+      "Acondicionamento e identificação de mercadorias para expedição.",
+      "Organização do setor e comunicação de produtos indisponíveis.",
+    ],
+  ],
+  [
+    "Operador de empilhadeira",
+    [
+      "Movimentação e armazenagem de materiais com empilhadeira, quando habilitado e autorizado.",
+      "Inspeção visual do equipamento e comunicação de irregularidades.",
+      "Organização de cargas e apoio ao abastecimento de áreas operacionais.",
+      "Cumprimento dos procedimentos de segurança e circulação interna.",
+    ],
+  ],
+  [
+    "Assistente de logística",
+    [
+      "Acompanhamento de pedidos, coletas, entregas e prazos operacionais.",
+      "Atualização de planilhas e sistemas de controle logístico.",
+      "Contato com transportadoras, fornecedores e áreas internas.",
+      "Organização de comprovantes e apoio à resolução de ocorrências.",
+    ],
+  ],
+  [
+    "Operador de máquinas",
+    [
+      "Operação de máquinas conforme treinamento, instruções e procedimentos da empresa.",
+      "Abastecimento de materiais e acompanhamento do processo produtivo.",
+      "Verificação visual da qualidade dos itens produzidos.",
+      "Comunicação de falhas e apoio à limpeza e organização do posto de trabalho.",
+    ],
+  ],
+  [
+    "Auxiliar de qualidade",
+    [
+      "Apoio à inspeção visual de matérias-primas e produtos.",
+      "Preenchimento de registros e listas de verificação da qualidade.",
+      "Identificação e comunicação de não conformidades à equipe responsável.",
+      "Organização de amostras, documentos e materiais do setor.",
+    ],
+  ],
+  [
+    "Embalador",
+    [
+      "Embalagem e identificação de produtos conforme padrões estabelecidos.",
+      "Conferência visual de integridade e apresentação dos itens.",
+      "Preparação de volumes para armazenamento ou expedição.",
+      "Organização de materiais e conservação do posto de trabalho.",
+    ],
+  ],
+  [
+    "Montador",
+    [
+      "Montagem de peças e componentes conforme instruções de trabalho.",
+      "Separação e conferência de materiais e ferramentas necessários.",
+      "Verificação visual do conjunto montado e comunicação de ajustes necessários.",
+      "Organização da bancada e cumprimento dos procedimentos de segurança.",
+    ],
+  ],
+  [
+    "Auxiliar de manutenção",
+    [
+      "Apoio à manutenção preventiva e corretiva de instalações e equipamentos.",
+      "Separação e organização de ferramentas, peças e materiais.",
+      "Acompanhamento de inspeções e comunicação de necessidades de reparo.",
+      "Registro de serviços e conservação das áreas de manutenção.",
+    ],
+  ],
+  [
+    "Fiscal de loja",
+    [
+      "Acompanhamento da movimentação da loja e observação de situações fora do padrão.",
+      "Orientação ao público e apoio à organização dos ambientes.",
+      "Comunicação de ocorrências à liderança conforme os procedimentos internos.",
+      "Apoio à prevenção de perdas dentro das atribuições do cargo.",
+    ],
+  ],
+  [
+    "Promotor de vendas",
+    [
+      "Apresentação e demonstração de produtos nos pontos de venda.",
+      "Organização de materiais promocionais e exposição de mercadorias.",
+      "Verificação de disponibilidade, preços e condições dos produtos.",
+      "Registro de visitas e informações de execução no ponto de venda.",
+    ],
+  ],
+  [
+    "Supervisor de loja",
+    [
+      "Apoio à organização das rotinas e distribuição de atividades da equipe.",
+      "Acompanhamento de atendimento, operação e indicadores da loja.",
+      "Orientação de colaboradores e encaminhamento de demandas à gerência.",
+      "Apoio ao controle de estoque, abertura e fechamento da unidade.",
+    ],
+  ],
+  [
+    "Pintor",
+    [
+      "Preparação de superfícies, incluindo limpeza, lixamento e proteção das áreas.",
+      "Preparação e aplicação de tintas e revestimentos conforme orientação técnica.",
+      "Organização de ferramentas, materiais e local de trabalho.",
+      "Verificação do acabamento e conservação dos equipamentos utilizados.",
+    ],
+  ],
+  [
+    "Eletricista",
+    [
+      "Execução de serviços elétricos compatíveis com sua formação e autorização.",
+      "Apoio à instalação, inspeção e manutenção de componentes elétricos.",
+      "Identificação e comunicação de irregularidades nas instalações.",
+      "Cumprimento das normas técnicas e procedimentos de segurança aplicáveis.",
+    ],
+  ],
+  [
+    "Encanador / Bombeiro hidráulico",
+    [
+      "Apoio à instalação e manutenção de tubulações e conexões hidráulicas.",
+      "Identificação de vazamentos e comunicação de necessidades de reparo.",
+      "Separação de ferramentas, peças e materiais para os serviços.",
+      "Verificação de funcionamento e organização do local após a execução.",
+    ],
+  ],
+  [
+    "Servente de obras",
+    [
+      "Preparação e transporte de materiais para as frentes de serviço.",
+      "Apoio aos profissionais da obra conforme orientação recebida.",
+      "Organização, limpeza e conservação das áreas de trabalho.",
+      "Separação de ferramentas e cumprimento dos procedimentos de segurança.",
+    ],
+  ],
+  [
+    "Recepcionista de clínica",
+    [
+      "Recepção e orientação de pacientes e visitantes.",
+      "Agendamento, confirmação e atualização de informações de consultas.",
+      "Organização de fichas, documentos e registros de atendimento.",
+      "Encaminhamento de solicitações à equipe responsável, preservando a confidencialidade.",
+    ],
+  ],
+  [
+    "Auxiliar de saúde bucal",
+    [
+      "Preparação e organização de materiais e do ambiente de atendimento conforme orientação profissional.",
+      "Apoio à organização de instrumentais e materiais dentro das atribuições e capacitação do cargo.",
+      "Recepção e orientação inicial de pacientes sobre o fluxo de atendimento.",
+      "Higienização e organização do ambiente conforme protocolos do serviço.",
+    ],
+  ],
+  [
+    "Técnico de enfermagem",
+    [
+      "Prestação de cuidados de enfermagem dentro das atribuições profissionais e sob orientação aplicável.",
+      "Verificação e registro de informações assistenciais conforme protocolos do serviço.",
+      "Organização de materiais e apoio à rotina da equipe de enfermagem.",
+      "Comunicação de alterações observadas à equipe responsável.",
+    ],
+  ],
+  [
+    "Agente de atendimento em saúde",
+    [
+      "Recepção e orientação de usuários sobre serviços e fluxos de atendimento.",
+      "Apoio ao agendamento e à organização de filas e encaminhamentos.",
+      "Atualização de cadastros e registros administrativos do atendimento.",
+      "Encaminhamento de dúvidas e solicitações aos profissionais responsáveis.",
+    ],
+  ],
+  [
+    "Desenvolvedor de software",
+    [
+      "Desenvolvimento e manutenção de funcionalidades conforme requisitos do projeto.",
+      "Correção de erros e realização de testes nas aplicações.",
+      "Utilização de controle de versão e colaboração com a equipe técnica.",
+      "Documentação de alterações e acompanhamento de tarefas de desenvolvimento.",
+    ],
+  ],
+  [
+    "Analista de suporte técnico",
+    [
+      "Atendimento e registro de chamados de suporte a usuários.",
+      "Diagnóstico inicial de problemas de hardware, software e acesso.",
+      "Orientação aos usuários e encaminhamento de incidentes especializados.",
+      "Acompanhamento dos chamados até a conclusão e documentação das soluções.",
+    ],
+  ],
+  [
+    "Assistente de TI",
+    [
+      "Apoio à instalação e configuração de computadores e periféricos.",
+      "Preparação de equipamentos e suporte básico aos colaboradores.",
+      "Organização de inventário de equipamentos e acessórios.",
+      "Registro de solicitações e apoio às rotinas da equipe de tecnologia.",
+    ],
+  ],
+  [
+    "Designer gráfico",
+    [
+      "Criação e adaptação de peças gráficas conforme briefing e identidade visual.",
+      "Preparação de arquivos para mídias digitais e materiais impressos.",
+      "Organização de versões, imagens e arquivos de projetos.",
+      "Ajustes em layouts com base em orientações e retornos recebidos.",
+    ],
+  ],
+  [
+    "Jardineiro",
+    [
+      "Manutenção e conservação de jardins, canteiros e áreas verdes.",
+      "Plantio, poda e irrigação conforme as necessidades das espécies e orientações recebidas.",
+      "Preparação do solo e organização de ferramentas e materiais.",
+      "Recolhimento de resíduos vegetais e conservação do ambiente.",
+    ],
+  ],
+  [
+    "Porteiro",
+    [
+      "Controle de entrada e saída de pessoas conforme regras do local.",
+      "Recepção e orientação de visitantes e prestadores de serviço.",
+      "Registro de movimentações e comunicação de ocorrências à administração.",
+      "Atendimento telefônico e apoio à rotina de acesso e correspondências.",
+    ],
+  ],
+  [
+    "Costureiro",
+    [
+      "Execução de ajustes, reparos e costuras conforme modelos e orientações.",
+      "Preparação de tecidos, linhas e aviamentos para a produção.",
+      "Operação de máquinas de costura conforme experiência e treinamento.",
+      "Conferência do acabamento e organização do espaço de trabalho.",
+    ],
+  ],
+  [
+    "Lavador de veículos",
+    [
+      "Lavagem e limpeza interna e externa de veículos conforme procedimentos do estabelecimento.",
+      "Aplicação adequada de produtos e utilização de equipamentos de limpeza.",
+      "Secagem, acabamento e conferência visual do serviço realizado.",
+      "Organização dos materiais e conservação da área de lavagem.",
+    ],
+  ],
+  [
+    "Auxiliar de laboratório",
+    [
+      "Preparação e organização de materiais e utensílios conforme procedimentos do laboratório.",
+      "Identificação e organização de amostras seguindo orientações recebidas.",
+      "Limpeza e conservação de bancadas e equipamentos conforme protocolos.",
+      "Apoio aos registros e controles internos, dentro do treinamento recebido.",
+    ],
+  ],
 ] as const;
-function ObjectiveSuggestions({onChoose}:{onChoose:(value:string)=>void}){return <div className="suggestionPanel"><div className="suggestionPanelHead"><b>Sugestões de objetivo</b><small>Selecione uma base e adapte à vaga e à sua realidade.</small></div><div className="objectiveSuggestions">{objectiveOptions.map(([label,value])=><button type="button" key={label} onClick={()=>onChoose(value)}>{label}<span>Usar sugestão +</span></button>)}</div></div>}
-type SkillGroup={name:string;roles:string[];items:string[]};
-const skillGroups:SkillGroup[]=[
- {name:"Comportamentais",roles:[],items:["Organização","Responsabilidade","Proatividade","Atenção aos detalhes","Adaptabilidade","Facilidade de aprendizado","Pontualidade","Resolução de problemas","Autonomia","Comprometimento"]},
- {name:"Comunicação e equipe",roles:[],items:["Comunicação clara","Trabalho em equipe","Relacionamento interpessoal","Escuta ativa","Atendimento ao público","Colaboração","Comunicação escrita"]},
- {name:"Administrativo e escritório",roles:["administr","secret","rh","finance","escritur","assistente","office"],items:["Pacote Office","Microsoft Excel","Microsoft Word","Google Workspace","Organização de documentos","Controle de arquivos","Rotinas administrativas","Digitação","Preenchimento de planilhas","Organização de agendas"]},
- {name:"Atendimento, comércio e vendas",roles:["vendedor","vendas","caixa","atendente","loja","comercial","promotor","recepcion"],items:["Atendimento ao cliente","Pós-venda","Técnicas de vendas","Negociação","Registro de pedidos","Operação de caixa","Reposição de mercadorias","Organização de vitrines e prateleiras","Resolução de dúvidas e reclamações"]},
- {name:"Estoque, logística e transporte",roles:["estoque","logíst","expedi","conferente","separador","empilhadeira","motorista","entregador","repositor"],items:["Controle de estoque","Conferência de mercadorias","Separação de pedidos","Armazenagem de produtos","Expedição de mercadorias","Inventário","Organização de carga","Rastreamento de entregas","Preenchimento de registros logísticos"]},
- {name:"Indústria e produção",roles:["produção","operador de máquina","máquinas","montador","embalador","qualidade","indústria","manutenção"],items:["Apoio à linha de produção","Operação de máquinas conforme treinamento","Inspeção visual de produtos","Controle de qualidade","Embalagem e identificação","Montagem de componentes","Leitura de instruções de trabalho","Organização do posto de trabalho"]},
- {name:"Construção e manutenção",roles:["pedreiro","obra","pintor","eletric","encan","hidrául","mecânico","jardineiro","manutenção"],items:["Preparação e organização de materiais","Leitura de instruções e medidas","Uso e conservação de ferramentas","Pintura e preparação de superfícies","Apoio a reparos e manutenção","Organização e limpeza da área de trabalho","Noções de instalações hidráulicas","Noções de instalações elétricas"]},
- {name:"Saúde e cuidado",roles:["enferm","saúde","clínica","farmácia","cuidador","laboratório","odont"],items:["Acolhimento e orientação ao público","Organização de prontuários e documentos","Agendamento de consultas","Atenção à higiene e organização do ambiente","Registro cuidadoso de informações","Comunicação com equipe multiprofissional","Atendimento humanizado"]},
- {name:"Tecnologia e criação",roles:["tecnologia","informática","suporte","desenvolvedor","program","designer","gráfico","ti"],items:["Informática básica","Suporte técnico básico","Instalação de programas conforme orientação","Pacote Office","Planilhas eletrônicas","Noções de lógica de programação","Controle de versões","Edição de imagens","Organização de arquivos digitais"]},
- {name:"Serviços, limpeza e segurança",roles:["limpeza","serviços gerais","porteiro","vigilante","segurança","lavador","garçom","cozinha","jardineiro"],items:["Limpeza e conservação de ambientes","Organização de materiais e equipamentos","Atendimento e orientação de visitantes","Atenção a procedimentos de segurança","Higienização de utensílios e superfícies","Organização de salão e ambiente de atendimento","Comunicação de ocorrências à liderança"]}
+function ExperienceTaskSuggestions({ value, onAdd }: { value: string; onAdd: (text: string) => void }) {
+  const [query, setQuery] = useState("");
+  const [showAll, setShowAll] = useState(false);
+  const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
+  const filteredGroups = experienceTaskGroups.filter(
+    ([role, tasks]) =>
+      !normalizedQuery ||
+      role.toLocaleLowerCase("pt-BR").includes(normalizedQuery) ||
+      tasks.some((task) => task.toLocaleLowerCase("pt-BR").includes(normalizedQuery)),
+  );
+  const visibleGroups = normalizedQuery || showAll ? filteredGroups : filteredGroups.slice(0, 6);
+  const remaining = filteredGroups.length - visibleGroups.length;
+  return (
+    <div className="experienceTaskSuggestions">
+      <div className="suggestionPanelHead">
+        <b>Exemplos de atividades por função</b>
+        <small>Escolha apenas atividades que você realmente realizou. Você pode editar o texto depois.</small>
+      </div>
+      <div className="experienceSearch">
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Buscar profissão ou atividade..."
+          aria-label="Buscar profissão ou atividade"
+        />
+        {query && (
+          <button type="button" onClick={() => setQuery("")}>
+            Limpar
+          </button>
+        )}
+      </div>
+      {filteredGroups.length ? (
+        <>
+          <div className="experienceRoleGroups">
+            {visibleGroups.map(([role, tasks]) => (
+              <details key={role}>
+                <summary>
+                  {role}
+                  <span>Ver sugestões</span>
+                </summary>
+                <div>
+                  {tasks
+                    .filter(
+                      (task) =>
+                        !normalizedQuery ||
+                        role.toLocaleLowerCase("pt-BR").includes(normalizedQuery) ||
+                        task.toLocaleLowerCase("pt-BR").includes(normalizedQuery),
+                    )
+                    .map((task) => {
+                      const active = value
+                        .toLocaleLowerCase("pt-BR")
+                        .includes(task.toLocaleLowerCase("pt-BR"));
+                      return (
+                        <button type="button" key={task} disabled={active} onClick={() => onAdd(task)}>
+                          {active ? "✓ Adicionada" : "＋ " + task}
+                        </button>
+                      );
+                    })}
+                </div>
+              </details>
+            ))}
+          </div>
+          {!normalizedQuery && filteredGroups.length > 6 && (
+            <button type="button" className="experienceShowMore" onClick={() => setShowAll(!showAll)}>
+              {showAll ? "Mostrar menos ↑" : "Ver mais opções ↓"}
+              {!showAll && <small>{remaining} funções adicionais</small>}
+            </button>
+          )}
+        </>
+      ) : (
+        <p className="experienceSearchEmpty">
+          Nenhuma sugestão encontrada. Você pode descrever a atividade manualmente no campo acima.
+        </p>
+      )}
+    </div>
+  );
+}
+function ItemEditor({
+  item,
+  index,
+  kind,
+  onChange,
+  onRemove,
+  onUp,
+  onDown,
+}: {
+  item: Item;
+  index: number;
+  kind: "experience" | "education";
+  onChange: (k: keyof Item, v: string) => void;
+  onRemove: () => void;
+  onUp: () => void;
+  onDown: () => void;
+}) {
+  const current = kind === "experience" && /\batual\b/i.test(item.period);
+  return (
+    <div className="itemEditor">
+      <div className="itemTop">
+        <b>Item {index + 1}</b>
+        <div className="itemActions">
+          <button onClick={onUp} title="Mover para cima">
+            ↑
+          </button>
+          <button onClick={onDown} title="Mover para baixo">
+            ↓
+          </button>
+          <button className="danger" onClick={onRemove}>
+            Remover
+          </button>
+        </div>
+      </div>
+      <div className="grid2">
+        <Field
+          label="Cargo / Curso"
+          placeholder={
+            kind === "experience"
+              ? "Ex.: Assistente Administrativo"
+              : "Ex.: Análise e Desenvolvimento de Sistemas"
+          }
+          value={item.title}
+          onChange={(v) => onChange("title", v)}
+        />
+        <Field
+          label="Empresa / Instituição"
+          placeholder={
+            kind === "experience" ? "Ex.: Empresa Brasileira Ltda." : "Ex.: Faculdade ou instituição"
+          }
+          value={item.subtitle}
+          onChange={(v) => onChange("subtitle", v)}
+        />
+      </div>
+      <Field
+        label="Período"
+        placeholder="Ex.: jan/2023 — atual"
+        hint="Pode usar mês/ano, somente o ano ou “Atual”."
+        value={item.period}
+        onChange={(v) => onChange("period", v)}
+      />
+      {kind === "experience" && (
+        <button
+          type="button"
+          aria-pressed={current}
+          className={"currentJob " + (current ? "active" : "")}
+          onClick={() =>
+            onChange(
+              "period",
+              current
+                ? item.period.replace(/\s*[—-]?\s*Atual\s*$/i, "").trim()
+                : item.period.trim()
+                  ? item.period.replace(/\s*[—-]?\s*$/, "") + " — Atual"
+                  : "Atual",
+            )
+          }
+        >
+          {current ? "✓ Trabalho atualmente aqui" : "Trabalho atualmente aqui"}
+        </button>
+      )}
+      <Field
+        area
+        label="Descrição"
+        placeholder={
+          kind === "experience"
+            ? "Ex.: Atendimento a clientes, organização de documentos e apoio às rotinas da equipe."
+            : "Opcional: destaque área, projeto, atividade ou aprendizado relevante."
+        }
+        hint={
+          kind === "experience"
+            ? "Prefira atividades, responsabilidades e resultados reais. Não invente informações."
+            : "Use apenas quando acrescentar algo relevante à formação."
+        }
+        value={item.description}
+        onChange={(v) => onChange("description", v)}
+      />
+      {kind === "experience" && (
+        <ExperienceTaskSuggestions
+          value={item.description}
+          onAdd={(task) => {
+            const current = item.description.trim();
+            if (!current.toLocaleLowerCase("pt-BR").includes(task.toLocaleLowerCase("pt-BR")))
+              onChange("description", current ? current + "\n" + task : task);
+          }}
+        />
+      )}
+      {kind === "experience" && item.title.trim() && item.subtitle.trim() && !item.description.trim() && (
+        <CoachTip
+          title="Conte o que você fazia"
+          text="Descreva atividades reais. Uma estrutura útil é: ação + atividade + resultado, quando houver um resultado que você possa comprovar."
+        />
+      )}
+      {kind === "education" && item.title.trim() && !item.subtitle.trim() && (
+        <CoachTip
+          title="Falta a instituição"
+          text="Se fizer sentido para sua formação, informe onde estudou. Se não houver instituição, você pode deixar em branco."
+        />
+      )}
+    </div>
+  );
+}
+function ContextChoice({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: [string, string][];
+}) {
+  return (
+    <div className="contextChoice">
+      <b>{label}</b>
+      <div>
+        {options.map(([id, text]) => (
+          <button
+            type="button"
+            key={id}
+            aria-pressed={value === id}
+            className={value === id ? "active" : ""}
+            onClick={() => onChange(id)}
+          >
+            {text}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+function CoachTip({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="coachTip">
+      <span>i</span>
+      <p>
+        <b>{title}</b>
+        <small>{text}</small>
+      </p>
+    </div>
+  );
+}
+function hasDuplicateSkills(items: string[]) {
+  const normalized = items.map((x) => x.trim().toLocaleLowerCase("pt-BR")).filter(Boolean);
+  return new Set(normalized).size !== normalized.length;
+}
+function ListEditor({
+  title,
+  items,
+  onAdd,
+  onChange,
+  onRemove,
+}: {
+  title: string;
+  items: string[];
+  onAdd: () => void;
+  onChange: (i: number, v: string) => void;
+  onRemove: (i: number) => void;
+}) {
+  return (
+    <div className="listEditor">
+      <div className="listHead">
+        <b>{title}</b>
+        <button onClick={onAdd}>＋ Adicionar</button>
+      </div>
+      {items.map((x, i) => (
+        <div className="listRow" key={i}>
+          <input
+            value={x}
+            onChange={(e) => onChange(i, e.target.value)}
+            placeholder={
+              title === "Idiomas"
+                ? "Ex.: Inglês — Intermediário"
+                : title === "Habilidades"
+                  ? "Ex.: Excel"
+                  : "Ex.: Excel Avançado — SENAI, 2025"
+            }
+          />
+          <button onClick={() => onRemove(i)} aria-label="Remover">
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const objectiveOptions = [
+  [
+    "Primeiro emprego",
+    "Busco minha primeira oportunidade profissional para desenvolver minhas habilidades, aprender novas atividades e contribuir com dedicação, responsabilidade e vontade de crescer.",
+  ],
+  [
+    "Administrativo",
+    "Busco atuar na área administrativa, contribuindo com organização, atenção aos detalhes e apoio eficiente às rotinas e aos processos da equipe.",
+  ],
+  [
+    "Atendimento ao cliente",
+    "Busco uma oportunidade em atendimento ao cliente, oferecendo comunicação cordial, escuta ativa e comprometimento com uma boa experiência para o público.",
+  ],
+  [
+    "Operacional",
+    "Desejo atuar na área operacional, contribuindo com responsabilidade, agilidade, atenção aos procedimentos e compromisso com a qualidade e a segurança.",
+  ],
+  [
+    "Tecnologia",
+    "Busco uma oportunidade na área de tecnologia para aplicar meus conhecimentos, desenvolver novas competências e colaborar com soluções e melhorias.",
+  ],
+  [
+    "Objetivo geral",
+    "Busco uma oportunidade profissional em que eu possa aplicar minhas habilidades, aprender continuamente e contribuir de forma responsável para os resultados da equipe.",
+  ],
+] as const;
+function ObjectiveSuggestions({ onChoose }: { onChoose: (value: string) => void }) {
+  return (
+    <div className="suggestionPanel">
+      <div className="suggestionPanelHead">
+        <b>Sugestões de objetivo</b>
+        <small>Selecione uma base e adapte à vaga e à sua realidade.</small>
+      </div>
+      <div className="objectiveSuggestions">
+        {objectiveOptions.map(([label, value]) => (
+          <button type="button" key={label} onClick={() => onChoose(value)}>
+            {label}
+            <span>Usar sugestão +</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+type SkillGroup = { name: string; roles: string[]; items: string[] };
+const skillGroups: SkillGroup[] = [
+  {
+    name: "Comportamentais",
+    roles: [],
+    items: [
+      "Organização",
+      "Responsabilidade",
+      "Proatividade",
+      "Atenção aos detalhes",
+      "Adaptabilidade",
+      "Facilidade de aprendizado",
+      "Pontualidade",
+      "Resolução de problemas",
+      "Autonomia",
+      "Comprometimento",
+    ],
+  },
+  {
+    name: "Comunicação e equipe",
+    roles: [],
+    items: [
+      "Comunicação clara",
+      "Trabalho em equipe",
+      "Relacionamento interpessoal",
+      "Escuta ativa",
+      "Atendimento ao público",
+      "Colaboração",
+      "Comunicação escrita",
+    ],
+  },
+  {
+    name: "Administrativo e escritório",
+    roles: ["administr", "secret", "rh", "finance", "escritur", "assistente", "office"],
+    items: [
+      "Pacote Office",
+      "Microsoft Excel",
+      "Microsoft Word",
+      "Google Workspace",
+      "Organização de documentos",
+      "Controle de arquivos",
+      "Rotinas administrativas",
+      "Digitação",
+      "Preenchimento de planilhas",
+      "Organização de agendas",
+    ],
+  },
+  {
+    name: "Atendimento, comércio e vendas",
+    roles: ["vendedor", "vendas", "caixa", "atendente", "loja", "comercial", "promotor", "recepcion"],
+    items: [
+      "Atendimento ao cliente",
+      "Pós-venda",
+      "Técnicas de vendas",
+      "Negociação",
+      "Registro de pedidos",
+      "Operação de caixa",
+      "Reposição de mercadorias",
+      "Organização de vitrines e prateleiras",
+      "Resolução de dúvidas e reclamações",
+    ],
+  },
+  {
+    name: "Estoque, logística e transporte",
+    roles: [
+      "estoque",
+      "logíst",
+      "expedi",
+      "conferente",
+      "separador",
+      "empilhadeira",
+      "motorista",
+      "entregador",
+      "repositor",
+    ],
+    items: [
+      "Controle de estoque",
+      "Conferência de mercadorias",
+      "Separação de pedidos",
+      "Armazenagem de produtos",
+      "Expedição de mercadorias",
+      "Inventário",
+      "Organização de carga",
+      "Rastreamento de entregas",
+      "Preenchimento de registros logísticos",
+    ],
+  },
+  {
+    name: "Indústria e produção",
+    roles: [
+      "produção",
+      "operador de máquina",
+      "máquinas",
+      "montador",
+      "embalador",
+      "qualidade",
+      "indústria",
+      "manutenção",
+    ],
+    items: [
+      "Apoio à linha de produção",
+      "Operação de máquinas conforme treinamento",
+      "Inspeção visual de produtos",
+      "Controle de qualidade",
+      "Embalagem e identificação",
+      "Montagem de componentes",
+      "Leitura de instruções de trabalho",
+      "Organização do posto de trabalho",
+    ],
+  },
+  {
+    name: "Construção e manutenção",
+    roles: [
+      "pedreiro",
+      "obra",
+      "pintor",
+      "eletric",
+      "encan",
+      "hidrául",
+      "mecânico",
+      "jardineiro",
+      "manutenção",
+    ],
+    items: [
+      "Preparação e organização de materiais",
+      "Leitura de instruções e medidas",
+      "Uso e conservação de ferramentas",
+      "Pintura e preparação de superfícies",
+      "Apoio a reparos e manutenção",
+      "Organização e limpeza da área de trabalho",
+      "Noções de instalações hidráulicas",
+      "Noções de instalações elétricas",
+    ],
+  },
+  {
+    name: "Saúde e cuidado",
+    roles: ["enferm", "saúde", "clínica", "farmácia", "cuidador", "laboratório", "odont"],
+    items: [
+      "Acolhimento e orientação ao público",
+      "Organização de prontuários e documentos",
+      "Agendamento de consultas",
+      "Atenção à higiene e organização do ambiente",
+      "Registro cuidadoso de informações",
+      "Comunicação com equipe multiprofissional",
+      "Atendimento humanizado",
+    ],
+  },
+  {
+    name: "Tecnologia e criação",
+    roles: ["tecnologia", "informática", "suporte", "desenvolvedor", "program", "designer", "gráfico", "ti"],
+    items: [
+      "Informática básica",
+      "Suporte técnico básico",
+      "Instalação de programas conforme orientação",
+      "Pacote Office",
+      "Planilhas eletrônicas",
+      "Noções de lógica de programação",
+      "Controle de versões",
+      "Edição de imagens",
+      "Organização de arquivos digitais",
+    ],
+  },
+  {
+    name: "Serviços, limpeza e segurança",
+    roles: [
+      "limpeza",
+      "serviços gerais",
+      "porteiro",
+      "vigilante",
+      "segurança",
+      "lavador",
+      "garçom",
+      "cozinha",
+      "jardineiro",
+    ],
+    items: [
+      "Limpeza e conservação de ambientes",
+      "Organização de materiais e equipamentos",
+      "Atendimento e orientação de visitantes",
+      "Atenção a procedimentos de segurança",
+      "Higienização de utensílios e superfícies",
+      "Organização de salão e ambiente de atendimento",
+      "Comunicação de ocorrências à liderança",
+    ],
+  },
 ];
-function SkillSuggestions({selected,onAdd,role}:{selected:string[];onAdd:(value:string)=>void;role:string}){
- const [showAll,setShowAll]=useState(false);
- const normalizedRole=role.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("pt-BR").trim();
- const matches=(group:SkillGroup)=>group.roles.some(keyword=>normalizedRole.includes(keyword.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")));
- const ordered=[...skillGroups.filter(group=>matches(group)),...skillGroups.filter(group=>!matches(group))];
- const hasMatch=skillGroups.some(matches),visibleGroups=showAll?ordered:ordered.slice(0,4),remaining=ordered.length-visibleGroups.length;
- return <div className="suggestionPanel"><div className="suggestionPanelHead"><b>Sugestões de habilidades e competências</b><small>{role.trim()&&hasMatch?"As áreas relacionadas ao seu título profissional aparecem primeiro. ":""}Toque para adicionar e inclua somente competências que você realmente possui.</small></div>{visibleGroups.map(group=><div className="skillSuggestionGroup" key={group.name}><b>{group.name}{matches(group)?" · relacionada à sua área":""}</b><div>{group.items.map(item=>{const active=selected.some(x=>x.trim().toLocaleLowerCase("pt-BR")===item.toLocaleLowerCase("pt-BR"));return <button type="button" key={item} disabled={active} className={active?"selected":""} onClick={()=>onAdd(item)}>{active?"✓ ":"＋ "}{item}</button>})}</div></div>)}{ordered.length>4&&<button type="button" className="experienceShowMore" onClick={()=>setShowAll(!showAll)}>{showAll?"Mostrar menos ↑":"Ver mais opções ↓"}{!showAll&&<small>{remaining} categorias adicionais</small>}</button>}</div>
+function SkillSuggestions({
+  selected,
+  onAdd,
+  role,
+}: {
+  selected: string[];
+  onAdd: (value: string) => void;
+  role: string;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const normalizedRole = role
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+  const matches = (group: SkillGroup) =>
+    group.roles.some((keyword) =>
+      normalizedRole.includes(keyword.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")),
+    );
+  const ordered = [
+    ...skillGroups.filter((group) => matches(group)),
+    ...skillGroups.filter((group) => !matches(group)),
+  ];
+  const hasMatch = skillGroups.some(matches),
+    visibleGroups = showAll ? ordered : ordered.slice(0, 4),
+    remaining = ordered.length - visibleGroups.length;
+  return (
+    <div className="suggestionPanel">
+      <div className="suggestionPanelHead">
+        <b>Sugestões de habilidades e competências</b>
+        <small>
+          {role.trim() && hasMatch
+            ? "As áreas relacionadas ao seu título profissional aparecem primeiro. "
+            : ""}
+          Toque para adicionar e inclua somente competências que você realmente possui.
+        </small>
+      </div>
+      {visibleGroups.map((group) => (
+        <div className="skillSuggestionGroup" key={group.name}>
+          <b>
+            {group.name}
+            {matches(group) ? " · relacionada à sua área" : ""}
+          </b>
+          <div>
+            {group.items.map((item) => {
+              const active = selected.some(
+                (x) => x.trim().toLocaleLowerCase("pt-BR") === item.toLocaleLowerCase("pt-BR"),
+              );
+              return (
+                <button
+                  type="button"
+                  key={item}
+                  disabled={active}
+                  className={active ? "selected" : ""}
+                  onClick={() => onAdd(item)}
+                >
+                  {active ? "✓ " : "＋ "}
+                  {item}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      {ordered.length > 4 && (
+        <button type="button" className="experienceShowMore" onClick={() => setShowAll(!showAll)}>
+          {showAll ? "Mostrar menos ↑" : "Ver mais opções ↓"}
+          {!showAll && <small>{remaining} categorias adicionais</small>}
+        </button>
+      )}
+    </div>
+  );
 }
 
-function sectionLabel(key:SectionKey){return {summary:"Objetivo profissional",experiences:"Experiência",education:"Formação",skills:"Habilidades",languages:"Idiomas",courses:"Cursos e certificações"}[key]}
-function PreviewSection({sectionKey,cv}:{sectionKey:SectionKey,cv:CV}){if(sectionKey==="summary")return cv.summary?<section><h3>OBJETIVO PROFISSIONAL</h3><p>{cv.summary}</p></section>:null;if(sectionKey==="experiences")return cv.experiences.length?<section><h3>EXPERIÊNCIA PROFISSIONAL</h3>{cv.experiences.map(x=><div className="resumeItem" key={x.id}><div className="row"><div><h4>{x.title||"Cargo"}</h4><b>{x.subtitle}</b></div><span>{x.period}</span></div><p>{x.description}</p></div>)}</section>:null;if(sectionKey==="education")return cv.education.length?<section><h3>FORMAÇÃO</h3>{cv.education.map(x=><div className="resumeItem" key={x.id}><div className="row"><div><h4>{x.title||"Curso"}</h4><b>{x.subtitle}</b></div><span>{x.period}</span></div></div>)}</section>:null;if(sectionKey==="skills")return cv.skills.filter(Boolean).length?<section><h3>HABILIDADES</h3><div className="chips">{cv.skills.filter(Boolean).map((x,i)=><i key={x+i}>{x}</i>)}</div></section>:null;if(sectionKey==="languages")return cv.languages.filter(Boolean).length?<section><h3>IDIOMAS</h3>{cv.languages.filter(Boolean).map((x,i)=><p key={x+i}>{x}</p>)}</section>:null;return cv.courses.filter(Boolean).length?<section><h3>CURSOS E CERTIFICAÇÕES</h3><div className="courseList">{cv.courses.flatMap(value=>value.split(/\\s*[•·]\\s*/)).filter(Boolean).map((entry,index)=>{const parts=entry.split(/\\s+[—–-]\\s+/).map(part=>part.trim()).filter(Boolean);const institution=parts.length>1?parts[0]:"";const title=parts.length>1?parts[1]:parts[0];const details=parts.length>2?parts.slice(2).join(" · "):"";return <div className="courseEntry" key={entry+index}>{institution&&<span className="courseInstitution">{institution}</span>}<strong>{title}</strong>{details&&<small>{details}</small>}</div>})}</div></section>:null;}
-function ProfilePickGroup({title,children}:{title:string;children:ReactNode}){return <section className="profilePickGroup"><b>{title}</b><div>{children}</div></section>}
-function ProfilePick({label,detail,checked,onChange}:{label:string;detail?:string;checked:boolean;onChange:()=>void}){return <label className={"profilePick "+(checked?"active":"")}><input type="checkbox" checked={checked} onChange={onChange}/><span><b>{label}</b>{detail&&<small>{detail}</small>}</span></label>}
+function sectionLabel(key: SectionKey) {
+  return {
+    summary: "Objetivo profissional",
+    experiences: "Experiência",
+    education: "Formação",
+    skills: "Habilidades",
+    languages: "Idiomas",
+    courses: "Cursos e certificações",
+  }[key];
+}
+function PreviewSection({ sectionKey, cv }: { sectionKey: SectionKey; cv: CV }) {
+  if (sectionKey === "summary")
+    return cv.summary ? (
+      <section>
+        <h3>OBJETIVO PROFISSIONAL</h3>
+        <p>{cv.summary}</p>
+      </section>
+    ) : null;
+  if (sectionKey === "experiences")
+    return cv.experiences.length ? (
+      <section>
+        <h3>EXPERIÊNCIA PROFISSIONAL</h3>
+        {cv.experiences.map((x) => (
+          <div className="resumeItem" key={x.id}>
+            <div className="row">
+              <div>
+                <h4>{x.title || "Cargo"}</h4>
+                <b>{x.subtitle}</b>
+              </div>
+              <span>{x.period}</span>
+            </div>
+            <p>{x.description}</p>
+          </div>
+        ))}
+      </section>
+    ) : null;
+  if (sectionKey === "education")
+    return cv.education.length ? (
+      <section>
+        <h3>FORMAÇÃO</h3>
+        {cv.education.map((x) => (
+          <div className="resumeItem" key={x.id}>
+            <div className="row">
+              <div>
+                <h4>{x.title || "Curso"}</h4>
+                <b>{x.subtitle}</b>
+              </div>
+              <span>{x.period}</span>
+            </div>
+          </div>
+        ))}
+      </section>
+    ) : null;
+  if (sectionKey === "skills")
+    return cv.skills.filter(Boolean).length ? (
+      <section>
+        <h3>HABILIDADES</h3>
+        <div className="chips">
+          {cv.skills.filter(Boolean).map((x, i) => (
+            <i key={x + i}>{x}</i>
+          ))}
+        </div>
+      </section>
+    ) : null;
+  if (sectionKey === "languages")
+    return cv.languages.filter(Boolean).length ? (
+      <section>
+        <h3>IDIOMAS</h3>
+        {cv.languages.filter(Boolean).map((x, i) => (
+          <p key={x + i}>{x}</p>
+        ))}
+      </section>
+    ) : null;
+  return cv.courses.filter(Boolean).length ? (
+    <section>
+      <h3>CURSOS E CERTIFICAÇÕES</h3>
+      <div className="courseList">
+        {cv.courses
+          .flatMap((value) => value.split(/\s*[•·]\s*/))
+          .filter(Boolean)
+          .map((entry, index) => {
+            const parts = entry
+              .split(/\s+[—–-]\s+/)
+              .map((part) => part.trim())
+              .filter(Boolean);
+            const institution = parts.length > 1 ? parts[0] : "";
+            const title = parts.length > 1 ? parts[1] : parts[0];
+            const details = parts.length > 2 ? parts.slice(2).join(" · ") : "";
+            return (
+              <div className="courseEntry" key={entry + index}>
+                {institution && <span className="courseInstitution">{institution}</span>}
+                <strong>{title}</strong>
+                {details && <small>{details}</small>}
+              </div>
+            );
+          })}
+      </div>
+    </section>
+  ) : null;
+}
+function ProfilePickGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="profilePickGroup">
+      <b>{title}</b>
+      <div>{children}</div>
+    </section>
+  );
+}
+function ProfilePick({
+  label,
+  detail,
+  checked,
+  onChange,
+}: {
+  label: string;
+  detail?: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <label className={"profilePick " + (checked ? "active" : "")}>
+      <input type="checkbox" checked={checked} onChange={onChange} />
+      <span>
+        <b>{label}</b>
+        {detail && <small>{detail}</small>}
+      </span>
+    </label>
+  );
+}

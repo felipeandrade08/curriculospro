@@ -1,32 +1,401 @@
 "use client";
-import {useEffect,useRef,useState,type ReactNode} from "react";
-import {authClient} from "@/lib/auth/client";
-import {PROFESSIONAL_PROFILE_KEY,ProfessionalProfile,ResumeItem,emptyProfessionalProfile,isProfessionalProfile,uid} from "@/lib/resume";
-import {SiteHeader} from "@/components/site-header";
-import {SiteFooter} from "@/components/site-footer";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { authClient } from "@/lib/auth/client";
+import {
+  PROFESSIONAL_PROFILE_KEY,
+  ProfessionalProfile,
+  ResumeItem,
+  emptyProfessionalProfile,
+  isProfessionalProfile,
+  uid,
+} from "@/lib/resume";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 
-type ListKey="courses"|"skills"|"languages";
-const PROFILE_CLOUD_REVISION="curriculospro.professionalProfileCloudRevision.v1";
-const revisionKey=(userId:string)=>PROFILE_CLOUD_REVISION+":"+userId;
-type CloudConflict={cloud:ProfessionalProfile;revision:number};
-export default function ProfessionalProfilePage(){
- const session=authClient.useSession(),hydrating=useRef(false);
- const [profile,setProfile]=useState<ProfessionalProfile>(emptyProfessionalProfile()),[ready,setReady]=useState(false),[cloudStatus,setCloudStatus]=useState(""),[conflict,setConflict]=useState<CloudConflict|null>(null);
- useEffect(()=>{try{const raw=localStorage.getItem(PROFESSIONAL_PROFILE_KEY);if(raw){const parsed=JSON.parse(raw);if(isProfessionalProfile(parsed))setProfile(parsed)}}catch{}finally{setReady(true)}},[]);
- useEffect(()=>{if(!ready||!session.data)return;const userId=session.data.user.id;let active=true;const sync=async()=>{setCloudStatus("Verificando nuvem…");try{const response=await fetch("/api/professional-profile",{cache:"no-store"});if(!response.ok)throw new Error("cloud");const data=await response.json() as {profile:ProfessionalProfile|null;revision:number};if(!active)return;const known=Number(localStorage.getItem(revisionKey(userId))||0),localRaw=localStorage.getItem(PROFESSIONAL_PROFILE_KEY),hasLocal=!!localRaw&&isProfessionalProfile(JSON.parse(localRaw));if(!data.profile){if(hasLocal){const put=await fetch("/api/professional-profile",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({profile,expectedRevision:0})});if(!put.ok)throw new Error("upload");const saved=await put.json();localStorage.setItem(revisionKey(userId),String(saved.revision));setCloudStatus("Sincronizado com a nuvem")}else setCloudStatus("Perfil ainda não salvo na nuvem");return}if(!hasLocal){hydrating.current=true;setProfile(data.profile);localStorage.setItem(PROFESSIONAL_PROFILE_KEY,JSON.stringify(data.profile));localStorage.setItem(revisionKey(userId),String(data.revision));setCloudStatus("Perfil recuperado da nuvem");requestAnimationFrame(()=>{hydrating.current=false});return}if(known===data.revision){setCloudStatus("Sincronizado com a nuvem");return}const localTime=Date.parse(profile.updatedAt)||0,cloudTime=Date.parse(data.profile.updatedAt)||0;if(known===0&&JSON.stringify(profile)===JSON.stringify(data.profile)){localStorage.setItem(revisionKey(userId),String(data.revision));setCloudStatus("Sincronizado com a nuvem");return}setConflict({cloud:data.profile,revision:data.revision});setCloudStatus(localTime===cloudTime?"Conflito de versões":"Existem alterações diferentes no dispositivo e na nuvem")}catch{if(active)setCloudStatus("Nuvem indisponível — suas alterações continuam salvas neste dispositivo")}};sync();return()=>{active=false}},[ready,session.data]);
- useEffect(()=>{if(!ready||hydrating.current)return;localStorage.setItem(PROFESSIONAL_PROFILE_KEY,JSON.stringify(profile))},[profile,ready]);
- const saveToCloud=async(expectedOverride?:number)=>{const userId=session.data?.user.id;if(!userId){setCloudStatus("Entre na sua conta para sincronizar.");return}setCloudStatus("Salvando na nuvem…");try{const expected=expectedOverride??Number(localStorage.getItem(revisionKey(userId))||0),next={...profile,updatedAt:new Date().toISOString()};const response=await fetch("/api/professional-profile",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({profile:next,expectedRevision:expected})});const data=await response.json();if(response.status===409){const fresh=await fetch("/api/professional-profile",{cache:"no-store"});const cloud=await fresh.json();if(cloud.profile)setConflict({cloud:cloud.profile,revision:cloud.revision});setCloudStatus("Conflito de versões");return}if(!response.ok)throw new Error("save");setProfile(next);localStorage.setItem(PROFESSIONAL_PROFILE_KEY,JSON.stringify(next));localStorage.setItem(revisionKey(userId),String(data.revision));setConflict(null);setCloudStatus("Sincronizado com a nuvem")}catch{setCloudStatus("Não foi possível sincronizar agora. O perfil local foi preservado.")}};
- const keepLocal=async()=>{if(!conflict)return;const revision=conflict.revision;setConflict(null);await saveToCloud(revision)};
- const useCloud=()=>{const userId=session.data?.user.id;if(!conflict||!userId)return;hydrating.current=true;setProfile(conflict.cloud);localStorage.setItem(PROFESSIONAL_PROFILE_KEY,JSON.stringify(conflict.cloud));localStorage.setItem(revisionKey(userId),String(conflict.revision));setConflict(null);setCloudStatus("Versão da nuvem aplicada neste dispositivo");requestAnimationFrame(()=>{hydrating.current=false})};
- const setText=(key:"name"|"email"|"phone"|"city",value:string)=>setProfile({...profile,[key]:value});
- const updateItem=(section:"experiences"|"education",id:string,key:keyof ResumeItem,value:string)=>setProfile({...profile,[section]:profile[section].map(x=>x.id===id?{...x,[key]:value}:x)});
- const addItem=(section:"experiences"|"education")=>setProfile({...profile,[section]:[...profile[section],{id:uid(),title:"",subtitle:"",period:"",description:""}]});
- const removeItem=(section:"experiences"|"education",id:string)=>setProfile({...profile,[section]:profile[section].filter(x=>x.id!==id)});
- const updateList=(key:ListKey,index:number,value:string)=>setProfile({...profile,[key]:profile[key].map((x,i)=>i===index?value:x)});
- const addList=(key:ListKey)=>setProfile({...profile,[key]:[...profile[key],""]});
- const removeList=(key:ListKey,index:number)=>setProfile({...profile,[key]:profile[key].filter((_,i)=>i!==index)});
- return <main className="profilePage"><SiteHeader active="curriculos"/><section className="profileHero shell"><div><span className="pill">PERFIL PROFISSIONAL</span><h1>Sua trajetória, pronta para ser reutilizada.</h1><p>Guarde aqui fatos profissionais que não mudam a cada vaga. Seus currículos continuam independentes: nada é alterado automaticamente.</p></div><div className="profileHeroActions">{session.data?<button type="button" onClick={()=>saveToCloud()}>Salvar também na nuvem</button>:<a className="secondary" href="/auth/sign-in">Entrar para sincronizar</a>}<a className="secondary" href="/editor?new=blank">Criar currículo</a><a className="secondary" href="/adaptar-vaga">Adaptar para vaga</a><a className="secondary" href="/curriculos">← Meus currículos</a></div></section><section className="profileCloudBar shell"><div><b>✓ Salvo automaticamente neste dispositivo</b><span>{session.data?(cloudStatus||"Conta conectada — você também pode manter uma cópia na nuvem."):"Você não precisa de conta para usar o Perfil Profissional. Entre somente se quiser sincronizar entre dispositivos."}</span></div>{conflict&&<div className="profileConflict"><strong>Encontramos duas versões do seu Perfil Profissional.</strong><small>Nenhuma foi sobrescrita. Escolha qual deve continuar.</small><div><button type="button" onClick={keepLocal}>Manter este dispositivo</button><button type="button" onClick={useCloud}>Usar versão da nuvem</button></div></div>}</section><section className="profileEditor shell"><aside><b>O que fica no perfil?</b><p>Contato, experiências, formação, cursos, competências e idiomas.</p><b>O que fica em cada currículo?</b><p>Título profissional, resumo, seleção de conteúdo, modelo, ordem e aparência.</p><small>O CurriculosPRO não completa informações que você não forneceu.</small></aside><div className="profileForm"><ProfileSection title="Dados pessoais" subtitle="Informações que você costuma reutilizar."><div className="profileGrid"><ProfileField label="Nome completo" value={profile.name} onChange={v=>setText("name",v)}/><ProfileField label="E-mail" value={profile.email} onChange={v=>setText("email",v)}/><ProfileField label="Telefone" value={profile.phone} onChange={v=>setText("phone",v)}/><ProfileField label="Cidade / Estado" value={profile.city} onChange={v=>setText("city",v)}/></div></ProfileSection><ProfileSection title="Experiências" subtitle="Empregos, trabalhos autônomos, estágios, projetos ou experiências informais reais." action={()=>addItem("experiences")}>{profile.experiences.map((item,i)=><ProfileItem key={item.id} item={item} label={"Experiência "+(i+1)} onChange={(k,v)=>updateItem("experiences",item.id,k,v)} onRemove={()=>removeItem("experiences",item.id)}/>)}</ProfileSection><ProfileSection title="Formação" subtitle="Inclua somente o que você sabe com segurança." action={()=>addItem("education")}>{profile.education.map((item,i)=><ProfileItem key={item.id} item={item} label={"Formação "+(i+1)} onChange={(k,v)=>updateItem("education",item.id,k,v)} onRemove={()=>removeItem("education",item.id)}/>)}</ProfileSection>{([["skills","Competências"],["courses","Cursos e certificações"],["languages","Idiomas"]] as [ListKey,string][]).map(([key,title])=><ProfileSection key={key} title={title} action={()=>addList(key)}>{profile[key].map((value,i)=><div className="profileListRow" key={i}><input value={value} onChange={e=>updateList(key,i,e.target.value)} placeholder={key==="skills"?"Ex.: Excel":key==="languages"?"Ex.: Inglês — Intermediário":"Ex.: Excel Avançado"}/><button onClick={()=>removeList(key,i)}>Remover</button></div>)}</ProfileSection>)}</div></section><SiteFooter/></main>
+type ListKey = "courses" | "skills" | "languages";
+const PROFILE_CLOUD_REVISION = "curriculospro.professionalProfileCloudRevision.v1";
+const revisionKey = (userId: string) => PROFILE_CLOUD_REVISION + ":" + userId;
+type CloudConflict = { cloud: ProfessionalProfile; revision: number };
+export default function ProfessionalProfilePage() {
+  const session = authClient.useSession(),
+    hydrating = useRef(false);
+  const [profile, setProfile] = useState<ProfessionalProfile>(emptyProfessionalProfile()),
+    [ready, setReady] = useState(false),
+    [cloudStatus, setCloudStatus] = useState(""),
+    [conflict, setConflict] = useState<CloudConflict | null>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PROFESSIONAL_PROFILE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (isProfessionalProfile(parsed)) setProfile(parsed);
+      }
+    } catch {
+    } finally {
+      setReady(true);
+    }
+  }, []);
+  useEffect(() => {
+    if (!ready || !session.data) return;
+    const userId = session.data.user.id;
+    let active = true;
+    const sync = async () => {
+      setCloudStatus("Verificando nuvem…");
+      try {
+        const response = await fetch("/api/professional-profile", { cache: "no-store" });
+        if (!response.ok) throw new Error("cloud");
+        const data = (await response.json()) as { profile: ProfessionalProfile | null; revision: number };
+        if (!active) return;
+        const known = Number(localStorage.getItem(revisionKey(userId)) || 0),
+          localRaw = localStorage.getItem(PROFESSIONAL_PROFILE_KEY),
+          hasLocal = !!localRaw && isProfessionalProfile(JSON.parse(localRaw));
+        if (!data.profile) {
+          if (hasLocal) {
+            const put = await fetch("/api/professional-profile", {
+              method: "PUT",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ profile, expectedRevision: 0 }),
+            });
+            if (!put.ok) throw new Error("upload");
+            const saved = await put.json();
+            localStorage.setItem(revisionKey(userId), String(saved.revision));
+            setCloudStatus("Sincronizado com a nuvem");
+          } else setCloudStatus("Perfil ainda não salvo na nuvem");
+          return;
+        }
+        if (!hasLocal) {
+          hydrating.current = true;
+          setProfile(data.profile);
+          localStorage.setItem(PROFESSIONAL_PROFILE_KEY, JSON.stringify(data.profile));
+          localStorage.setItem(revisionKey(userId), String(data.revision));
+          setCloudStatus("Perfil recuperado da nuvem");
+          requestAnimationFrame(() => {
+            hydrating.current = false;
+          });
+          return;
+        }
+        if (known === data.revision) {
+          setCloudStatus("Sincronizado com a nuvem");
+          return;
+        }
+        const localTime = Date.parse(profile.updatedAt) || 0,
+          cloudTime = Date.parse(data.profile.updatedAt) || 0;
+        if (known === 0 && JSON.stringify(profile) === JSON.stringify(data.profile)) {
+          localStorage.setItem(revisionKey(userId), String(data.revision));
+          setCloudStatus("Sincronizado com a nuvem");
+          return;
+        }
+        setConflict({ cloud: data.profile, revision: data.revision });
+        setCloudStatus(
+          localTime === cloudTime
+            ? "Conflito de versões"
+            : "Existem alterações diferentes no dispositivo e na nuvem",
+        );
+      } catch {
+        if (active) setCloudStatus("Nuvem indisponível — suas alterações continuam salvas neste dispositivo");
+      }
+    };
+    sync();
+    return () => {
+      active = false;
+    };
+  }, [ready, session.data]);
+  useEffect(() => {
+    if (!ready || hydrating.current) return;
+    localStorage.setItem(PROFESSIONAL_PROFILE_KEY, JSON.stringify(profile));
+  }, [profile, ready]);
+  const saveToCloud = async (expectedOverride?: number) => {
+    const userId = session.data?.user.id;
+    if (!userId) {
+      setCloudStatus("Entre na sua conta para sincronizar.");
+      return;
+    }
+    setCloudStatus("Salvando na nuvem…");
+    try {
+      const expected = expectedOverride ?? Number(localStorage.getItem(revisionKey(userId)) || 0),
+        next = { ...profile, updatedAt: new Date().toISOString() };
+      const response = await fetch("/api/professional-profile", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ profile: next, expectedRevision: expected }),
+      });
+      const data = await response.json();
+      if (response.status === 409) {
+        const fresh = await fetch("/api/professional-profile", { cache: "no-store" });
+        const cloud = await fresh.json();
+        if (cloud.profile) setConflict({ cloud: cloud.profile, revision: cloud.revision });
+        setCloudStatus("Conflito de versões");
+        return;
+      }
+      if (!response.ok) throw new Error("save");
+      setProfile(next);
+      localStorage.setItem(PROFESSIONAL_PROFILE_KEY, JSON.stringify(next));
+      localStorage.setItem(revisionKey(userId), String(data.revision));
+      setConflict(null);
+      setCloudStatus("Sincronizado com a nuvem");
+    } catch {
+      setCloudStatus("Não foi possível sincronizar agora. O perfil local foi preservado.");
+    }
+  };
+  const keepLocal = async () => {
+    if (!conflict) return;
+    const revision = conflict.revision;
+    setConflict(null);
+    await saveToCloud(revision);
+  };
+  const useCloud = () => {
+    const userId = session.data?.user.id;
+    if (!conflict || !userId) return;
+    hydrating.current = true;
+    setProfile(conflict.cloud);
+    localStorage.setItem(PROFESSIONAL_PROFILE_KEY, JSON.stringify(conflict.cloud));
+    localStorage.setItem(revisionKey(userId), String(conflict.revision));
+    setConflict(null);
+    setCloudStatus("Versão da nuvem aplicada neste dispositivo");
+    requestAnimationFrame(() => {
+      hydrating.current = false;
+    });
+  };
+  const setText = (key: "name" | "email" | "phone" | "city", value: string) =>
+    setProfile({ ...profile, [key]: value });
+  const updateItem = (
+    section: "experiences" | "education",
+    id: string,
+    key: keyof ResumeItem,
+    value: string,
+  ) =>
+    setProfile({
+      ...profile,
+      [section]: profile[section].map((x) => (x.id === id ? { ...x, [key]: value } : x)),
+    });
+  const addItem = (section: "experiences" | "education") =>
+    setProfile({
+      ...profile,
+      [section]: [...profile[section], { id: uid(), title: "", subtitle: "", period: "", description: "" }],
+    });
+  const removeItem = (section: "experiences" | "education", id: string) =>
+    setProfile({ ...profile, [section]: profile[section].filter((x) => x.id !== id) });
+  const updateList = (key: ListKey, index: number, value: string) =>
+    setProfile({ ...profile, [key]: profile[key].map((x, i) => (i === index ? value : x)) });
+  const addList = (key: ListKey) => setProfile({ ...profile, [key]: [...profile[key], ""] });
+  const removeList = (key: ListKey, index: number) =>
+    setProfile({ ...profile, [key]: profile[key].filter((_, i) => i !== index) });
+  return (
+    <main className="profilePage">
+      <SiteHeader active="curriculos" />
+      <section className="profileHero shell">
+        <div>
+          <span className="pill">PERFIL PROFISSIONAL</span>
+          <h1>Sua trajetória, pronta para ser reutilizada.</h1>
+          <p>
+            Guarde aqui fatos profissionais que não mudam a cada vaga. Seus currículos continuam
+            independentes: nada é alterado automaticamente.
+          </p>
+        </div>
+        <div className="profileHeroActions">
+          {session.data ? (
+            <button type="button" onClick={() => saveToCloud()}>
+              Salvar também na nuvem
+            </button>
+          ) : (
+            <a className="secondary" href="/auth/sign-in">
+              Entrar para sincronizar
+            </a>
+          )}
+          <a className="secondary" href="/editor?new=blank">
+            Criar currículo
+          </a>
+          <a className="secondary" href="/adaptar-vaga">
+            Adaptar para vaga
+          </a>
+          <a className="secondary" href="/curriculos">
+            ← Meus currículos
+          </a>
+        </div>
+      </section>
+      <section className="profileCloudBar shell">
+        <div>
+          <b>✓ Salvo automaticamente neste dispositivo</b>
+          <span>
+            {session.data
+              ? cloudStatus || "Conta conectada — você também pode manter uma cópia na nuvem."
+              : "Você não precisa de conta para usar o Perfil Profissional. Entre somente se quiser sincronizar entre dispositivos."}
+          </span>
+        </div>
+        {conflict && (
+          <div className="profileConflict">
+            <strong>Encontramos duas versões do seu Perfil Profissional.</strong>
+            <small>Nenhuma foi sobrescrita. Escolha qual deve continuar.</small>
+            <div>
+              <button type="button" onClick={keepLocal}>
+                Manter este dispositivo
+              </button>
+              <button type="button" onClick={useCloud}>
+                Usar versão da nuvem
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+      <section className="profileEditor shell">
+        <aside>
+          <b>O que fica no perfil?</b>
+          <p>Contato, experiências, formação, cursos, competências e idiomas.</p>
+          <b>O que fica em cada currículo?</b>
+          <p>Título profissional, resumo, seleção de conteúdo, modelo, ordem e aparência.</p>
+          <small>O CurriculosPRO não completa informações que você não forneceu.</small>
+        </aside>
+        <div className="profileForm">
+          <ProfileSection title="Dados pessoais" subtitle="Informações que você costuma reutilizar.">
+            <div className="profileGrid">
+              <ProfileField label="Nome completo" value={profile.name} onChange={(v) => setText("name", v)} />
+              <ProfileField label="E-mail" value={profile.email} onChange={(v) => setText("email", v)} />
+              <ProfileField label="Telefone" value={profile.phone} onChange={(v) => setText("phone", v)} />
+              <ProfileField
+                label="Cidade / Estado"
+                value={profile.city}
+                onChange={(v) => setText("city", v)}
+              />
+            </div>
+          </ProfileSection>
+          <ProfileSection
+            title="Experiências"
+            subtitle="Empregos, trabalhos autônomos, estágios, projetos ou experiências informais reais."
+            action={() => addItem("experiences")}
+          >
+            {profile.experiences.map((item, i) => (
+              <ProfileItem
+                key={item.id}
+                item={item}
+                label={"Experiência " + (i + 1)}
+                onChange={(k, v) => updateItem("experiences", item.id, k, v)}
+                onRemove={() => removeItem("experiences", item.id)}
+              />
+            ))}
+          </ProfileSection>
+          <ProfileSection
+            title="Formação"
+            subtitle="Inclua somente o que você sabe com segurança."
+            action={() => addItem("education")}
+          >
+            {profile.education.map((item, i) => (
+              <ProfileItem
+                key={item.id}
+                item={item}
+                label={"Formação " + (i + 1)}
+                onChange={(k, v) => updateItem("education", item.id, k, v)}
+                onRemove={() => removeItem("education", item.id)}
+              />
+            ))}
+          </ProfileSection>
+          {(
+            [
+              ["skills", "Competências"],
+              ["courses", "Cursos e certificações"],
+              ["languages", "Idiomas"],
+            ] as [ListKey, string][]
+          ).map(([key, title]) => (
+            <ProfileSection key={key} title={title} action={() => addList(key)}>
+              {profile[key].map((value, i) => (
+                <div className="profileListRow" key={i}>
+                  <input
+                    value={value}
+                    onChange={(e) => updateList(key, i, e.target.value)}
+                    placeholder={
+                      key === "skills"
+                        ? "Ex.: Excel"
+                        : key === "languages"
+                          ? "Ex.: Inglês — Intermediário"
+                          : "Ex.: Excel Avançado"
+                    }
+                  />
+                  <button onClick={() => removeList(key, i)}>Remover</button>
+                </div>
+              ))}
+            </ProfileSection>
+          ))}
+        </div>
+      </section>
+      <SiteFooter />
+    </main>
+  );
 }
-function ProfileSection({title,subtitle,action,children}:{title:string;subtitle?:string;action?:()=>void;children:ReactNode}){return <section className="profileBlock"><header><div><h2>{title}</h2>{subtitle&&<p>{subtitle}</p>}</div>{action&&<button onClick={action}>＋ Adicionar</button>}</header>{children}</section>}
-function ProfileField({label,value,onChange}:{label:string;value:string;onChange:(v:string)=>void}){return <label><span>{label}</span><input value={value} onChange={e=>onChange(e.target.value)}/></label>}
-function ProfileItem({item,label,onChange,onRemove}:{item:ResumeItem;label:string;onChange:(k:keyof ResumeItem,v:string)=>void;onRemove:()=>void}){return <div className="profileItem"><div><b>{label}</b><button onClick={onRemove}>Remover</button></div><div className="profileGrid"><ProfileField label="Título / função" value={item.title} onChange={v=>onChange("title",v)}/><ProfileField label="Empresa / instituição" value={item.subtitle} onChange={v=>onChange("subtitle",v)}/><ProfileField label="Período" value={item.period} onChange={v=>onChange("period",v)}/></div><label><span>Descrição <small>opcional</small></span><textarea rows={3} value={item.description} onChange={e=>onChange("description",e.target.value)}/></label></div>}
+function ProfileSection({
+  title,
+  subtitle,
+  action,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="profileBlock">
+      <header>
+        <div>
+          <h2>{title}</h2>
+          {subtitle && <p>{subtitle}</p>}
+        </div>
+        {action && <button onClick={action}>＋ Adicionar</button>}
+      </header>
+      {children}
+    </section>
+  );
+}
+function ProfileField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label>
+      <span>{label}</span>
+      <input value={value} onChange={(e) => onChange(e.target.value)} />
+    </label>
+  );
+}
+function ProfileItem({
+  item,
+  label,
+  onChange,
+  onRemove,
+}: {
+  item: ResumeItem;
+  label: string;
+  onChange: (k: keyof ResumeItem, v: string) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="profileItem">
+      <div>
+        <b>{label}</b>
+        <button onClick={onRemove}>Remover</button>
+      </div>
+      <div className="profileGrid">
+        <ProfileField label="Título / função" value={item.title} onChange={(v) => onChange("title", v)} />
+        <ProfileField
+          label="Empresa / instituição"
+          value={item.subtitle}
+          onChange={(v) => onChange("subtitle", v)}
+        />
+        <ProfileField label="Período" value={item.period} onChange={(v) => onChange("period", v)} />
+      </div>
+      <label>
+        <span>
+          Descrição <small>opcional</small>
+        </span>
+        <textarea
+          rows={3}
+          value={item.description}
+          onChange={(e) => onChange("description", e.target.value)}
+        />
+      </label>
+    </div>
+  );
+}
