@@ -131,7 +131,13 @@ export async function applyProviderPayment(payment: MercadoPagoPayment, row: Pay
     return { status: clientStatus(row.status, iso(row.expires_at)), granted: false };
   }
   if (payment.status === "refunded" || payment.status === "charged_back") {
-    await revokeAccess(row.id, payment.status, payment.status_detail || null);
+    const revoked = await revokeAccess(row.id, payment.status, payment.status_detail || null);
+    if (!revoked) {
+      // Estornado antes de o acesso ser liberado: só registra o status.
+      const sql = db();
+      await sql`UPDATE payments SET status=${payment.status}, status_detail=${payment.status_detail || null}, updated_at=now()
+        WHERE id=${row.id} AND granted_at IS NULL`;
+    }
     return { status: "cancelled" as const, granted: false };
   }
   if (payment.status === "approved") {
