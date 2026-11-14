@@ -1,0 +1,862 @@
+/* ==========================================================================
+   Modelos de currículo (.cv)
+   A folha tem 794 × 1123 px (A4 a 96 dpi). Todas as medidas usam --k, que
+   combina a escala do ajuste automático (--s) com a densidade (--d).
+   ========================================================================== */
+.cv {
+  --s: 1;
+  --d: 1;
+  --k: calc(var(--s) * var(--d));
+  --accent: #0b6bcb;
+  --ink: #172033;
+  --text: #333d4d;
+  --muted: #667085;
+  --line: #e4e8ee;
+  --soft: color-mix(in srgb, var(--accent) 9%, #fff);
+  --pad-y: calc(50px * var(--k));
+  --pad-x: calc(54px * var(--k));
+  --gap: calc(19px * var(--k));
+  --side-w: 236px;
+  position: relative;
+  box-sizing: border-box;
+  width: 794px;
+  min-height: 1123px;
+  padding: var(--pad-y) var(--pad-x);
+  background: #fff;
+  color: var(--text);
+  font-family: "Inter Variable", Inter, "Segoe UI", Arial, sans-serif;
+  font-size: calc(10.6px * var(--k));
+  line-height: 1.5;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "head" "main";
+  align-content: start;
+  text-align: left;
+  overflow-wrap: anywhere;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.cv *,
+.cv *::before,
+.cv *::after {
+  box-sizing: border-box;
+}
+.cv-d-compact {
+  --d: 0.92;
+}
+.cv h1,
+.cv h2,
+.cv h3,
+.cv p,
+.cv ul {
+  margin: 0;
+}
+
+/* Cabeçalho */
+.cv-head {
+  grid-area: head;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "photo id" "photo contact";
+  column-gap: calc(20px * var(--k));
+  align-items: center;
+}
+.cv-head > .cv-photo {
+  grid-area: photo;
+}
+.cv-id {
+  grid-area: id;
+  align-self: end;
+}
+.cv-contact {
+  grid-area: contact;
+  align-self: start;
+}
+.cv-head:not(:has(.cv-photo)) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "id" "contact";
+}
+.cv-photo,
+.cv-side-photo {
+  display: block;
+  width: calc(92px * var(--k));
+  height: calc(92px * var(--k));
+  border-radius: 50%;
+  object-fit: cover;
+}
+.cv-mono {
+  display: none;
+}
+.cv-name {
+  font-size: calc(30px * var(--k));
+  line-height: 1.08;
+  font-weight: 760;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+.cv-role {
+  margin-top: calc(5px * var(--k)) !important;
+  font-size: calc(13.5px * var(--k));
+  font-weight: 600;
+  color: var(--accent);
+}
+.cv-ph {
+  opacity: 0.35;
+}
+.cv-contact,
+.cv-side-contact {
+  list-style: none;
+  padding: 0;
+  font-size: calc(9.9px * var(--k));
+  color: var(--muted);
+}
+.cv-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(4px * var(--k)) calc(16px * var(--k));
+  margin-top: calc(10px * var(--k)) !important;
+}
+.cv-contact li,
+.cv-side-contact li {
+  display: flex;
+  align-items: center;
+  gap: calc(6px * var(--k));
+  min-width: 0;
+}
+.cv-contact svg,
+.cv-side-contact svg {
+  width: 1.2em;
+  height: 1.2em;
+  flex: none;
+  color: var(--accent);
+}
+
+/* Colunas */
+.cv-main {
+  grid-area: main;
+  min-width: 0;
+}
+.cv-side {
+  grid-area: side;
+  min-width: 0;
+}
+.cv-side .cv-sec:first-child {
+  margin-top: 0;
+}
+.cv-sec-contact {
+  display: none;
+}
+
+/* Seções */
+.cv-sec {
+  margin-top: var(--gap);
+  break-inside: auto;
+}
+.cv-h {
+  display: flex;
+  align-items: center;
+  gap: calc(10px * var(--k));
+  margin-bottom: calc(9px * var(--k)) !important;
+  font-size: calc(9.6px * var(--k));
+  font-weight: 760;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  break-after: avoid;
+}
+.cv-h::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.cv-summary {
+  color: var(--text);
+}
+.cv-item {
+  break-inside: avoid;
+}
+.cv-item + .cv-item {
+  margin-top: calc(12px * var(--k));
+}
+.cv-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: calc(12px * var(--k));
+}
+.cv-item h3 {
+  font-size: calc(11.6px * var(--k));
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.cv-period {
+  flex: none;
+  font-size: calc(9.4px * var(--k));
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.cv-org {
+  margin-top: calc(1px * var(--k)) !important;
+  font-size: calc(10.3px * var(--k));
+  font-weight: 600;
+  color: #475467;
+}
+.cv-desc {
+  margin-top: calc(5px * var(--k));
+}
+.cv-desc p + p,
+.cv-desc p + ul,
+.cv-desc ul + p {
+  margin-top: calc(3px * var(--k));
+}
+.cv-desc ul {
+  padding-left: 1.15em;
+  list-style: disc outside;
+}
+.cv-desc li {
+  display: list-item;
+}
+.cv-desc li + li {
+  margin-top: calc(2px * var(--k));
+}
+.cv-desc li::marker {
+  color: var(--accent);
+}
+.cv-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(6px * var(--k));
+}
+.cv-tags span {
+  padding: calc(3px * var(--k)) calc(10px * var(--k));
+  border-radius: 999px;
+  background: var(--soft);
+  color: color-mix(in srgb, var(--accent) 80%, #000);
+  font-size: calc(9.6px * var(--k));
+  font-weight: 600;
+}
+.cv-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: calc(5px * var(--k));
+}
+.cv-lang-list b,
+.cv-course b {
+  font-weight: 650;
+  color: var(--ink);
+}
+.cv-lang-list span {
+  color: var(--muted);
+}
+.cv-course span {
+  display: block;
+  font-size: calc(9.4px * var(--k));
+  color: var(--muted);
+}
+.cv-main .cv-course-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: calc(18px * var(--k));
+}
+.cv-main .cv-lang-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(4px * var(--k)) calc(22px * var(--k));
+}
+
+/* ---------- Colunas laterais ---------- */
+.cv-side-left,
+.cv-side-right {
+  column-gap: calc(30px * var(--k));
+}
+.cv-side-left {
+  grid-template-columns: var(--side-w) minmax(0, 1fr);
+  grid-template-areas: "side head" "side main";
+}
+.cv-side-right {
+  grid-template-columns: minmax(0, 1fr) var(--side-w);
+  grid-template-areas: "head head" "main side";
+}
+.cv-side-left .cv-sec-contact,
+.cv-side-right .cv-sec-contact {
+  display: block;
+}
+.cv-side-left .cv-contact,
+.cv-side-right .cv-contact {
+  display: none;
+}
+.cv-side-contact {
+  display: grid;
+  gap: calc(7px * var(--k));
+}
+.cv-side .cv-skill-list li {
+  padding-left: calc(12px * var(--k));
+  position: relative;
+}
+.cv-side .cv-skill-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: calc(5px * var(--k));
+  height: calc(5px * var(--k));
+  border-radius: 50%;
+  background: var(--accent);
+}
+.cv-side .cv-lang-list li span {
+  display: block;
+}
+
+/* ==========================================================================
+   1. Essencial
+   ========================================================================== */
+.cv-essential .cv-head {
+  padding-bottom: calc(18px * var(--k));
+  border-bottom: calc(2.5px * var(--k)) solid var(--accent);
+}
+
+/* ==========================================================================
+   2. Moderno — faixa colorida no topo
+   ========================================================================== */
+.cv-modern {
+  padding-top: 0;
+}
+.cv-modern .cv-head {
+  margin: 0 calc(var(--pad-x) * -1);
+  padding: calc(40px * var(--k)) var(--pad-x) calc(30px * var(--k));
+  background: var(--accent);
+  color: #fff;
+}
+.cv-modern .cv-name {
+  color: #fff;
+}
+.cv-modern .cv-role {
+  color: rgba(255, 255, 255, 0.86);
+}
+.cv-modern .cv-contact {
+  color: rgba(255, 255, 255, 0.9);
+}
+.cv-modern .cv-contact svg {
+  color: #fff;
+}
+.cv-modern .cv-photo {
+  border: calc(3px * var(--k)) solid rgba(255, 255, 255, 0.85);
+}
+.cv-modern .cv-h {
+  color: var(--ink);
+}
+.cv-modern .cv-h::before {
+  content: "";
+  width: calc(14px * var(--k));
+  height: calc(4px * var(--k));
+  border-radius: 4px;
+  background: var(--accent);
+  order: -1;
+}
+
+/* ==========================================================================
+   3. Executivo — serifado e centralizado
+   ========================================================================== */
+.cv-executive {
+  --accent-ink: var(--ink);
+}
+.cv-executive .cv-head {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "id" "contact";
+  text-align: center;
+  padding-bottom: calc(16px * var(--k));
+  border-bottom: 1px solid var(--ink);
+}
+.cv-executive .cv-name {
+  font-family: "Lora Variable", Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  font-size: calc(31px * var(--k));
+  letter-spacing: 0.01em;
+}
+.cv-executive .cv-role {
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: calc(10.5px * var(--k));
+}
+.cv-executive .cv-contact {
+  justify-content: center;
+}
+.cv-executive .cv-contact svg {
+  color: var(--muted);
+}
+.cv-executive .cv-h {
+  justify-content: center;
+  font-family: "Lora Variable", Georgia, serif;
+  font-size: calc(11px * var(--k));
+  letter-spacing: 0.18em;
+  color: var(--ink);
+}
+.cv-executive .cv-h::before {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.cv-executive .cv-item h3 {
+  font-family: "Lora Variable", Georgia, serif;
+  font-size: calc(12.2px * var(--k));
+}
+.cv-executive .cv-tags span {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 3px;
+}
+.cv-executive .cv-desc li::marker {
+  color: var(--muted);
+}
+
+/* ==========================================================================
+   4. Minimalista — títulos em coluna
+   ========================================================================== */
+.cv-minimal .cv-name {
+  font-weight: 300;
+  font-size: calc(34px * var(--k));
+  letter-spacing: -0.03em;
+}
+.cv-minimal .cv-role {
+  color: var(--muted);
+  font-weight: 500;
+}
+.cv-minimal .cv-head {
+  padding-bottom: calc(20px * var(--k));
+}
+.cv-minimal .cv-sec {
+  display: grid;
+  grid-template-columns: calc(128px * var(--k)) minmax(0, 1fr);
+  column-gap: calc(22px * var(--k));
+  margin-top: 0;
+  padding: calc(14px * var(--k)) 0;
+  border-top: 1px solid var(--line);
+}
+.cv-minimal .cv-h {
+  margin: calc(2px * var(--k)) 0 0 !important;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  font-size: calc(9px * var(--k));
+  align-items: flex-start;
+}
+.cv-minimal .cv-h::after {
+  display: none;
+}
+.cv-minimal .cv-tags span {
+  background: none;
+  padding: 0;
+  color: var(--text);
+  font-weight: 500;
+}
+.cv-minimal .cv-tags {
+  gap: calc(4px * var(--k)) calc(14px * var(--k));
+}
+.cv-minimal .cv-tags span + span::before {
+  content: "·";
+  margin-right: calc(14px * var(--k));
+  margin-left: calc(-14px * var(--k));
+  color: var(--muted);
+  position: relative;
+  left: calc(-3px * var(--k));
+}
+
+/* ==========================================================================
+   5. Criativo — coluna colorida à esquerda
+   ========================================================================== */
+.cv-creative {
+  --side-w: 250px;
+  padding: 0;
+  column-gap: 0;
+  background: linear-gradient(to right, var(--accent) 0 var(--side-w), #fff var(--side-w));
+}
+.cv-creative .cv-side {
+  padding: calc(44px * var(--k)) calc(26px * var(--k));
+  color: rgba(255, 255, 255, 0.92);
+}
+.cv-creative .cv-head,
+.cv-creative .cv-main {
+  padding-left: calc(36px * var(--k));
+  padding-right: calc(44px * var(--k));
+}
+.cv-creative .cv-head {
+  padding-top: calc(48px * var(--k));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "id" "contact";
+}
+.cv-creative .cv-head > .cv-photo {
+  display: none;
+}
+.cv-creative .cv-main {
+  padding-bottom: calc(44px * var(--k));
+}
+.cv-creative .cv-name {
+  font-size: calc(32px * var(--k));
+}
+.cv-creative .cv-side-photo {
+  width: calc(132px * var(--k));
+  height: calc(132px * var(--k));
+  margin: 0 auto calc(26px * var(--k));
+  border: calc(4px * var(--k)) solid rgba(255, 255, 255, 0.35);
+}
+.cv-creative .cv-side .cv-h {
+  color: #fff;
+}
+.cv-creative .cv-side .cv-h::after {
+  background: rgba(255, 255, 255, 0.35);
+}
+.cv-creative .cv-side .cv-sec {
+  margin-top: calc(24px * var(--k));
+}
+.cv-creative .cv-side-contact,
+.cv-creative .cv-side .cv-lang-list span,
+.cv-creative .cv-side .cv-course span {
+  color: rgba(255, 255, 255, 0.82);
+}
+.cv-creative .cv-side-contact svg {
+  color: #fff;
+}
+.cv-creative .cv-side b {
+  color: #fff;
+}
+.cv-creative .cv-side .cv-skill-list li::before {
+  background: #fff;
+}
+.cv-creative .cv-main .cv-h::after {
+  height: calc(2px * var(--k));
+  background: var(--soft);
+}
+
+/* ==========================================================================
+   6. Profissional — lateral clara à direita
+   ========================================================================== */
+.cv-professional {
+  --side-w: 232px;
+}
+.cv-professional .cv-head {
+  padding-bottom: calc(20px * var(--k));
+  margin-bottom: calc(4px * var(--k));
+  border-bottom: 1px solid var(--line);
+}
+.cv-professional .cv-side {
+  margin-top: var(--gap);
+  padding: calc(18px * var(--k)) calc(18px * var(--k));
+  background: #f4f6f9;
+  border-radius: calc(10px * var(--k));
+  align-self: start;
+}
+.cv-professional .cv-side .cv-sec {
+  margin-top: calc(18px * var(--k));
+}
+.cv-professional .cv-side .cv-sec:first-child {
+  margin-top: 0;
+}
+.cv-professional .cv-h {
+  color: var(--ink);
+}
+.cv-professional .cv-h::before {
+  content: "";
+  width: calc(4px * var(--k));
+  height: calc(13px * var(--k));
+  border-radius: 2px;
+  background: var(--accent);
+  order: -1;
+}
+.cv-professional .cv-side .cv-h::after {
+  display: none;
+}
+
+/* ==========================================================================
+   7. Elegante — monograma e serifa
+   ========================================================================== */
+.cv-elegant .cv-head {
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "mono id" "mono contact";
+  padding-bottom: calc(18px * var(--k));
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, #fff);
+}
+.cv-elegant .cv-head > .cv-photo {
+  display: none;
+}
+.cv-elegant .cv-mono {
+  grid-area: mono;
+  display: grid;
+  place-items: center;
+  width: calc(72px * var(--k));
+  height: calc(72px * var(--k));
+  border-radius: 50%;
+  border: calc(1.5px * var(--k)) solid var(--accent);
+  color: var(--accent);
+  font-family: "Lora Variable", Georgia, serif;
+  font-size: calc(24px * var(--k));
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.cv-elegant .cv-name {
+  font-family: "Lora Variable", Georgia, serif;
+  font-weight: 500;
+  font-size: calc(31px * var(--k));
+  letter-spacing: 0;
+}
+.cv-elegant .cv-role {
+  font-family: "Lora Variable", Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: calc(13px * var(--k));
+}
+.cv-elegant .cv-h {
+  font-family: "Lora Variable", Georgia, serif;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-style: italic;
+  font-weight: 600;
+  font-size: calc(14px * var(--k));
+}
+.cv-elegant .cv-h::after {
+  background: color-mix(in srgb, var(--accent) 25%, #fff);
+}
+.cv-elegant .cv-tags span {
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, #fff);
+  color: var(--text);
+}
+
+/* ==========================================================================
+   8. Compacto — mais conteúdo por página
+   ========================================================================== */
+.cv-compact {
+  --d: 0.9;
+  --pad-y: calc(40px * var(--k));
+  --pad-x: calc(46px * var(--k));
+  --gap: calc(14px * var(--k));
+}
+.cv-compact.cv-d-compact {
+  --d: 0.84;
+}
+.cv-compact .cv-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "id contact";
+  align-items: end;
+  padding-bottom: calc(12px * var(--k));
+  border-bottom: calc(2px * var(--k)) solid var(--ink);
+}
+.cv-compact .cv-head > .cv-photo {
+  display: none;
+}
+.cv-compact .cv-contact {
+  display: grid;
+  justify-items: end;
+  gap: calc(2px * var(--k));
+  margin: 0 !important;
+}
+.cv-compact .cv-contact li {
+  flex-direction: row-reverse;
+}
+.cv-compact .cv-h {
+  padding: calc(4px * var(--k)) calc(8px * var(--k));
+  background: #f1f3f6;
+  color: var(--ink);
+  border-left: calc(3px * var(--k)) solid var(--accent);
+}
+.cv-compact .cv-h::after {
+  display: none;
+}
+.cv-compact .cv-tags span {
+  background: none;
+  padding: 0;
+  color: var(--text);
+  font-weight: 500;
+}
+.cv-compact .cv-tags span:not(:last-child)::after {
+  content: " ·";
+  color: var(--muted);
+}
+
+/* ==========================================================================
+   9. Tecnologia — detalhes monoespaçados
+   ========================================================================== */
+.cv-tech {
+  --side-w: 210px;
+}
+.cv-tech .cv-head {
+  padding-bottom: calc(16px * var(--k));
+}
+.cv-tech .cv-head > .cv-photo {
+  display: none;
+}
+.cv-tech .cv-name {
+  font-weight: 800;
+}
+.cv-tech .cv-name::after {
+  content: "_";
+  color: var(--accent);
+}
+.cv-tech .cv-role {
+  font-family: "JetBrains Mono Variable", ui-monospace, Menlo, Consolas, monospace;
+  font-size: calc(11.5px * var(--k));
+  font-weight: 600;
+}
+.cv-tech .cv-h {
+  font-family: "JetBrains Mono Variable", ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  font-size: calc(10.5px * var(--k));
+  color: var(--ink);
+}
+.cv-tech .cv-h::before {
+  content: "//";
+  color: var(--accent);
+  order: -1;
+}
+.cv-tech .cv-period {
+  font-family: "JetBrains Mono Variable", ui-monospace, monospace;
+  font-weight: 500;
+}
+.cv-tech .cv-side {
+  margin-top: var(--gap);
+  padding-left: calc(18px * var(--k));
+  border-left: 1px solid var(--line);
+  align-self: stretch;
+}
+.cv-tech .cv-side .cv-sec {
+  margin-top: calc(18px * var(--k));
+}
+.cv-tech .cv-side .cv-sec:first-child {
+  margin-top: 0;
+}
+.cv-tech .cv-side .cv-h::after {
+  display: none;
+}
+.cv-tech .cv-side .cv-skill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(5px * var(--k));
+}
+.cv-tech .cv-side .cv-skill-list li {
+  padding: calc(2px * var(--k)) calc(7px * var(--k));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, #fff);
+  border-radius: calc(4px * var(--k));
+  font-family: "JetBrains Mono Variable", ui-monospace, monospace;
+  font-size: calc(9px * var(--k));
+  color: var(--ink);
+}
+.cv-tech .cv-side .cv-skill-list li::before {
+  display: none;
+}
+
+/* ==========================================================================
+   10. Corporativo — lateral escura
+   ========================================================================== */
+.cv-corporate {
+  --side-w: 240px;
+  --dark: color-mix(in srgb, var(--accent) 78%, #050b16);
+  padding: 0;
+  column-gap: 0;
+  background: linear-gradient(to right, var(--dark) 0 var(--side-w), #fff var(--side-w));
+}
+.cv-corporate .cv-side {
+  padding: calc(46px * var(--k)) calc(26px * var(--k));
+  color: rgba(255, 255, 255, 0.86);
+}
+.cv-corporate .cv-head,
+.cv-corporate .cv-main {
+  padding-left: calc(36px * var(--k));
+  padding-right: calc(44px * var(--k));
+}
+.cv-corporate .cv-head {
+  padding-top: calc(50px * var(--k));
+  padding-bottom: calc(16px * var(--k));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "id" "contact";
+}
+.cv-corporate .cv-head > .cv-photo {
+  display: none;
+}
+.cv-corporate .cv-main {
+  padding-bottom: calc(44px * var(--k));
+}
+.cv-corporate .cv-name {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: calc(28px * var(--k));
+}
+.cv-corporate .cv-role {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: calc(10.5px * var(--k));
+}
+.cv-corporate .cv-side-photo {
+  width: calc(128px * var(--k));
+  height: calc(128px * var(--k));
+  margin: 0 auto calc(26px * var(--k));
+  border: calc(3px * var(--k)) solid rgba(255, 255, 255, 0.25);
+}
+.cv-corporate .cv-side .cv-h {
+  color: #fff;
+  letter-spacing: 0.16em;
+}
+.cv-corporate .cv-side .cv-h::after {
+  background: rgba(255, 255, 255, 0.22);
+}
+.cv-corporate .cv-side .cv-sec {
+  margin-top: calc(24px * var(--k));
+}
+.cv-corporate .cv-side-contact,
+.cv-corporate .cv-side .cv-lang-list span,
+.cv-corporate .cv-side .cv-course span {
+  color: rgba(255, 255, 255, 0.75);
+}
+.cv-corporate .cv-side-contact svg {
+  color: #9cc7ff;
+}
+.cv-corporate .cv-side b {
+  color: #fff;
+}
+.cv-corporate .cv-side .cv-skill-list li::before {
+  background: #9cc7ff;
+}
+.cv-corporate .cv-main .cv-h {
+  color: var(--ink);
+}
+.cv-corporate .cv-main .cv-h::after {
+  flex: none;
+  width: calc(32px * var(--k));
+  height: calc(2px * var(--k));
+  background: var(--accent);
+}
+.cv-corporate .cv-main .cv-h {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(5px * var(--k));
+}
+
+/* ==========================================================================
+   Miniaturas
+   ========================================================================== */
+.cvThumb {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  flex: none;
+}
+.cvThumbInner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 794px;
+  transform: scale(var(--k));
+  transform-origin: top left;
+  pointer-events: none;
+}
+.cvThumbInner .cv {
+  min-height: 1123px;
+}

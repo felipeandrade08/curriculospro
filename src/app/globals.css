@@ -10822,3 +10822,222 @@ footer.adminFoot {
   color: #fff;
   box-shadow: 0 6px 16px rgba(8, 124, 240, 0.25);
 }
+
+/* ==========================================================================
+   Impressão/PDF: o currículo começa exatamente no topo da folha A4 e nunca
+   gera página em branco por sobra de margem. Conteúdo longo continua quebrando
+   normalmente em várias páginas.
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .editor,
+  .editor .workspace,
+  .editor .preview {
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .editor .paper {
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    width: 210mm !important;
+    /* 1mm de folga evita que arredondamentos criem uma página extra vazia */
+    min-height: 296mm !important;
+  }
+  .devCredit,
+  .previewBar,
+  .pageGuide,
+  .fitBar {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Editor: prévia com o novo componente .cv
+   ========================================================================== */
+.preview {
+  position: relative;
+}
+.cvStage {
+  width: 794px;
+  margin: 0 auto;
+}
+.cvLive {
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.06),
+    0 24px 60px rgba(16, 33, 58, 0.12);
+}
+.cvMeasure {
+  position: absolute;
+  top: 0;
+  left: -20000px;
+  width: 794px;
+  visibility: hidden;
+  pointer-events: none;
+  contain: layout paint;
+}
+.pageGuide {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  height: 0;
+  border-top: 2px dashed #f59e0b;
+  pointer-events: none;
+}
+.pageGuide span {
+  position: absolute;
+  right: 10px;
+  top: -11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font:
+    700 11px/1.4 "Inter Variable",
+    Inter,
+    sans-serif;
+}
+.fitBar {
+  max-width: 794px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 9px 12px 9px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  border: 1px solid;
+}
+.fitBar.ok {
+  background: #effaf4;
+  border-color: #c6ecd7;
+  color: #1c6b46;
+}
+.fitBar.warn {
+  background: #fff8eb;
+  border-color: #f6dca8;
+  color: #7a4a00;
+}
+.fitBar button {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 9px;
+  padding: 6px 12px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.fitBar button.primaryFit {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #fff;
+}
+.fitBar small {
+  font-size: 12px;
+}
+.templatePicker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.templatePicker button {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  padding: 10px 10px 9px;
+  border: 1.5px solid #e1e7ef;
+  border-radius: 14px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+  font: inherit;
+}
+.templatePicker button:hover {
+  border-color: #9ec5f5;
+  transform: translateY(-1px);
+}
+.templatePicker button.selected {
+  border-color: #0b6bcb;
+  background: #eef6ff;
+  box-shadow: 0 0 0 3px rgba(11, 107, 203, 0.14);
+}
+.templatePicker .cvThumb {
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(16, 33, 58, 0.1);
+}
+.templatePicker button > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #1c2a3d;
+}
+.templatePicker em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #0b6bcb;
+  background: #e2efff;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+.swatches .swatchCustom {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px dashed #9aa8ba;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #5b6b80;
+  font-weight: 800;
+}
+.swatchCustom input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+@media print {
+  .editor .cvStage {
+    zoom: 1 !important;
+    width: auto !important;
+    margin: 0 !important;
+  }
+  .editor .cv {
+    width: 210mm !important;
+    min-height: 296mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+  .cvMeasure,
+  .fitBar,
+  .pageGuide {
+    display: none !important;
+  }
+}
+/* O medidor considera apenas a altura do conteúdo, sem a altura mínima da folha. */
+.cvMeasure .cv {
+  min-height: 0 !important;
+}
