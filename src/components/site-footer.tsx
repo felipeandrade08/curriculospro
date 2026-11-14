@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
-import { SUPPORT_WHATSAPP_URL } from "@/lib/site";
+import { COMPANY, SUPPORT_WHATSAPP_URL } from "@/lib/site";
 
 const linkedinUrl = "https://www.linkedin.com/in/felipe-andrade-0331b9205/";
 
@@ -43,7 +43,10 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="wrap sf-bottom">
-        <span>© {new Date().getFullYear()} CurriculosPRO</span>
+        <span>
+          © {new Date().getFullYear()} {COMPANY.legalName}, CNPJ {COMPANY.cnpj}, telefone e WhatsApp{" "}
+          {COMPANY.phone}
+        </span>
         <span>
           Desenvolvido por{" "}
           <a href={linkedinUrl} target="_blank" rel="noopener noreferrer">

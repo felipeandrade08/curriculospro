@@ -2,7 +2,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import type { Metadata } from "next";
 import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
-import { SUPPORT_WHATSAPP_URL } from "@/lib/site";
+import { COMPANY, SUPPORT_WHATSAPP_URL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Termos de uso", alternates: { canonical: "/termos" } };
 export default function Terms() {
@@ -16,6 +16,13 @@ export default function Terms() {
           Ao utilizar o CurriculosPRO, você concorda em usar a ferramenta para criar e organizar currículos
           com informações sob sua responsabilidade.
         </p>
+        <section>
+          <h2>Quem oferece o serviço</h2>
+          <p>
+            O CurriculosPRO é oferecido por {COMPANY.legalName}, inscrita no CNPJ {COMPANY.cnpj}. Atendimento
+            pelo telefone e WhatsApp {COMPANY.phone}.
+          </p>
+        </section>
         <section>
           <h2>Conteúdo do currículo</h2>
           <p>
