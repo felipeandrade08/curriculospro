@@ -1,22 +1,279 @@
 "use client";
-import {useEffect,useState} from "react";
-import {CloudSync,LAST_CLOUD_USER,PENDING_DELETIONS} from "./cloud-sync";
-import {ProfessionalProfileCard} from "./professional-profile-card";
-import {SiteHeader} from "@/components/site-header";
-import {SiteFooter} from "@/components/site-footer";
-import {ACTIVE_RESUME_KEY,LEGACY_RESUME_KEY,RESUME_LIBRARY_KEY,ResumeDocument,createResume,parseBackup,readRecovery,storeRecovery,cloneResume,migrateLegacyResume} from "@/lib/resume";
+import { useEffect, useState } from "react";
+import { CloudSync, LAST_CLOUD_USER, PENDING_DELETIONS } from "./cloud-sync";
+import { ProfessionalProfileCard } from "./professional-profile-card";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import {
+  ACTIVE_RESUME_KEY,
+  LEGACY_RESUME_KEY,
+  RESUME_LIBRARY_KEY,
+  ResumeDocument,
+  createResume,
+  parseBackup,
+  readRecovery,
+  storeRecovery,
+  cloneResume,
+  migrateLegacyResume,
+} from "@/lib/resume";
 
-export default function ResumesPage(){
- const [items,setItems]=useState<ResumeDocument[]>([]),[recoveryDate,setRecoveryDate]=useState("");
- useEffect(()=>{const refresh=()=>{try{let list:ResumeDocument[]=JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY)||"[]");if(!list.length){const legacy=localStorage.getItem(LEGACY_RESUME_KEY);if(legacy){const doc=migrateLegacyResume(legacy);list=[doc];localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(list))}}setItems(list);const recovery=readRecovery();if(recovery)setRecoveryDate(recovery.createdAt)}catch{}};refresh();window.addEventListener("curriculospro:library-changed",refresh);return()=>window.removeEventListener("curriculospro:library-changed",refresh)},[]);
- const save=(list:ResumeDocument[])=>{setItems(list);localStorage.setItem(RESUME_LIBRARY_KEY,JSON.stringify(list))};
- const open=(id:string)=>{localStorage.setItem(ACTIVE_RESUME_KEY,id);location.href="/editor"};
- const add=(mode:"blank"|"example")=>{const doc=createResume(mode);save([doc,...items]);open(doc.id)};
- const rename=(doc:ResumeDocument)=>{const title=prompt("Nome deste currículo:",doc.title)?.trim();if(title)save(items.map(x=>x.id===doc.id?{...x,title,updatedAt:new Date().toISOString()}:x))};
- const duplicate=(doc:ResumeDocument)=>save([cloneResume(doc),...items]);
- const remove=(id:string)=>{if(confirm("Excluir este currículo? Você poderá restaurar a última recuperação.")){storeRecovery(items,"delete");setRecoveryDate(new Date().toISOString());try{const userId=localStorage.getItem(LAST_CLOUD_USER);if(userId){const revisions:Record<string,number>=JSON.parse(localStorage.getItem("curriculospro.cloudRevisions.v1:"+userId)||"{}");if(Number(revisions[id]||0)>0){const key=PENDING_DELETIONS+":"+userId,pending:string[]=JSON.parse(localStorage.getItem(key)||"[]");if(!pending.includes(id))localStorage.setItem(key,JSON.stringify([...pending,id]))}}}catch{}save(items.filter(x=>x.id!==id))}};
- const restore=()=>{const recovery=readRecovery();if(recovery&&confirm("Restaurar a biblioteca para o estado salvo antes da última alteração?")){try{const userId=localStorage.getItem(LAST_CLOUD_USER);if(userId){const key=PENDING_DELETIONS+":"+userId,pending:string[]=JSON.parse(localStorage.getItem(key)||"[]"),restoredIds=new Set(recovery.resumes.map(x=>x.id));localStorage.setItem(key,JSON.stringify(pending.filter(id=>!restoredIds.has(id))))}}catch{}save(recovery.resumes)}};
- const exportAll=()=>{const blob=new Blob([JSON.stringify({product:"CurriculosPRO",version:3,exportedAt:new Date().toISOString(),resumes:items},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="curriculospro-backup.json";a.click();URL.revokeObjectURL(a.href)};
- const importFile=(file?:File)=>{if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const incoming=parseBackup(String(reader.result));storeRecovery(items,"import");setRecoveryDate(new Date().toISOString());save([...incoming.map((x:ResumeDocument)=>cloneResume(x,x.title)),...items])}catch{alert("Arquivo de backup inválido.")}};reader.readAsText(file)};
- return <main className="libraryPage"><SiteHeader active="curriculos"/><section className="libraryUtility shell"><div><span className="librarySecureDot"/>Área pessoal de currículos</div><button className="ghostAction" disabled={!items.length} title={items.length?"Baixar uma cópia dos seus currículos":"Crie um currículo antes de exportar"} onClick={exportAll}>Exportar backup</button></section><section className="libraryHero shell"><div><span className="pill">SEUS CURRÍCULOS</span><h1>Um perfil. Várias oportunidades.</h1><p>Crie versões diferentes do seu currículo para cada objetivo profissional. Elas ficam neste dispositivo e, quando você quiser, também podem ser sincronizadas com sua conta.</p></div><div className="libraryActions"><button className="primary" onClick={()=>add("blank")}>＋ Novo currículo</button><a className="secondary" href="/modelos">Escolher modelo</a><button className="secondary" onClick={()=>add("example")}>Usar exemplo</button><label className="secondary importButton">Importar backup<input type="file" accept=".json,application/json" onChange={e=>importFile(e.target.files?.[0])}/></label></div></section><section className="profileSection shell"><div className="sectionEyebrow">SUA BASE PROFISSIONAL</div><ProfessionalProfileCard resumes={items}/></section><section className="accountSection shell"><div className="sectionEyebrow">CONTA E ARMAZENAMENTO</div><CloudSync/></section><section className="libraryStatusGrid shell"><section className="storageStatus"><div><b>✓ Salvo neste dispositivo</b><span>Seus currículos ficam salvos apenas neste navegador, sem precisar de conta. Se você limpar os dados do navegador ou trocar de aparelho, poderá perdê-los. Use “Exportar backup” para guardar uma cópia.</span></div>{recoveryDate&&<button onClick={restore}>↶ Restaurar última recuperação</button>}</section><div className="dataSafetyCard"><span className="safetyIcon">✓</span><div><b>Você mantém o controle</b><p>O modo local continua disponível mesmo sem conta. Use backup e sincronização como camadas extras de proteção.</p><a href="/privacidade">Como tratamos seus dados →</a></div></div></section><section className="librarySectionHead shell"><div><span>BIBLIOTECA</span><h2>Seus currículos</h2></div><small>{items.length} {items.length===1?"currículo":"currículos"} neste dispositivo</small></section><section className="resumeLibrary shell">{items.length?items.map(doc=><article className="resumeCard" key={doc.id}><div className={"resumeCardThumb "+doc.template}><i style={{background:doc.accent}}/><span/><span/><span/></div><div className="resumeCardBody"><small>{doc.template==="essential"?"ESSENCIAL":doc.template==="modern"?"MODERNO":"EXECUTIVO"}</small><h2>{doc.title}</h2><p>{doc.cv.role||"Sem título profissional"} · atualizado {new Date(doc.updatedAt).toLocaleDateString("pt-BR")}</p><div><button className="cardPrimary" onClick={()=>open(doc.id)}>Continuar editando</button><button onClick={()=>rename(doc)}>Renomear</button><button onClick={()=>duplicate(doc)}>Duplicar</button><button className="dangerText" onClick={()=>remove(doc.id)}>Excluir</button></div></div></article>):<div className="emptyLibrary"><span className="emptyIcon">CV</span><b>Seu espaço está pronto.</b><p>Crie seu primeiro currículo profissional ou abra um exemplo para conhecer todos os recursos.</p><div><button className="primary" onClick={()=>add("blank")}>Criar primeiro currículo →</button><a className="secondary" href="/modelos">Escolher um modelo</a><button className="secondary" onClick={()=>add("example")}>Explorar exemplo</button></div></div>}</section><SiteFooter/></main>
+export default function ResumesPage() {
+  const [items, setItems] = useState<ResumeDocument[]>([]),
+    [recoveryDate, setRecoveryDate] = useState("");
+  useEffect(() => {
+    const refresh = () => {
+      try {
+        let list: ResumeDocument[] = JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY) || "[]");
+        if (!list.length) {
+          const legacy = localStorage.getItem(LEGACY_RESUME_KEY);
+          if (legacy) {
+            const doc = migrateLegacyResume(legacy);
+            list = [doc];
+            localStorage.setItem(RESUME_LIBRARY_KEY, JSON.stringify(list));
+          }
+        }
+        setItems(list);
+        const recovery = readRecovery();
+        if (recovery) setRecoveryDate(recovery.createdAt);
+      } catch {}
+    };
+    refresh();
+    window.addEventListener("curriculospro:library-changed", refresh);
+    return () => window.removeEventListener("curriculospro:library-changed", refresh);
+  }, []);
+  const save = (list: ResumeDocument[]) => {
+    setItems(list);
+    localStorage.setItem(RESUME_LIBRARY_KEY, JSON.stringify(list));
+  };
+  const open = (id: string) => {
+    localStorage.setItem(ACTIVE_RESUME_KEY, id);
+    location.href = "/editor";
+  };
+  const add = (mode: "blank" | "example") => {
+    const doc = createResume(mode);
+    save([doc, ...items]);
+    open(doc.id);
+  };
+  const rename = (doc: ResumeDocument) => {
+    const title = prompt("Nome deste currículo:", doc.title)?.trim();
+    if (title)
+      save(items.map((x) => (x.id === doc.id ? { ...x, title, updatedAt: new Date().toISOString() } : x)));
+  };
+  const duplicate = (doc: ResumeDocument) => save([cloneResume(doc), ...items]);
+  const remove = (id: string) => {
+    if (confirm("Excluir este currículo? Você poderá restaurar a última recuperação.")) {
+      storeRecovery(items, "delete");
+      setRecoveryDate(new Date().toISOString());
+      try {
+        const userId = localStorage.getItem(LAST_CLOUD_USER);
+        if (userId) {
+          const revisions: Record<string, number> = JSON.parse(
+            localStorage.getItem("curriculospro.cloudRevisions.v1:" + userId) || "{}",
+          );
+          if (Number(revisions[id] || 0) > 0) {
+            const key = PENDING_DELETIONS + ":" + userId,
+              pending: string[] = JSON.parse(localStorage.getItem(key) || "[]");
+            if (!pending.includes(id)) localStorage.setItem(key, JSON.stringify([...pending, id]));
+          }
+        }
+      } catch {}
+      save(items.filter((x) => x.id !== id));
+    }
+  };
+  const restore = () => {
+    const recovery = readRecovery();
+    if (recovery && confirm("Restaurar a biblioteca para o estado salvo antes da última alteração?")) {
+      try {
+        const userId = localStorage.getItem(LAST_CLOUD_USER);
+        if (userId) {
+          const key = PENDING_DELETIONS + ":" + userId,
+            pending: string[] = JSON.parse(localStorage.getItem(key) || "[]"),
+            restoredIds = new Set(recovery.resumes.map((x) => x.id));
+          localStorage.setItem(key, JSON.stringify(pending.filter((id) => !restoredIds.has(id))));
+        }
+      } catch {}
+      save(recovery.resumes);
+    }
+  };
+  const exportAll = () => {
+    const blob = new Blob(
+        [
+          JSON.stringify(
+            { product: "CurriculosPRO", version: 3, exportedAt: new Date().toISOString(), resumes: items },
+            null,
+            2,
+          ),
+        ],
+        { type: "application/json" },
+      ),
+      a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "curriculospro-backup.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  const importFile = (file?: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const incoming = parseBackup(String(reader.result));
+        storeRecovery(items, "import");
+        setRecoveryDate(new Date().toISOString());
+        save([...incoming.map((x: ResumeDocument) => cloneResume(x, x.title)), ...items]);
+      } catch {
+        alert("Arquivo de backup inválido.");
+      }
+    };
+    reader.readAsText(file);
+  };
+  return (
+    <main className="libraryPage">
+      <SiteHeader active="curriculos" />
+      <section className="libraryUtility shell">
+        <div>
+          <span className="librarySecureDot" />
+          Área pessoal de currículos
+        </div>
+        <button
+          className="ghostAction"
+          disabled={!items.length}
+          title={
+            items.length ? "Baixar uma cópia dos seus currículos" : "Crie um currículo antes de exportar"
+          }
+          onClick={exportAll}
+        >
+          Exportar backup
+        </button>
+      </section>
+      <section className="libraryHero shell">
+        <div>
+          <span className="pill">SEUS CURRÍCULOS</span>
+          <h1>Um perfil. Várias oportunidades.</h1>
+          <p>
+            Crie versões diferentes do seu currículo para cada objetivo profissional. Elas ficam neste
+            dispositivo e, quando você quiser, também podem ser sincronizadas com sua conta.
+          </p>
+        </div>
+        <div className="libraryActions">
+          <button className="primary" onClick={() => add("blank")}>
+            ＋ Novo currículo
+          </button>
+          <a className="secondary" href="/modelos">
+            Escolher modelo
+          </a>
+          <button className="secondary" onClick={() => add("example")}>
+            Usar exemplo
+          </button>
+          <label className="secondary importButton">
+            Importar backup
+            <input
+              type="file"
+              accept=".json,application/json"
+              onChange={(e) => importFile(e.target.files?.[0])}
+            />
+          </label>
+        </div>
+      </section>
+      <section className="profileSection shell">
+        <div className="sectionEyebrow">SUA BASE PROFISSIONAL</div>
+        <ProfessionalProfileCard resumes={items} />
+      </section>
+      <section className="accountSection shell">
+        <div className="sectionEyebrow">CONTA E ARMAZENAMENTO</div>
+        <CloudSync />
+      </section>
+      <section className="libraryStatusGrid shell">
+        <section className="storageStatus">
+          <div>
+            <b>✓ Salvo neste dispositivo</b>
+            <span>
+              Seus currículos ficam salvos apenas neste navegador, sem precisar de conta. Se você limpar os
+              dados do navegador ou trocar de aparelho, poderá perdê-los. Use “Exportar backup” para guardar
+              uma cópia.
+            </span>
+          </div>
+          {recoveryDate && <button onClick={restore}>↶ Restaurar última recuperação</button>}
+        </section>
+        <div className="dataSafetyCard">
+          <span className="safetyIcon">✓</span>
+          <div>
+            <b>Você mantém o controle</b>
+            <p>
+              O modo local continua disponível mesmo sem conta. Use backup e sincronização como camadas extras
+              de proteção.
+            </p>
+            <a href="/privacidade">Como tratamos seus dados →</a>
+          </div>
+        </div>
+      </section>
+      <section className="librarySectionHead shell">
+        <div>
+          <span>BIBLIOTECA</span>
+          <h2>Seus currículos</h2>
+        </div>
+        <small>
+          {items.length} {items.length === 1 ? "currículo" : "currículos"} neste dispositivo
+        </small>
+      </section>
+      <section className="resumeLibrary shell">
+        {items.length ? (
+          items.map((doc) => (
+            <article className="resumeCard" key={doc.id}>
+              <div className={"resumeCardThumb " + doc.template}>
+                <i style={{ background: doc.accent }} />
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="resumeCardBody">
+                <small>
+                  {doc.template === "essential"
+                    ? "ESSENCIAL"
+                    : doc.template === "modern"
+                      ? "MODERNO"
+                      : "EXECUTIVO"}
+                </small>
+                <h2>{doc.title}</h2>
+                <p>
+                  {doc.cv.role || "Sem título profissional"} · atualizado{" "}
+                  {new Date(doc.updatedAt).toLocaleDateString("pt-BR")}
+                </p>
+                <div>
+                  <button className="cardPrimary" onClick={() => open(doc.id)}>
+                    Continuar editando
+                  </button>
+                  <button onClick={() => rename(doc)}>Renomear</button>
+                  <button onClick={() => duplicate(doc)}>Duplicar</button>
+                  <button className="dangerText" onClick={() => remove(doc.id)}>
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))
+        ) : (
+          <div className="emptyLibrary">
+            <span className="emptyIcon">CV</span>
+            <b>Seu espaço está pronto.</b>
+            <p>
+              Crie seu primeiro currículo profissional ou abra um exemplo para conhecer todos os recursos.
+            </p>
+            <div>
+              <button className="primary" onClick={() => add("blank")}>
+                Criar primeiro currículo →
+              </button>
+              <a className="secondary" href="/modelos">
+                Escolher um modelo
+              </a>
+              <button className="secondary" onClick={() => add("example")}>
+                Explorar exemplo
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+      <SiteFooter />
+    </main>
+  );
 }
