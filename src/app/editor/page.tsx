@@ -7,7 +7,8 @@ import { trackUsage } from "@/lib/analytics";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { A4_HEIGHT, A4_WIDTH, ResumeThumb, ResumeView } from "@/components/resume-view";
 import { ACCENT_COLORS, TEMPLATES, templateMeta, type TemplateId } from "@/lib/templates";
-import { exampleById } from "@/lib/examples";
+import { EXAMPLE_CATEGORIES, RESUME_EXAMPLES, exampleById } from "@/lib/examples";
+import { activityIdeas, matchExamples, skillIdeas } from "@/lib/profession-ideas";
 import {
   ACTIVE_RESUME_KEY,
   JOB_SELECTION_KEY,
@@ -86,8 +87,9 @@ export default function Editor() {
     courses: "pending",
     languages: "pending",
   });
-  const [stepGuideOpen, setStepGuideOpen] = useState(true),
-    [guideIndex, setGuideIndex] = useState(0);
+  const [guideIndex, setGuideIndex] = useState(0),
+    [hasProfile, setHasProfile] = useState(false),
+    [hasJobSelection, setHasJobSelection] = useState(false);
   const [cv, setCv] = useState(initial),
     [tab, setTab] = useState<(typeof tabs)[number]>("Conteúdo"),
     [template, setTemplate] = useState<Template>("essential"),
@@ -215,12 +217,26 @@ export default function Editor() {
     }
   }, [cv, template, accent, density, sectionOrder, hidden, documentTitle]);
   const goToStep = (id: string) => {
+    const index = journey.findIndex((x) => x.id === id);
+    if (index >= 0) setGuideIndex(index);
     setTab("Conteúdo");
     setMobilePreview(false);
-    requestAnimationFrame(() =>
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }),
-    );
+    requestAnimationFrame(() => {
+      const top = document.querySelector(".wizNav");
+      const side = document.querySelector(".side");
+      if (side && side.scrollTop > 0) side.scrollTo({ top: 0, behavior: "smooth" });
+      top?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
+  useEffect(() => {
+    try {
+      const p = JSON.parse(localStorage.getItem(PROFESSIONAL_PROFILE_KEY) || "null");
+      setHasProfile(isProfessionalProfile(p) && !!(p.name || p.experiences.length || p.education.length));
+      setHasJobSelection(
+        !!activeId.current && !!localStorage.getItem(JOB_SELECTION_KEY + ":" + activeId.current),
+      );
+    } catch {}
+  }, [profilePicker]);
   useEffect(() => {
     if (hydrated.current && activeId.current)
       try {
@@ -452,7 +468,9 @@ export default function Editor() {
     () => [
       {
         id: "step-personal",
-        label: "Dados pessoais",
+        label: "Seus dados",
+        short: "Dados",
+        help: "Nome, cargo que você busca e como as empresas falam com você.",
         done:
           !!cv.name.trim() &&
           (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email) ||
@@ -462,12 +480,16 @@ export default function Editor() {
       {
         id: "step-summary",
         label: "Objetivo profissional",
+        short: "Objetivo",
+        help: "Duas ou três frases sobre a vaga que você procura e como pode ajudar. Use uma ideia pronta e ajuste.",
         done: cv.summary.trim().length >= 60,
         optional: true,
       },
       {
         id: "step-experience",
         label: "Experiência",
+        short: "Experiência",
+        help: "Empregos, bicos, estágio ou trabalho por conta própria. Comece pelo mais recente.",
         done:
           guidance.experience === "first-job" ||
           cv.experiences.some((x) => x.title.trim() && (x.subtitle.trim() || x.description.trim())),
@@ -476,18 +498,24 @@ export default function Editor() {
       {
         id: "step-education",
         label: "Formação",
+        short: "Formação",
+        help: "Escolaridade e cursos de formação, concluídos ou em andamento.",
         done: guidance.education === "none" || cv.education.some((x) => x.title.trim()),
         optional: true,
       },
       {
         id: "step-skills",
-        label: "Competências",
+        label: "Habilidades",
+        short: "Habilidades",
+        help: "Toque nas sugestões da sua profissão. Escolha só o que você realmente sabe fazer.",
         done: cv.skills.filter((x) => x.trim()).length >= 3,
         optional: true,
       },
       {
         id: "step-complements",
-        label: "Complementos",
+        label: "Cursos e idiomas",
+        short: "Extras",
+        help: "Opcional. Inclua cursos livres, certificações e idiomas se tiver.",
         done:
           (guidance.courses === "none" ||
             (guidance.courses !== "pending" && cv.courses.some((x) => x.trim()))) &&
@@ -495,15 +523,50 @@ export default function Editor() {
             (guidance.languages !== "pending" && cv.languages.some((x) => x.trim()))),
         optional: true,
       },
-      { id: "step-review", label: "Revisão", done: assistant.score === 100, optional: false },
+      {
+        id: "step-review",
+        label: "Revisão final",
+        short: "Revisão",
+        help: "Confira os avisos abaixo e a prévia ao lado antes de baixar o PDF.",
+        done: assistant.score === 100,
+        optional: false,
+      },
     ],
     [cv, guidance, assistant.score],
   );
   const currentGuideStep = journey[Math.min(guideIndex, journey.length - 1)];
   const advanceGuide = (direction: 1 | -1) => {
     const next = Math.max(0, Math.min(journey.length - 1, guideIndex + direction));
-    setGuideIndex(next);
     goToStep(journey[next].id);
+  };
+  const cvIsEmpty =
+    !cv.name.trim() &&
+    !cv.experiences.length &&
+    !cv.education.length &&
+    !cv.skills.length &&
+    !cv.summary.trim();
+  const addSkill = (value: string) => {
+    if (!cv.skills.some((x) => x.trim().toLocaleLowerCase("pt-BR") === value.toLocaleLowerCase("pt-BR")))
+      set("skills", [...cv.skills.filter((x) => x.trim()), value]);
+  };
+  // Ideia de atividade entra na experiência mais recente (ou cria uma, se ainda não houver).
+  const addActivityIdea = (task: string) => {
+    const line = "• " + task;
+    if (!cv.experiences.length) {
+      setCv({
+        ...cv,
+        experiences: [{ id: uid(), title: cv.role, subtitle: "", period: "", description: line }],
+      });
+      return;
+    }
+    const first = cv.experiences[0];
+    if (first.description.toLocaleLowerCase("pt-BR").includes(task.toLocaleLowerCase("pt-BR"))) return;
+    setCv({
+      ...cv,
+      experiences: cv.experiences.map((x, i) =>
+        i === 0 ? { ...x, description: x.description.trim() ? x.description.trim() + "\n" + line : line } : x,
+      ),
+    });
   };
   const review = useMemo(() => {
     const issues: { level: "required" | "recommended" | "optional"; title: string; text: string }[] = [];
@@ -885,21 +948,39 @@ export default function Editor() {
             ))}
           </div>
           {tab === "Conteúdo" ? (
-            <div className="formBody">
-              <div className="profileImportBar">
-                <div>
-                  <b>Perfil Profissional</b>
-                  <span>Reaproveite sua trajetória sem substituir o que já está neste currículo.</span>
+            <div className="formBody wiz">
+              <nav className="wizNav" aria-label="Etapas do currículo">
+                <ol>
+                  {journey.map((step, index) => (
+                    <li key={step.id}>
+                      <button
+                        type="button"
+                        aria-current={index === guideIndex ? "step" : undefined}
+                        className={(step.done ? "done " : "") + (index === guideIndex ? "current" : "")}
+                        onClick={() => goToStep(step.id)}
+                      >
+                        <i>{step.done ? "✓" : index + 1}</i>
+                        <span>{step.short}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+              {cvIsEmpty && guideIndex === 0 && (
+                <div className="quickStart">
+                  <b>Comece mais rápido</b>
+                  <p>Não precisa digitar tudo do zero:</p>
+                  <div>
+                    <a href="/importar">Importar meu currículo antigo</a>
+                    {hasProfile && (
+                      <button type="button" onClick={openProfilePicker}>
+                        Trazer do meu Perfil Profissional
+                      </button>
+                    )}
+                    <a href="/comecar#st-ex-title">Usar exemplo da minha profissão</a>
+                  </div>
                 </div>
-                <button type="button" onClick={openProfilePicker}>
-                  ＋ Trazer do perfil
-                </button>
-                <a href="/perfil-profissional">Editar perfil</a>
-                <a href="/adaptar-vaga">Adaptar para vaga</a>
-                <button type="button" onClick={applyJobSelection}>
-                  Aplicar seleção da vaga
-                </button>
-              </div>
+              )}
               {profilePicker && (
                 <div className="profilePicker">
                   <div className="profilePickerHead">
@@ -995,551 +1076,490 @@ export default function Editor() {
                   </div>
                 </div>
               )}
-              <section className="stepByStepGuide" aria-label="Assistente passo a passo">
-                <div className="stepGuideHeader">
-                  <div>
-                    <small>ASSISTENTE PASSO A PASSO</small>
-                    <b>Vamos montar seu currículo juntos</b>
-                    <span>Uma etapa de cada vez. Você pode pular qualquer parte e voltar depois.</span>
-                  </div>
-                  <button type="button" onClick={() => setStepGuideOpen(!stepGuideOpen)}>
-                    {stepGuideOpen ? "Recolher" : "Continuar"}
-                  </button>
-                </div>
-                <nav className="stepGuideDots" aria-label="Etapas do currículo">
-                  {journey.map((step, index) => (
-                    <button
-                      type="button"
-                      key={step.id}
-                      title={step.label + (step.done ? " — concluído" : step.optional ? " — opcional" : "")}
-                      aria-label={
-                        "Etapa " + (index + 1) + ": " + step.label + (step.done ? ", concluída" : "")
-                      }
-                      aria-current={index === guideIndex ? "step" : undefined}
-                      className={(step.done ? "done " : "") + (index === guideIndex ? "current" : "")}
-                      onClick={() => {
-                        setGuideIndex(index);
-                        setStepGuideOpen(true);
-                        goToStep(step.id);
-                      }}
-                    >
-                      {step.done ? "✓" : index + 1}
-                    </button>
-                  ))}
-                </nav>
-                {stepGuideOpen && (
-                  <>
-                    <div className="stepGuideCurrent">
-                      <div className="stepGuideCount">
-                        ETAPA {guideIndex + 1} DE {journey.length}
-                      </div>
-                      <b>{currentGuideStep.label}</b>
-                      <p>
-                        {currentGuideStep.id === "step-personal"
-                          ? "Conte como as empresas podem identificar e entrar em contato com você."
-                          : currentGuideStep.id === "step-summary"
-                            ? "Explique que tipo de oportunidade procura e como pode contribuir."
-                            : currentGuideStep.id === "step-experience"
-                              ? "Conte sobre empregos, trabalhos informais, projetos ou indique que busca o primeiro emprego."
-                              : currentGuideStep.id === "step-education"
-                                ? "Informe sua escolaridade ou formação, mesmo que esteja em andamento."
-                                : currentGuideStep.id === "step-skills"
-                                  ? "Escolha habilidades que você realmente possui."
-                                  : currentGuideStep.id === "step-complements"
-                                    ? "Cursos e idiomas ajudam quando forem relevantes, mas você pode pular esta etapa."
-                                    : "Confira os dados e a prévia antes de gerar o PDF."}
-                      </p>
-                      <span
-                        className={
-                          currentGuideStep.done
-                            ? "stepGuideStatus complete"
-                            : currentGuideStep.optional
-                              ? "stepGuideStatus optional"
-                              : "stepGuideStatus"
-                        }
-                      >
-                        {currentGuideStep.done
-                          ? "✓ Etapa concluída"
-                          : currentGuideStep.optional
-                            ? "Opcional — pode pular"
-                            : "Etapa importante"}
-                      </span>
+              <header className="wizHead">
+                <small>
+                  Etapa {guideIndex + 1} de {journey.length}
+                  {currentGuideStep.optional && !currentGuideStep.done ? " · opcional" : ""}
+                </small>
+                <h2>{currentGuideStep.label}</h2>
+                <p>{currentGuideStep.help}</p>
+              </header>
+              {currentGuideStep.id === "step-personal" && (
+                <section className="wizStep">
+                  <div className="photoControl">
+                    <div className="photoPreview">
+                      {cv.photo ? (
+                        <img src={cv.photo} alt="Foto do currículo" />
+                      ) : (
+                        <span>
+                          {cv.name
+                            .split(" ")
+                            .slice(0, 2)
+                            .map((x) => x[0])
+                            .join("") || "CV"}
+                        </span>
+                      )}
                     </div>
-                    <div className="stepGuideActions">
-                      <button
-                        type="button"
-                        className="stepGuideBack"
-                        disabled={guideIndex === 0}
-                        onClick={() => advanceGuide(-1)}
-                      >
-                        ← Voltar
-                      </button>
-                      <button type="button" className="stepGuideNext" onClick={() => advanceGuide(1)}>
-                        {guideIndex === journey.length - 1 ? "Revisar novamente" : "Próxima etapa →"}
-                      </button>
-                      {currentGuideStep.optional && !currentGuideStep.done && (
-                        <button type="button" className="stepGuideSkip" onClick={() => advanceGuide(1)}>
-                          Pular
+                    <div>
+                      <b>
+                        Foto no currículo <small>opcional</small>
+                      </b>
+                      <p>
+                        Não precisa adicionar foto. Se preferir incluir uma, escolha uma imagem profissional;
+                        você pode removê-la quando quiser.
+                      </p>
+                      <label className="photoButton">
+                        Escolher foto
+                        <input type="file" accept="image/*" onChange={(e) => onPhoto(e.target.files?.[0])} />
+                      </label>
+                      {cv.photo && (
+                        <button className="removePhoto" onClick={() => set("photo", "")}>
+                          Remover foto
+                        </button>
+                      )}
+                      {photoError && (
+                        <p className="photoError" role="alert">
+                          {photoError}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid2">
+                    <Field
+                      label="Nome completo"
+                      placeholder="Ex.: Mariana Costa"
+                      autoComplete="name"
+                      value={cv.name}
+                      onChange={(v) => set("name", v)}
+                    />
+                    <Field
+                      label="Cargo ou profissão"
+                      placeholder="Ex.: Vendedora, Auxiliar Administrativo"
+                      hint="Usamos isso para sugerir frases e habilidades da sua área."
+                      value={cv.role}
+                      onChange={(v) => set("role", v)}
+                    />
+                    <Field
+                      label="E-mail"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      placeholder="nome@exemplo.com"
+                      hint="Use um e-mail profissional que você acessa."
+                      value={cv.email}
+                      onChange={(v) => set("email", v.trim())}
+                    />
+                    <Field
+                      label="Telefone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="(16) 99999-1234"
+                      maxLength={15}
+                      hint="DDD + número. A formatação é automática."
+                      value={cv.phone}
+                      onChange={(v) => set("phone", formatPhone(v))}
+                    />
+                  </div>
+                  <Field
+                    label="Cidade / Estado"
+                    autoComplete="address-level2"
+                    placeholder="Ex.: Matão / SP"
+                    hint="Cidade e UF onde você mora ou busca oportunidades."
+                    value={cv.city}
+                    onChange={(v) => set("city", formatCity(v))}
+                  />
+                  {!cvIsEmpty && (
+                    <div className="wizTools">
+                      <span>Atalhos:</span>
+                      {hasProfile && (
+                        <button type="button" onClick={openProfilePicker}>
+                          Trazer do Perfil Profissional
+                        </button>
+                      )}
+                      <a href="/importar">Importar outro currículo</a>
+                      <a href="/adaptar-vaga">Adaptar para uma vaga</a>
+                      {hasJobSelection && (
+                        <button type="button" onClick={applyJobSelection}>
+                          Aplicar seleção da vaga
                         </button>
                       )}
                     </div>
-                  </>
-                )}
-              </section>
-              <div id="step-personal" className="journeyAnchor sectionTitle">
-                <span>01</span>
-                <div>
-                  <h2>Informações pessoais</h2>
-                  <p>Comece pelo essencial.</p>
-                </div>
-              </div>
-              <div className="resumeAssistant">
-                <div className="assistantTop">
-                  <div>
-                    <small>ASSISTENTE DE CURRÍCULO</small>
-                    <b>
-                      {assistant.score === 100
-                        ? "Trajetória organizada para revisão"
-                        : assistant.score >= 70
-                          ? "Poucas áreas faltam organizar"
-                          : assistant.score >= 40
-                            ? "Sua trajetória está tomando forma"
-                            : "Organize sua trajetória no seu ritmo"}
-                    </b>
+                  )}
+                </section>
+              )}
+              {currentGuideStep.id === "step-summary" && (
+                <section className="wizStep">
+                  <ProfessionIdeas
+                    role={cv.role}
+                    kind="summary"
+                    onRole={(role) => set("role", role)}
+                    onPick={(value) => set("summary", value)}
+                  />
+                  <div className="objectiveBlock">
+                    <Field
+                      area
+                      label="Objetivo profissional"
+                      placeholder="Ex.: Busco uma oportunidade na área administrativa para aplicar minhas habilidades e contribuir com a equipe..."
+                      hint="Escolha uma sugestão como ponto de partida e personalize com seu objetivo real."
+                      value={cv.summary}
+                      onChange={(v) => set("summary", v)}
+                    />
+                    <ObjectiveSuggestions onChoose={(value) => set("summary", value)} />
+                    {cv.summary.trim() && cv.summary.trim().length < 60 && (
+                      <CoachTip
+                        title="Deixe seu objetivo mais claro"
+                        text="Diga a área ou função desejada, uma ou duas contribuições reais e o tipo de oportunidade que procura."
+                      />
+                    )}
                   </div>
-                  <strong>
-                    {assistant.done} de {assistant.total}
-                  </strong>
-                </div>
-                <div className="assistantMeter">
-                  <i style={{ width: assistant.score + "%" }} />
-                </div>
-                {assistant.next.length > 0 ? (
-                  <div className="assistantNext">
-                    <span>PRÓXIMAS ÁREAS PARA ORGANIZAR</span>
-                    {assistant.next.map((x) => (
-                      <div key={x.label}>
-                        <i>○</i>
-                        <p>
-                          <b>{x.label}</b>
-                          <small>{x.tip}</small>
-                        </p>
-                      </div>
+                </section>
+              )}
+              {currentGuideStep.id === "step-experience" && (
+                <section className="wizStep">
+                  <div id="step-experience" className="journeyAnchor">
+                    <SectionHead
+                      n="03"
+                      title="Experiência"
+                      subtitle="Vale emprego formal, trabalho autônomo, estágio, projeto ou experiência informal relevante."
+                      action={guidance.experience === "first-job" ? undefined : () => addItem("experiences")}
+                    />
+                    <ContextChoice
+                      label="Qual situação combina mais com você?"
+                      value={guidance.experience}
+                      onChange={(value) =>
+                        setGuidance({ ...guidance, experience: value as ExperienceContext })
+                      }
+                      options={[
+                        ["pending", "Ainda vou preencher"],
+                        ["standard", "Tenho experiência"],
+                        ["first-job", "Busco primeiro emprego"],
+                        ["informal", "Experiência informal"],
+                        ["self-employed", "Trabalho por conta própria"],
+                        ["partial", "Tenho informação parcial"],
+                      ]}
+                    />
+                    {guidance.experience === "first-job" && (
+                      <CoachTip
+                        title="Primeiro emprego também tem conteúdo"
+                        text="Você pode destacar formação, cursos, projetos, atividades voluntárias e competências reais. Não é necessário inventar uma experiência profissional."
+                      />
+                    )}
+                    {guidance.experience === "informal" && (
+                      <CoachTip
+                        title="Experiência informal é experiência"
+                        text="Descreva o serviço que você realmente realizou, para quem ou em qual contexto e quais eram suas responsabilidades."
+                      />
+                    )}
+                    {guidance.experience === "self-employed" && (
+                      <CoachTip
+                        title="Trabalho autônomo pode entrar no currículo"
+                        text="Use um título que represente seu trabalho e descreva serviços, responsabilidades e resultados reais. Empresa formal não é obrigatória."
+                      />
+                    )}
+                    {guidance.experience === "partial" && (
+                      <CoachTip
+                        title="Use somente o que você sabe"
+                        text="Preencha cargo, contexto, período ou atividades apenas quando souber. Informação parcial verdadeira é melhor que completar no chute."
+                      />
+                    )}
+                  </div>
+                  {guidance.experience !== "first-job" && (
+                    <ProfessionIdeas
+                      role={cv.role}
+                      kind="activities"
+                      onRole={(role) => set("role", role)}
+                      onPick={addActivityIdea}
+                    />
+                  )}
+                  {guidance.experience !== "first-job" &&
+                    cv.experiences.map((x, i) => (
+                      <ItemEditor
+                        kind="experience"
+                        key={x.id}
+                        item={x}
+                        index={i}
+                        onChange={(k, v) => updateItem("experiences", x.id, k, v)}
+                        onRemove={() => removeItem("experiences", x.id)}
+                        onUp={() => move("experiences", i, -1)}
+                        onDown={() => move("experiences", i, 1)}
+                      />
                     ))}
+                </section>
+              )}
+              {currentGuideStep.id === "step-education" && (
+                <section className="wizStep">
+                  <div id="step-education" className="journeyAnchor">
+                    <SectionHead
+                      n="04"
+                      title="Formação"
+                      subtitle="Inclua cursos concluídos ou em andamento. Não é obrigatório informar datas exatas se você não souber."
+                      action={guidance.education === "none" ? undefined : () => addItem("education")}
+                    />
+                    <ContextChoice
+                      label="Como está sua formação?"
+                      value={guidance.education}
+                      onChange={(value) => setGuidance({ ...guidance, education: value as EducationContext })}
+                      options={[
+                        ["pending", "Ainda vou preencher"],
+                        ["standard", "Informar normalmente"],
+                        ["in-progress", "Em andamento"],
+                        ["no-exact-date", "Não sei a data exata"],
+                        ["none", "Não tenho formação para informar"],
+                        ["partial", "Tenho informação parcial"],
+                      ]}
+                    />
+                    {guidance.education === "in-progress" && (
+                      <CoachTip
+                        title="Formação em andamento é válida"
+                        text="No período, você pode escrever “Em andamento” ou informar a previsão de conclusão, se souber."
+                      />
+                    )}
+                    {guidance.education === "no-exact-date" && (
+                      <CoachTip
+                        title="A data não precisa ser inventada"
+                        text="Se você não souber o período exato, informe somente o ano quando souber ou deixe o período em branco."
+                      />
+                    )}
+                    {guidance.education === "none" && (
+                      <CoachTip
+                        title="A formação pode ficar fora deste currículo"
+                        text="Não invente escolaridade ou curso. Você pode fortalecer o currículo com experiência, projetos e competências reais."
+                      />
+                    )}
+                    {guidance.education === "partial" && (
+                      <CoachTip
+                        title="Informação parcial também pode ser usada"
+                        text="Informe curso ou instituição apenas quando souber. Período e outros detalhes podem ficar em branco."
+                      />
+                    )}
                   </div>
-                ) : (
-                  <div className="assistantReady">
-                    ✓ As áreas principais estão organizadas. Cursos e idiomas são complementos opcionais;
-                    inclua-os somente se forem relevantes para você. Faça uma última revisão da prévia antes
-                    do PDF.
+                  {guidance.education !== "none" &&
+                    cv.education.map((x, i) => (
+                      <ItemEditor
+                        kind="education"
+                        key={x.id}
+                        item={x}
+                        index={i}
+                        onChange={(k, v) => updateItem("education", x.id, k, v)}
+                        onRemove={() => removeItem("education", x.id)}
+                        onUp={() => move("education", i, -1)}
+                        onDown={() => move("education", i, 1)}
+                      />
+                    ))}
+                </section>
+              )}
+              {currentGuideStep.id === "step-skills" && (
+                <section className="wizStep">
+                  {hasDuplicateSkills(cv.skills) && (
+                    <CoachTip
+                      title="Há competências repetidas"
+                      text="Remova duplicatas para deixar a leitura mais objetiva. Mantenha apenas habilidades que você realmente possui."
+                    />
+                  )}
+                  <ProfessionIdeas
+                    role={cv.role}
+                    kind="skills"
+                    selected={cv.skills}
+                    onRole={(role) => set("role", role)}
+                    onPick={addSkill}
+                  />
+                  <SkillSuggestions
+                    selected={cv.skills}
+                    role={cv.role}
+                    onAdd={(value) => {
+                      if (
+                        !cv.skills.some(
+                          (x) => x.trim().toLocaleLowerCase("pt-BR") === value.toLocaleLowerCase("pt-BR"),
+                        )
+                      )
+                        set("skills", [...cv.skills, value]);
+                    }}
+                  />
+                  <ListEditor
+                    title="Habilidades"
+                    items={cv.skills}
+                    onAdd={() => addList("skills")}
+                    onChange={(i, v) => updateList("skills", i, v)}
+                    onRemove={(i) => removeList("skills", i)}
+                  />
+                </section>
+              )}
+              {currentGuideStep.id === "step-complements" && (
+                <section className="wizStep">
+                  <div id="step-complements" className="journeyAnchor subGuidance">
+                    <ContextChoice
+                      label="Cursos e certificações"
+                      value={guidance.courses}
+                      onChange={(value) => setGuidance({ ...guidance, courses: value as CoursesContext })}
+                      options={[
+                        ["pending", "Ainda vou preencher"],
+                        ["standard", "Tenho cursos para informar"],
+                        ["none", "Não tenho no momento"],
+                        ["missing-details", "Tenho, mas faltam detalhes"],
+                      ]}
+                    />
+                    {guidance.courses === "none" && (
+                      <CoachTip
+                        title="Tudo bem não ter cursos extras"
+                        text="Essa seção é opcional. O currículo pode ser forte com formação, experiências, projetos e competências reais."
+                      />
+                    )}
+                    {guidance.courses === "none" && cv.courses.some((x) => x.trim()) && (
+                      <CoachTip
+                        title="Seus cursos preenchidos foram preservados"
+                        text="Nada foi apagado. Se não quiser mostrá-los neste currículo, você pode ocultar a seção em Design."
+                      />
+                    )}
+                    {guidance.courses === "missing-details" && (
+                      <CoachTip
+                        title="Não invente datas ou instituições"
+                        text="Informe o nome do curso e apenas os detalhes que você souber com segurança. Uma data exata não é obrigatória."
+                      />
+                    )}
                   </div>
-                )}
-                <p className="assistantRule">
-                  Sugestões baseadas apenas no que você preencheu. O CurriculosPRO não inventa informações
-                  profissionais.
-                </p>
-              </div>
-              <div className="formGuidance">
-                <b>Preenchimento guiado</b>
-                <span>
-                  Os campos ajudam a manter telefone, contato e informações profissionais em um formato claro.
-                </span>
-              </div>
-              <div className="photoControl">
-                <div className="photoPreview">
-                  {cv.photo ? (
-                    <img src={cv.photo} alt="Foto do currículo" />
-                  ) : (
-                    <span>
-                      {cv.name
-                        .split(" ")
-                        .slice(0, 2)
-                        .map((x) => x[0])
-                        .join("") || "CV"}
-                    </span>
+                  {guidance.courses !== "none" && (
+                    <ListEditor
+                      title="Cursos e certificações"
+                      items={cv.courses}
+                      onAdd={() => addList("courses")}
+                      onChange={(i, v) => updateList("courses", i, v)}
+                      onRemove={(i) => removeList("courses", i)}
+                    />
+                  )}{" "}
+                  <div className="subGuidance">
+                    <ContextChoice
+                      label="Idiomas"
+                      value={guidance.languages}
+                      onChange={(value) => setGuidance({ ...guidance, languages: value as LanguagesContext })}
+                      options={[
+                        ["pending", "Ainda vou preencher"],
+                        ["standard", "Tenho idioma(s) para informar"],
+                        ["none", "Não quero informar idiomas"],
+                        ["partial", "Não sei meu nível exato"],
+                      ]}
+                    />
+                    {guidance.languages === "none" && (
+                      <CoachTip
+                        title="Idiomas são opcionais"
+                        text="Se essa informação não for relevante para seu currículo agora, você pode deixar a seção de fora."
+                      />
+                    )}
+                    {guidance.languages === "partial" && (
+                      <CoachTip
+                        title="Não aumente seu nível no currículo"
+                        text="Se não souber classificar seu nível com precisão, descreva somente o que consegue afirmar com segurança."
+                      />
+                    )}
+                  </div>
+                  {guidance.languages !== "none" && (
+                    <ListEditor
+                      title="Idiomas"
+                      items={cv.languages}
+                      onAdd={() => addList("languages")}
+                      onChange={(i, v) => updateList("languages", i, v)}
+                      onRemove={(i) => removeList("languages", i)}
+                    />
                   )}
-                </div>
-                <div>
-                  <b>
-                    Foto no currículo <small>opcional</small>
-                  </b>
-                  <p>
-                    Não precisa adicionar foto. Se preferir incluir uma, escolha uma imagem profissional; você
-                    pode removê-la quando quiser.
-                  </p>
-                  <label className="photoButton">
-                    Escolher foto
-                    <input type="file" accept="image/*" onChange={(e) => onPhoto(e.target.files?.[0])} />
-                  </label>
-                  {cv.photo && (
-                    <button className="removePhoto" onClick={() => set("photo", "")}>
-                      Remover foto
-                    </button>
-                  )}
-                  {photoError && (
-                    <p className="photoError" role="alert">
-                      {photoError}
+                </section>
+              )}
+              {currentGuideStep.id === "step-review" && (
+                <section className="wizStep">
+                  <div
+                    id="step-review"
+                    className={"journeyAnchor finalReview " + (review.required ? "hasRequired" : "ready")}
+                  >
+                    <div className="reviewHead">
+                      <div>
+                        <small>REVISÃO ANTES DO PDF</small>
+                        <b>
+                          {review.required
+                            ? review.required + " ponto(s) importante(s) para revisar"
+                            : review.issues.length
+                              ? "Currículo pronto para uma última conferência"
+                              : "Tudo certo para revisar a prévia"}
+                        </b>
+                      </div>
+                      <span>{review.required ? "Revisar" : "✓"}</span>
+                    </div>
+                    {review.issues.length > 0 && (
+                      <div className="reviewIssues">
+                        {review.issues.slice(0, 4).map((x, i) => (
+                          <div className={"reviewIssue " + x.level} key={x.title + i}>
+                            <i>{x.level === "required" ? "!" : x.level === "recommended" ? "•" : "i"}</i>
+                            <p>
+                              <b>{x.title}</b>
+                              <small>{x.text}</small>
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="qualityReview">
+                      <div className="qualityReviewTop">
+                        <div>
+                          <small>ÍNDICE DE QUALIDADE</small>
+                          <b>{review.qualityScore}%</b>
+                          <span>Baseado em 7 critérios de organização e preenchimento</span>
+                        </div>
+                        <div className="qualityReviewMeter">
+                          <i style={{ width: review.qualityScore + "%" }} />
+                        </div>
+                      </div>
+                      <div className="qualityReviewChecks">
+                        {review.qualityChecks.map((check) => (
+                          <div className={check.ok ? "passed" : "pending"} key={check.label}>
+                            <i>{check.ok ? "✓" : "○"}</i>
+                            <span>
+                              <b>{check.label}</b>
+                              {!check.ok && <small>{check.tip}</small>}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="qualityReviewNote">
+                        A pontuação é uma orientação de preenchimento, não uma avaliação da sua capacidade
+                        profissional. Não inclui cursos ou idiomas, que são opcionais.
+                      </p>
+                    </div>
+                    <p className="reviewFoot">
+                      Esta revisão verifica estrutura e preenchimento. Ela não decide se sua experiência é
+                      “boa” ou “ruim”.
                     </p>
-                  )}
-                </div>
-              </div>
-              <div className="grid2">
-                <Field
-                  label="Nome completo"
-                  placeholder="Ex.: Mariana Costa"
-                  autoComplete="name"
-                  value={cv.name}
-                  onChange={(v) => set("name", v)}
-                />
-                <Field
-                  label="Título profissional"
-                  placeholder="Ex.: Analista Administrativo"
-                  value={cv.role}
-                  onChange={(v) => set("role", v)}
-                />
-                <Field
-                  label="E-mail"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="nome@exemplo.com"
-                  hint="Use um e-mail profissional que você acessa."
-                  value={cv.email}
-                  onChange={(v) => set("email", v.trim())}
-                />
-                <Field
-                  label="Telefone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="(16) 99999-1234"
-                  maxLength={15}
-                  hint="DDD + número. A formatação é automática."
-                  value={cv.phone}
-                  onChange={(v) => set("phone", formatPhone(v))}
-                />
-              </div>
-              <Field
-                label="Cidade / Estado"
-                autoComplete="address-level2"
-                placeholder="Ex.: Matão / SP"
-                hint="Cidade e UF onde você mora ou busca oportunidades."
-                value={cv.city}
-                onChange={(v) => set("city", formatCity(v))}
-              />
-              <div id="step-summary" className="journeyAnchor" />
-              <div className="objectiveBlock">
-                <Field
-                  area
-                  label="Objetivo profissional"
-                  placeholder="Ex.: Busco uma oportunidade na área administrativa para aplicar minhas habilidades e contribuir com a equipe..."
-                  hint="Escolha uma sugestão como ponto de partida e personalize com seu objetivo real."
-                  value={cv.summary}
-                  onChange={(v) => set("summary", v)}
-                />
-                <ObjectiveSuggestions onChoose={(value) => set("summary", value)} />
-                {cv.summary.trim() && cv.summary.trim().length < 60 && (
-                  <CoachTip
-                    title="Deixe seu objetivo mais claro"
-                    text="Diga a área ou função desejada, uma ou duas contribuições reais e o tipo de oportunidade que procura."
-                  />
-                )}
-              </div>
-              <div id="step-experience" className="journeyAnchor">
-                <SectionHead
-                  n="02"
-                  title="Experiência"
-                  subtitle="Vale emprego formal, trabalho autônomo, estágio, projeto ou experiência informal relevante."
-                  action={guidance.experience === "first-job" ? undefined : () => addItem("experiences")}
-                />
-                <ContextChoice
-                  label="Qual situação combina mais com você?"
-                  value={guidance.experience}
-                  onChange={(value) => setGuidance({ ...guidance, experience: value as ExperienceContext })}
-                  options={[
-                    ["pending", "Ainda vou preencher"],
-                    ["standard", "Tenho experiência"],
-                    ["first-job", "Busco primeiro emprego"],
-                    ["informal", "Experiência informal"],
-                    ["self-employed", "Trabalho por conta própria"],
-                    ["partial", "Tenho informação parcial"],
-                  ]}
-                />
-                {guidance.experience === "first-job" && (
-                  <CoachTip
-                    title="Primeiro emprego também tem conteúdo"
-                    text="Você pode destacar formação, cursos, projetos, atividades voluntárias e competências reais. Não é necessário inventar uma experiência profissional."
-                  />
-                )}
-                {guidance.experience === "informal" && (
-                  <CoachTip
-                    title="Experiência informal é experiência"
-                    text="Descreva o serviço que você realmente realizou, para quem ou em qual contexto e quais eram suas responsabilidades."
-                  />
-                )}
-                {guidance.experience === "self-employed" && (
-                  <CoachTip
-                    title="Trabalho autônomo pode entrar no currículo"
-                    text="Use um título que represente seu trabalho e descreva serviços, responsabilidades e resultados reais. Empresa formal não é obrigatória."
-                  />
-                )}
-                {guidance.experience === "partial" && (
-                  <CoachTip
-                    title="Use somente o que você sabe"
-                    text="Preencha cargo, contexto, período ou atividades apenas quando souber. Informação parcial verdadeira é melhor que completar no chute."
-                  />
-                )}
-              </div>
-              {guidance.experience !== "first-job" &&
-                cv.experiences.map((x, i) => (
-                  <ItemEditor
-                    kind="experience"
-                    key={x.id}
-                    item={x}
-                    index={i}
-                    onChange={(k, v) => updateItem("experiences", x.id, k, v)}
-                    onRemove={() => removeItem("experiences", x.id)}
-                    onUp={() => move("experiences", i, -1)}
-                    onDown={() => move("experiences", i, 1)}
-                  />
-                ))}
-              <div id="step-education" className="journeyAnchor">
-                <SectionHead
-                  n="03"
-                  title="Formação"
-                  subtitle="Inclua cursos concluídos ou em andamento. Não é obrigatório informar datas exatas se você não souber."
-                  action={guidance.education === "none" ? undefined : () => addItem("education")}
-                />
-                <ContextChoice
-                  label="Como está sua formação?"
-                  value={guidance.education}
-                  onChange={(value) => setGuidance({ ...guidance, education: value as EducationContext })}
-                  options={[
-                    ["pending", "Ainda vou preencher"],
-                    ["standard", "Informar normalmente"],
-                    ["in-progress", "Em andamento"],
-                    ["no-exact-date", "Não sei a data exata"],
-                    ["none", "Não tenho formação para informar"],
-                    ["partial", "Tenho informação parcial"],
-                  ]}
-                />
-                {guidance.education === "in-progress" && (
-                  <CoachTip
-                    title="Formação em andamento é válida"
-                    text="No período, você pode escrever “Em andamento” ou informar a previsão de conclusão, se souber."
-                  />
-                )}
-                {guidance.education === "no-exact-date" && (
-                  <CoachTip
-                    title="A data não precisa ser inventada"
-                    text="Se você não souber o período exato, informe somente o ano quando souber ou deixe o período em branco."
-                  />
-                )}
-                {guidance.education === "none" && (
-                  <CoachTip
-                    title="A formação pode ficar fora deste currículo"
-                    text="Não invente escolaridade ou curso. Você pode fortalecer o currículo com experiência, projetos e competências reais."
-                  />
-                )}
-                {guidance.education === "partial" && (
-                  <CoachTip
-                    title="Informação parcial também pode ser usada"
-                    text="Informe curso ou instituição apenas quando souber. Período e outros detalhes podem ficar em branco."
-                  />
-                )}
-              </div>
-              {guidance.education !== "none" &&
-                cv.education.map((x, i) => (
-                  <ItemEditor
-                    kind="education"
-                    key={x.id}
-                    item={x}
-                    index={i}
-                    onChange={(k, v) => updateItem("education", x.id, k, v)}
-                    onRemove={() => removeItem("education", x.id)}
-                    onUp={() => move("education", i, -1)}
-                    onDown={() => move("education", i, 1)}
-                  />
-                ))}
-              {hasDuplicateSkills(cv.skills) && (
-                <CoachTip
-                  title="Há competências repetidas"
-                  text="Remova duplicatas para deixar a leitura mais objetiva. Mantenha apenas habilidades que você realmente possui."
-                />
-              )}
-              <div id="step-skills" className="journeyAnchor sectionTitle compact">
-                <span>04</span>
-                <div>
-                  <h2>Competências</h2>
-                  <p>Escolha sugestões relevantes ou adicione suas próprias habilidades.</p>
-                </div>
-              </div>
-              <SkillSuggestions
-                selected={cv.skills}
-                role={cv.role}
-                onAdd={(value) => {
-                  if (
-                    !cv.skills.some(
-                      (x) => x.trim().toLocaleLowerCase("pt-BR") === value.toLocaleLowerCase("pt-BR"),
-                    )
-                  )
-                    set("skills", [...cv.skills, value]);
-                }}
-              />
-              <ListEditor
-                title="Habilidades"
-                items={cv.skills}
-                onAdd={() => addList("skills")}
-                onChange={(i, v) => updateList("skills", i, v)}
-                onRemove={(i) => removeList("skills", i)}
-              />
-              <div id="step-complements" className="journeyAnchor subGuidance">
-                <ContextChoice
-                  label="Cursos e certificações"
-                  value={guidance.courses}
-                  onChange={(value) => setGuidance({ ...guidance, courses: value as CoursesContext })}
-                  options={[
-                    ["pending", "Ainda vou preencher"],
-                    ["standard", "Tenho cursos para informar"],
-                    ["none", "Não tenho no momento"],
-                    ["missing-details", "Tenho, mas faltam detalhes"],
-                  ]}
-                />
-                {guidance.courses === "none" && (
-                  <CoachTip
-                    title="Tudo bem não ter cursos extras"
-                    text="Essa seção é opcional. O currículo pode ser forte com formação, experiências, projetos e competências reais."
-                  />
-                )}
-                {guidance.courses === "none" && cv.courses.some((x) => x.trim()) && (
-                  <CoachTip
-                    title="Seus cursos preenchidos foram preservados"
-                    text="Nada foi apagado. Se não quiser mostrá-los neste currículo, você pode ocultar a seção em Design."
-                  />
-                )}
-                {guidance.courses === "missing-details" && (
-                  <CoachTip
-                    title="Não invente datas ou instituições"
-                    text="Informe o nome do curso e apenas os detalhes que você souber com segurança. Uma data exata não é obrigatória."
-                  />
-                )}
-              </div>
-              {guidance.courses !== "none" && (
-                <ListEditor
-                  title="Cursos e certificações"
-                  items={cv.courses}
-                  onAdd={() => addList("courses")}
-                  onChange={(i, v) => updateList("courses", i, v)}
-                  onRemove={(i) => removeList("courses", i)}
-                />
-              )}{" "}
-              <div className="subGuidance">
-                <ContextChoice
-                  label="Idiomas"
-                  value={guidance.languages}
-                  onChange={(value) => setGuidance({ ...guidance, languages: value as LanguagesContext })}
-                  options={[
-                    ["pending", "Ainda vou preencher"],
-                    ["standard", "Tenho idioma(s) para informar"],
-                    ["none", "Não quero informar idiomas"],
-                    ["partial", "Não sei meu nível exato"],
-                  ]}
-                />
-                {guidance.languages === "none" && (
-                  <CoachTip
-                    title="Idiomas são opcionais"
-                    text="Se essa informação não for relevante para seu currículo agora, você pode deixar a seção de fora."
-                  />
-                )}
-                {guidance.languages === "partial" && (
-                  <CoachTip
-                    title="Não aumente seu nível no currículo"
-                    text="Se não souber classificar seu nível com precisão, descreva somente o que consegue afirmar com segurança."
-                  />
-                )}
-              </div>
-              {guidance.languages !== "none" && (
-                <ListEditor
-                  title="Idiomas"
-                  items={cv.languages}
-                  onAdd={() => addList("languages")}
-                  onChange={(i, v) => updateList("languages", i, v)}
-                  onRemove={(i) => removeList("languages", i)}
-                />
-              )}
-              <div
-                id="step-review"
-                className={"journeyAnchor finalReview " + (review.required ? "hasRequired" : "ready")}
-              >
-                <div className="reviewHead">
-                  <div>
-                    <small>REVISÃO ANTES DO PDF</small>
-                    <b>
-                      {review.required
-                        ? review.required + " ponto(s) importante(s) para revisar"
-                        : review.issues.length
-                          ? "Currículo pronto para uma última conferência"
-                          : "Tudo certo para revisar a prévia"}
-                    </b>
-                  </div>
-                  <span>{review.required ? "Revisar" : "✓"}</span>
-                </div>
-                {review.issues.length > 0 && (
-                  <div className="reviewIssues">
-                    {review.issues.slice(0, 4).map((x, i) => (
-                      <div className={"reviewIssue " + x.level} key={x.title + i}>
-                        <i>{x.level === "required" ? "!" : x.level === "recommended" ? "•" : "i"}</i>
-                        <p>
-                          <b>{x.title}</b>
-                          <small>{x.text}</small>
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="qualityReview">
-                  <div className="qualityReviewTop">
-                    <div>
-                      <small>ÍNDICE DE QUALIDADE</small>
-                      <b>{review.qualityScore}%</b>
-                      <span>Baseado em 7 critérios de organização e preenchimento</span>
-                    </div>
-                    <div className="qualityReviewMeter">
-                      <i style={{ width: review.qualityScore + "%" }} />
+                    <div className="reviewPdfActions">
+                      <button type="button" className="download" onClick={printResume}>
+                        {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
+                      </button>
+                      <span>
+                        {access.active
+                          ? "Na janela de impressão, escolha “Salvar como PDF”. Confira o documento antes de enviar."
+                          : "Edite e visualize grátis. Ao liberar o download, você baixa por " +
+                            ACCESS_DAYS +
+                            " dias quantas vezes quiser."}
+                      </span>
                     </div>
                   </div>
-                  <div className="qualityReviewChecks">
-                    {review.qualityChecks.map((check) => (
-                      <div className={check.ok ? "passed" : "pending"} key={check.label}>
-                        <i>{check.ok ? "✓" : "○"}</i>
-                        <span>
-                          <b>{check.label}</b>
-                          {!check.ok && <small>{check.tip}</small>}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="qualityReviewNote">
-                    A pontuação é uma orientação de preenchimento, não uma avaliação da sua capacidade
-                    profissional. Não inclui cursos ou idiomas, que são opcionais.
-                  </p>
-                </div>
-                <p className="reviewFoot">
-                  Esta revisão verifica estrutura e preenchimento. Ela não decide se sua experiência é “boa”
-                  ou “ruim”.
-                </p>
-                <div className="reviewPdfActions">
-                  <button type="button" className="download" onClick={printResume}>
+                </section>
+              )}
+              <div className="wizFoot">
+                <button
+                  type="button"
+                  className="wizBack"
+                  disabled={guideIndex === 0}
+                  onClick={() => advanceGuide(-1)}
+                >
+                  ← Voltar
+                </button>
+                {guideIndex < journey.length - 1 ? (
+                  <button type="button" className="wizNext" onClick={() => advanceGuide(1)}>
+                    {currentGuideStep.optional && !currentGuideStep.done ? "Pular" : "Próxima"}:{" "}
+                    {journey[guideIndex + 1].short} →
+                  </button>
+                ) : (
+                  <button type="button" className="wizNext" onClick={printResume}>
                     {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
                   </button>
-                  <span>
-                    {access.active
-                      ? "Na janela de impressão, escolha “Salvar como PDF”. Confira o documento antes de enviar."
-                      : "Edite e visualize grátis. Ao liberar o download, você baixa por " +
-                        ACCESS_DAYS +
-                        " dias quantas vezes quiser."}
-                  </span>
-                </div>
+                )}
               </div>
             </div>
           ) : (
@@ -2816,12 +2836,12 @@ function SkillSuggestions({
   const [showAll, setShowAll] = useState(false);
   const normalizedRole = role
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("pt-BR")
     .trim();
   const matches = (group: SkillGroup) =>
     group.roles.some((keyword) =>
-      normalizedRole.includes(keyword.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")),
+      normalizedRole.includes(keyword.normalize("NFD").replace(/[\u0300-\u036f]/g, "")),
     );
   const ordered = [
     ...skillGroups.filter((group) => matches(group)),
@@ -2915,5 +2935,116 @@ function ProfilePick({
         {detail && <small>{detail}</small>}
       </span>
     </label>
+  );
+}
+function ProfessionIdeas({
+  role,
+  kind,
+  selected = [],
+  onRole,
+  onPick,
+}: {
+  role: string;
+  kind: "summary" | "activities" | "skills";
+  selected?: string[];
+  onRole: (role: string) => void;
+  onPick: (value: string) => void;
+}) {
+  const [chosenId, setChosenId] = useState("");
+  const [used, setUsed] = useState<Set<string>>(new Set());
+  const [showAll, setShowAll] = useState(false);
+  const matched = useMemo(() => matchExamples(role), [role]);
+  const chosen = chosenId ? RESUME_EXAMPLES.filter((x) => x.id === chosenId) : [];
+  const source = chosen.length ? chosen : matched;
+  const picker = (
+    <label className="ideasPick">
+      <span>{source.length ? "Outra profissão?" : "Escolha a profissão mais parecida com a sua:"}</span>
+      <select
+        value={chosenId}
+        onChange={(e) => {
+          setChosenId(e.target.value);
+          const ex = RESUME_EXAMPLES.find((x) => x.id === e.target.value);
+          if (ex && !role.trim()) onRole(ex.data.role);
+        }}
+      >
+        <option value="">{source.length ? "Trocar…" : "Selecionar…"}</option>
+        {EXAMPLE_CATEGORIES.map((c) => (
+          <optgroup key={c} label={c}>
+            {RESUME_EXAMPLES.filter((x) => x.category === c).map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.title}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </label>
+  );
+  const title =
+    kind === "summary"
+      ? "Objetivos prontos"
+      : kind === "activities"
+        ? "Atividades comuns"
+        : "Habilidades mais pedidas";
+  const fold = (x: string) => x.trim().toLocaleLowerCase("pt-BR");
+  const isSelected = (x: string) => used.has(x) || selected.some((s) => fold(s) === fold(x));
+  const pick = (x: string) => {
+    onPick(x);
+    setUsed(new Set(used).add(x));
+  };
+  let body: ReactNode = null;
+  if (source.length && kind === "summary")
+    body = (
+      <div className="ideasTexts">
+        {source.slice(0, 2).map((ex) => (
+          <button type="button" key={ex.id} onClick={() => onPick(ex.data.summary)}>
+            <small>{ex.title}</small>
+            <span>{ex.data.summary}</span>
+            <b>Usar este texto</b>
+          </button>
+        ))}
+      </div>
+    );
+  else if (source.length) {
+    const all = kind === "activities" ? activityIdeas(source) : skillIdeas(source);
+    const list = showAll ? all : all.slice(0, kind === "activities" ? 6 : 12);
+    body = (
+      <>
+        <div className={"ideasChips " + kind}>
+          {list.map((x) => (
+            <button type="button" key={x} disabled={isSelected(x)} onClick={() => pick(x)}>
+              {isSelected(x) ? "✓ " : "+ "}
+              {x}
+            </button>
+          ))}
+        </div>
+        {all.length > list.length && (
+          <button type="button" className="ideasMore" onClick={() => setShowAll(true)}>
+            Ver mais {all.length - list.length}
+          </button>
+        )}
+      </>
+    );
+  }
+  return (
+    <div className="ideas">
+      <div className="ideasHead">
+        <b>
+          ✦ {title}
+          {source.length ? " para " + source.map((x) => x.title).join(", ") : " para a sua profissão"}
+        </b>
+        {picker}
+      </div>
+      {body}
+      {source.length > 0 && (
+        <p className="ideasNote">
+          {kind === "activities"
+            ? "Toque para adicionar na experiência mais recente. Mantenha só o que você realmente fazia."
+            : kind === "summary"
+              ? "Depois de usar, troque os detalhes pelos seus."
+              : "Inclua apenas o que você domina de verdade."}
+        </p>
+      )}
+    </div>
   );
 }

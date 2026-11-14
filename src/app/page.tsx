@@ -93,11 +93,11 @@ export default function Home() {
               para mandar para o recrutador.
             </p>
             <div className="hero-actions">
-              <Link href="/editor?new=blank" className="btn btn-primary btn-lg">
+              <Link href="/comecar" className="btn btn-primary btn-lg">
                 Criar meu currículo
               </Link>
-              <Link href="/exemplos" className="btn btn-ghost btn-lg">
-                Ver exemplos por profissão
+              <Link href="/importar" className="btn btn-ghost btn-lg">
+                Importar currículo antigo
               </Link>
             </div>
             <ul className="hero-facts">
@@ -270,7 +270,7 @@ export default function Home() {
               <li>Todos os modelos e currículos da conta</li>
               <li>Liberação automática em segundos</li>
             </ul>
-            <Link href="/editor?new=blank" className="btn btn-primary btn-lg">
+            <Link href="/comecar" className="btn btn-primary btn-lg">
               Criar meu currículo
             </Link>
           </div>
@@ -280,7 +280,7 @@ export default function Home() {
       <section className="wrap closing">
         <h2>Seu próximo emprego começa com uma boa primeira impressão.</h2>
         <div className="hero-actions">
-          <Link href="/editor?new=blank" className="btn btn-primary btn-lg">
+          <Link href="/comecar" className="btn btn-primary btn-lg">
             Criar meu currículo
           </Link>
           <Link href="/importar" className="btn btn-ghost btn-lg">

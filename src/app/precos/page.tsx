@@ -79,7 +79,7 @@ export default function PricingPage() {
             <li>Prévia em tempo real com marca d&apos;água</li>
             <li>Salvo no seu navegador, sem cadastro</li>
           </ul>
-          <Link href="/editor?new=blank" className="btn btn-ghost btn-lg">
+          <Link href="/comecar" className="btn btn-ghost btn-lg">
             Começar grátis
           </Link>
         </article>
@@ -101,7 +101,7 @@ export default function PricingPage() {
             <li>Seus currículos salvos na nuvem</li>
             <li>Sem assinatura e sem renovação automática</li>
           </ul>
-          <Link href="/editor?new=blank" className="btn btn-primary btn-lg">
+          <Link href="/comecar" className="btn btn-primary btn-lg">
             Criar meu currículo
           </Link>
           <small>Você só paga na hora de baixar.</small>

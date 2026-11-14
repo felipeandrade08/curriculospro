@@ -29,7 +29,7 @@ export function SiteHeader({ active }: { active?: Active }) {
             </Link>
           ))}
         </nav>
-        <Link href="/editor?new=blank" className="btn btn-primary sh-cta">
+        <Link href="/comecar" className="btn btn-primary sh-cta">
           Criar currículo
         </Link>
         <details className="sh-menu">
@@ -45,7 +45,7 @@ export function SiteHeader({ active }: { active?: Active }) {
               </Link>
             ))}
             <Link href="/auth/sign-in">Entrar na conta</Link>
-            <Link href="/editor?new=blank" className="btn btn-primary">
+            <Link href="/comecar" className="btn btn-primary">
               Criar currículo
             </Link>
           </nav>

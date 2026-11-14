@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Importar currículo",
-  description: "Traga seu currículo antigo e continue editando sem começar do zero.",
+  title: "Importar currículo antigo",
+  description:
+    "Envie seu currículo em PDF ou Word e nós separamos nome, experiências, formação e cursos para você só conferir e atualizar.",
   alternates: { canonical: "/importar" },
 };
 
