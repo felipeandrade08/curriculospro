@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
 import { RESUME_EXAMPLES } from "@/lib/examples";
+import { SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = "https://curriculospro.vercel.app";
+  const base = SITE_URL;
   const pages = ["", "/modelos", "/exemplos", "/precos", "/privacidade", "/termos"];
   return [
     ...pages.map((path) => ({

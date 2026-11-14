@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://curriculospro.vercel.app">Acessar o CurriculosPRO</a> ·
+  <a href="https://www.curriculospro.site">Acessar o CurriculosPRO</a> ·
   <a href="https://github.com/felipeandrade08/curriculospro/actions">Ver builds</a>
 </p>
 
@@ -128,7 +128,7 @@ Preço e duração ficam em `src/lib/billing.ts` (`ACCESS_PRICE_CENTS` e `ACCESS
 1. Crie uma aplicação em [Mercado Pago Developers](https://www.mercadopago.com.br/developers/panel/app) (produto: *Pagamentos online / Checkout Transparente*).
 2. A conta Mercado Pago precisa ter uma **chave Pix cadastrada**.
 3. Copie o **Access Token de produção** para `MERCADOPAGO_ACCESS_TOKEN` na Vercel.
-4. Em **Webhooks**, cadastre `https://SEU-DOMINIO/api/webhooks/mercadopago` com o evento **Pagamentos** e copie a **assinatura secreta** para `MERCADOPAGO_WEBHOOK_SECRET`.
+4. Em **Webhooks**, cadastre `https://www.curriculospro.site/api/webhooks/mercadopago` com o evento **Pagamentos** e copie a **assinatura secreta** para `MERCADOPAGO_WEBHOOK_SECRET`.
 5. Rode `npm run db:migrate` com a `DATABASE_URL` de produção.
 6. Faça um pagamento real de teste e confira em `/admin`. Para devolver, use **Devolver dinheiro** no painel do Mercado Pago.
 
@@ -147,7 +147,7 @@ O projeto está preparado para deploy na Vercel:
 5. Configure o Mercado Pago (seção acima).
 6. Faça o deploy e valide criação de currículo, pagamento Pix, exportação PDF, login e sincronização.
 
-URL pública configurada nos metadados do projeto: https://curriculospro.vercel.app
+Domínio oficial: https://www.curriculospro.site (definido em `src/lib/site.ts`).
 
 ## Integração contínua
 

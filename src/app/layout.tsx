@@ -7,10 +7,11 @@ import "@fontsource-variable/bricolage-grotesque";
 import "./globals.css";
 import "./resume.css";
 import "./site.css";
+import { SITE_URL } from "@/lib/site";
 import { Providers } from "./providers";
 import { UsageBeacon } from "@/components/usage-beacon";
 export const metadata: Metadata = {
-  metadataBase: new URL("https://curriculospro.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: { default: "CurriculosPRO — Seu currículo profissional", template: "%s | CurriculosPRO" },
   description:
     "Crie seu currículo profissional online com modelos modernos e editor guiado. Edite grátis e baixe em PDF por R$ 9,90 com 7 dias de acesso.",

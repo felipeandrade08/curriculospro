@@ -1,3 +1,4 @@
+import { SITE_URL } from "@/lib/site";
 import type { MetadataRoute } from "next";
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -6,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: ["/", "/modelos"],
       disallow: ["/api/", "/editor", "/curriculos", "/perfil-profissional", "/adaptar-vaga", "/auth/"],
     },
-    sitemap: "https://curriculospro.vercel.app/sitemap.xml",
+    sitemap: SITE_URL + "/sitemap.xml",
   };
 }
