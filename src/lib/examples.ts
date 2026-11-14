@@ -761,7 +761,7 @@ export const RESUME_EXAMPLES: ResumeExample[] = [
         },
       ],
       education: [edu("Ciências Contábeis", "UFMG", "2014 — 2018")],
-      courses: ["FGV — Análise de Demonstrações Financeiras — 30h", "Excel Avançado e Power BI — 40h"],
+      courses: ["FGV — Análise de Demonstrações Financeiras — 30h", "Fundação Bradesco — Excel Avançado e Power BI — 40h"],
       skills: [
         "Fluxo de caixa",
         "Conciliação bancária",
