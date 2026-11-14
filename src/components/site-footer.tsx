@@ -1,72 +1,58 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ACCESS_PRICE_LABEL } from "@/lib/billing";
-import { SUPPORT_WHATSAPP_URL } from "@/lib/site";
+import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
+import { COMPANY, SUPPORT_WHATSAPP_URL } from "@/lib/site";
 
 const linkedinUrl = "https://www.linkedin.com/in/felipe-andrade-0331b9205/";
 
 export function SiteFooter() {
   return (
-    <footer className="siteFooter">
-      <div className="shell footer">
-        <div className="footerBrand">
-          <Link className="brand brandImage footerLogo" href="/" aria-label="CurriculosPRO — página inicial">
-            <Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={165} height={62} />
+    <footer className="sf">
+      <div className="wrap sf-grid">
+        <div className="sf-brand">
+          <Link className="sf-logo" href="/" aria-label="CurriculosPRO — página inicial">
+            <Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={150} height={57} />
           </Link>
           <p>
-            Uma ferramenta simples para transformar sua trajetória em um currículo claro, organizado e
-            profissional.
+            Currículos bem escritos e bem diagramados, prontos para enviar. Crie e edite grátis; baixe o PDF
+            por {ACCESS_PRICE_LABEL} com {ACCESS_DAYS} dias de acesso.
           </p>
-          <div className="footerTrust">
-            <span>Crie e edite grátis</span>
-            <span>Sem cadastro obrigatório</span>
-            <span>PDF por {ACCESS_PRICE_LABEL} · 7 dias</span>
-          </div>
         </div>
-        <nav className="footerLinks" aria-label="Navegação do produto">
-          <strong>PRODUTO</strong>
+        <nav aria-label="Produto">
+          <h2>Produto</h2>
           <Link href="/modelos">Modelos de currículo</Link>
-          <Link href="/curriculos">Meus currículos</Link>
-          <Link href="/editor?new=blank">Criar currículo</Link>
+          <Link href="/exemplos">Exemplos por profissão</Link>
           <Link href="/precos">Preços</Link>
-          <Link href="/feedback">Enviar feedback</Link>
+          <Link href="/importar">Importar currículo</Link>
         </nav>
-        <nav className="footerLinks" aria-label="Conta e recursos">
-          <strong>SUA CONTA</strong>
+        <nav aria-label="Sua conta">
+          <h2>Sua conta</h2>
+          <Link href="/curriculos">Meus currículos</Link>
+          <Link href="/perfil-profissional">Perfil profissional</Link>
           <Link href="/auth/sign-in">Entrar</Link>
           <Link href="/auth/sign-up">Criar conta</Link>
-          <Link href="/curriculos">Sincronização em nuvem</Link>
         </nav>
-        <nav className="footerLinks" aria-label="Informações do projeto">
-          <strong>INFORMAÇÕES</strong>
+        <nav aria-label="Ajuda">
+          <h2>Ajuda</h2>
           <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-            Ajuda pelo WhatsApp
+            Falar no WhatsApp
           </a>
-          <Link href="/privacidade">Política de privacidade</Link>
+          <Link href="/feedback">Enviar sugestão</Link>
           <Link href="/termos">Termos de uso</Link>
+          <Link href="/privacidade">Privacidade</Link>
         </nav>
-        <div className="footerMeta">
-          <span>© {new Date().getFullYear()} CurriculosPRO. Todos os direitos reservados.</span>
-          <div className="footerCreator">
-            <span>
-              Desenvolvido por <strong>Felipe Andrade Dev</strong>
-            </span>
-            <a
-              className="footerSocial"
-              href={linkedinUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Visitar LinkedIn de Felipe Andrade (abre em nova aba)"
-              title="LinkedIn — Felipe Andrade"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14ZM8.34 17.5V9.6H5.7v7.9h2.64ZM7.02 8.52a1.53 1.53 0 1 0 0-3.06 1.53 1.53 0 0 0 0 3.06ZM18.3 17.5v-4.33c0-2.32-1.24-3.4-2.9-3.4-1.34 0-1.94.74-2.27 1.26V9.6h-2.64v7.9h2.64v-3.92c0-1.03.2-2.02 1.47-2.02 1.25 0 1.27 1.17 1.27 2.09v3.85h2.43Z" />
-              </svg>
-              <span>LinkedIn</span>
-            </a>
-          </div>
-          <small>Feito para ajudar você a apresentar sua história com clareza e confiança.</small>
-        </div>
+      </div>
+      <div className="wrap sf-bottom">
+        <span>
+          © {new Date().getFullYear()} {COMPANY.legalName}, CNPJ {COMPANY.cnpj}, telefone e WhatsApp{" "}
+          {COMPANY.phone}
+        </span>
+        <span>
+          Desenvolvido por{" "}
+          <a href={linkedinUrl} target="_blank" rel="noopener noreferrer">
+            Felipe Andrade
+          </a>
+        </span>
       </div>
     </footer>
   );

@@ -1,4 +1,6 @@
-export type ResumeTemplate = "essential" | "modern" | "executive" | "minimal" | "creative";
+import { isTemplateId, type TemplateId } from "@/lib/templates";
+import { exampleById, RESUME_EXAMPLES } from "@/lib/examples";
+export type ResumeTemplate = TemplateId;
 export type ResumeDensity = "comfortable" | "compact";
 export type ResumeSection = "summary" | "experiences" | "education" | "skills" | "languages" | "courses";
 export type ResumeItem = { id: string; title: string; subtitle: string; period: string; description: string };
@@ -156,153 +158,17 @@ export const exampleResumeData = (): ResumeData => ({
   skills: ["Planejamento", "Conteúdo", "Análise de dados"],
   languages: ["Português — Nativo"],
 });
-export const exampleProfiles = [
-  {
-    id: "first-job",
-    name: "Primeiro emprego",
-    role: "Jovem aprendiz / Auxiliar",
-    summary:
-      "Busco minha primeira oportunidade profissional para desenvolver minhas habilidades, aprender novas atividades e contribuir com dedicação, responsabilidade e vontade de crescer.",
-    experienceTitle: "Projeto acadêmico",
-    experienceCompany: "Atividade escolar",
-    experiencePeriod: "2025",
-    experienceDescription:
-      "Participação em atividades em grupo, organização de tarefas e apresentação de trabalhos.",
-    educationTitle: "Ensino Médio",
-    educationCompany: "Instituição de Ensino",
-    educationPeriod: "2023 — 2025",
-    courses: ["Informática básica"],
-    skills: ["Organização", "Comunicação", "Facilidade de aprendizado", "Trabalho em equipe"],
-    languages: ["Português — Nativo"],
-  },
-  {
-    id: "administrative",
-    name: "Administrativo",
-    role: "Auxiliar Administrativo",
-    summary:
-      "Busco atuar na área administrativa, contribuindo com organização, atenção aos detalhes e apoio às rotinas e aos processos da equipe.",
-    experienceTitle: "Auxiliar Administrativo",
-    experienceCompany: "Empresa Exemplo",
-    experiencePeriod: "2023 — 2025",
-    experienceDescription:
-      "Apoio à organização de documentos, atualização de planilhas, atendimento telefônico e suporte às rotinas administrativas.",
-    educationTitle: "Técnico em Administração",
-    educationCompany: "Instituição de Ensino",
-    educationPeriod: "2022 — 2023",
-    courses: ["Pacote Office"],
-    skills: ["Microsoft Excel", "Organização de documentos", "Atendimento", "Comunicação escrita"],
-    languages: ["Português — Nativo"],
-  },
-  {
-    id: "retail",
-    name: "Comércio e atendimento",
-    role: "Atendente / Vendedor",
-    summary:
-      "Busco uma oportunidade em atendimento e comércio, oferecendo comunicação cordial, atenção às necessidades dos clientes e compromisso com uma boa experiência.",
-    experienceTitle: "Atendente",
-    experienceCompany: "Comércio Exemplo",
-    experiencePeriod: "2024 — 2025",
-    experienceDescription:
-      "Atendimento ao público, organização de produtos, apoio ao registro de pedidos e esclarecimento de dúvidas.",
-    educationTitle: "Ensino Médio",
-    educationCompany: "Instituição de Ensino",
-    educationPeriod: "Concluído em 2023",
-    courses: ["Atendimento ao cliente"],
-    skills: ["Atendimento ao cliente", "Comunicação clara", "Organização", "Trabalho em equipe"],
-    languages: ["Português — Nativo"],
-  },
-  {
-    id: "logistics",
-    name: "Logística e estoque",
-    role: "Auxiliar de Logística",
-    summary:
-      "Desejo atuar na área de logística, contribuindo com organização, conferência de mercadorias e cumprimento dos procedimentos operacionais.",
-    experienceTitle: "Auxiliar de Estoque",
-    experienceCompany: "Centro de Distribuição Exemplo",
-    experiencePeriod: "2023 — 2025",
-    experienceDescription:
-      "Apoio à conferência e organização de mercadorias, separação de pedidos e atualização de registros de estoque.",
-    educationTitle: "Ensino Médio",
-    educationCompany: "Instituição de Ensino",
-    educationPeriod: "Concluído em 2022",
-    courses: ["Noções de logística"],
-    skills: [
-      "Controle de estoque",
-      "Conferência de mercadorias",
-      "Separação de pedidos",
-      "Atenção aos detalhes",
-    ],
-    languages: ["Português — Nativo"],
-  },
-  {
-    id: "industry",
-    name: "Indústria e produção",
-    role: "Auxiliar de Produção",
-    summary:
-      "Busco atuar na área de produção, colaborando com responsabilidade, atenção aos procedimentos, organização e compromisso com a qualidade.",
-    experienceTitle: "Auxiliar de Produção",
-    experienceCompany: "Indústria Exemplo",
-    experiencePeriod: "2024 — 2025",
-    experienceDescription:
-      "Apoio às atividades da linha de produção, organização do posto de trabalho, embalagem e inspeção visual conforme orientação.",
-    educationTitle: "Ensino Médio",
-    educationCompany: "Instituição de Ensino",
-    educationPeriod: "Concluído em 2023",
-    courses: ["Boas práticas de segurança"],
-    skills: ["Organização", "Atenção aos procedimentos", "Trabalho em equipe", "Comprometimento"],
-    languages: ["Português — Nativo"],
-  },
-  {
-    id: "technology",
-    name: "Tecnologia e suporte",
-    role: "Assistente de TI",
-    summary:
-      "Busco uma oportunidade em tecnologia para aplicar meus conhecimentos, desenvolver novas competências e colaborar com soluções e melhorias.",
-    experienceTitle: "Suporte de Informática",
-    experienceCompany: "Projeto de Aprendizagem",
-    experiencePeriod: "2024 — 2025",
-    experienceDescription:
-      "Apoio na configuração básica de computadores, instalação de programas autorizados e orientação a usuários em dúvidas comuns.",
-    educationTitle: "Técnico em Informática",
-    educationCompany: "Instituição de Ensino",
-    educationPeriod: "2023 — 2025",
-    courses: ["Fundamentos de redes", "Informática aplicada"],
-    skills: ["Informática", "Suporte técnico básico", "Resolução de problemas", "Comunicação"],
-    languages: ["Português — Nativo"],
-  },
-] as const;
-export type ExampleProfileId = (typeof exampleProfiles)[number]["id"];
-export function exampleResumeDataFor(profileId: string): ResumeData {
-  const p = exampleProfiles.find((x) => x.id === profileId) || exampleProfiles[0];
+export function exampleResumeDataFor(exampleId: string): ResumeData {
+  const example = exampleById(exampleId) || RESUME_EXAMPLES[0];
+  const d = example.data;
   return {
-    name: "Nome Sobrenome",
+    ...d,
     photo: "",
-    role: p.role,
-    email: "seu.email@exemplo.com",
-    phone: "(00) 00000-0000",
-    city: "Sua cidade, UF",
-    summary: p.summary,
-    experiences: [
-      {
-        id: uid(),
-        title: p.experienceTitle,
-        subtitle: p.experienceCompany,
-        period: p.experiencePeriod,
-        description: p.experienceDescription,
-      },
-    ],
-    education: [
-      {
-        id: uid(),
-        title: p.educationTitle,
-        subtitle: p.educationCompany,
-        period: p.educationPeriod,
-        description: "",
-      },
-    ],
-    courses: [...p.courses],
-    skills: [...p.skills],
-    languages: [...p.languages],
+    experiences: d.experiences.map((x) => ({ ...x, id: uid() })),
+    education: d.education.map((x) => ({ ...x, id: uid() })),
+    courses: [...d.courses],
+    skills: [...d.skills],
+    languages: [...d.languages],
   };
 }
 export function createResume(
@@ -317,7 +183,7 @@ export function createResume(
     updatedAt: now,
     cv: mode === "example" ? exampleResumeData() : emptyResumeData(),
     template,
-    accent: "#087cf0",
+    accent: "#0b6bcb",
     density: "comfortable",
     sectionOrder: [...defaultOrder],
     hidden: [],
@@ -540,13 +406,7 @@ export function parseBackup(value: string): ResumeDocument[] {
   return docs;
 }
 export function isResumeTemplate(value: string | null): value is ResumeTemplate {
-  return (
-    value === "essential" ||
-    value === "modern" ||
-    value === "executive" ||
-    value === "minimal" ||
-    value === "creative"
-  );
+  return isTemplateId(value);
 }
 export function cloneResume(source: ResumeDocument, title = source.title + " — cópia"): ResumeDocument {
   const now = new Date().toISOString();

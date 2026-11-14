@@ -12,7 +12,7 @@ export default function OpengraphImage() {
         width: "100%",
         height: "100%",
         display: "flex",
-        background: "linear-gradient(135deg, #0a2f63 0%, #087cf0 100%)",
+        background: "linear-gradient(135deg, #0a2f63 0%, #1553d6 100%)",
         padding: 72,
         fontFamily: "sans-serif",
         color: "white",
@@ -54,10 +54,10 @@ export default function OpengraphImage() {
           }}
         >
           <div style={{ fontSize: 26, fontWeight: 800, color: "#14213d" }}>Mariana Costa</div>
-          <div style={{ fontSize: 16, color: "#087cf0", marginTop: 6, fontWeight: 700 }}>
+          <div style={{ fontSize: 16, color: "#1553d6", marginTop: 6, fontWeight: 700 }}>
             Analista de Marketing
           </div>
-          <div style={{ height: 3, background: "#087cf0", marginTop: 20, marginBottom: 22, width: 90 }} />
+          <div style={{ height: 3, background: "#1553d6", marginTop: 20, marginBottom: 22, width: 90 }} />
           {[260, 220, 240, 180, 250, 200, 230, 160].map((w, i) => (
             <div
               key={i}

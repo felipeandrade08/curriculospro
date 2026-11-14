@@ -1,29 +1,55 @@
-"use client";
 import Image from "next/image";
 import Link from "next/link";
 
-export function SiteHeader({ active }: { active?: "modelos" | "curriculos" | "precos" }) {
+type Active = "modelos" | "exemplos" | "curriculos" | "precos";
+
+const links: { href: string; label: string; key: Active }[] = [
+  { href: "/modelos", label: "Modelos", key: "modelos" },
+  { href: "/exemplos", label: "Exemplos por profissão", key: "exemplos" },
+  { href: "/precos", label: "Preços", key: "precos" },
+  { href: "/curriculos", label: "Meus currículos", key: "curriculos" },
+];
+
+export function SiteHeader({ active }: { active?: Active }) {
   return (
-    <header className="siteHeader">
-      <div className="nav shell">
-        <Link className="brand brandImage" href="/">
-          <Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={190} height={72} priority />
+    <header className="sh">
+      <div className="sh-inner wrap">
+        <Link className="sh-logo" href="/" aria-label="CurriculosPRO — página inicial">
+          <Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={168} height={64} priority />
         </Link>
-        <nav aria-label="Navegação principal">
-          <Link href="/#recursos">Recursos</Link>
-          <Link className={active === "modelos" ? "active" : ""} href="/modelos">
-            Modelos
-          </Link>
-          <Link className={active === "precos" ? "active" : ""} href="/precos">
-            Preços
-          </Link>
-          <Link className={active === "curriculos" ? "active" : ""} href="/curriculos">
-            Meus currículos
-          </Link>
-          <Link href="/editor?new=blank" className="navCta">
-            Criar currículo
-          </Link>
+        <nav className="sh-nav" aria-label="Navegação principal">
+          {links.map((link) => (
+            <Link
+              key={link.key}
+              href={link.href}
+              className={active === link.key ? "is-active" : undefined}
+              aria-current={active === link.key ? "page" : undefined}
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
+        <Link href="/editor?new=blank" className="btn btn-primary sh-cta">
+          Criar currículo
+        </Link>
+        <details className="sh-menu">
+          <summary aria-label="Abrir menu">
+            <span />
+            <span />
+            <span />
+          </summary>
+          <nav aria-label="Menu">
+            {links.map((link) => (
+              <Link key={link.key} href={link.href} aria-current={active === link.key ? "page" : undefined}>
+                {link.label}
+              </Link>
+            ))}
+            <Link href="/auth/sign-in">Entrar na conta</Link>
+            <Link href="/editor?new=blank" className="btn btn-primary">
+              Criar currículo
+            </Link>
+          </nav>
+        </details>
       </div>
     </header>
   );

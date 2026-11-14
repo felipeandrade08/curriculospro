@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import type { Metadata } from "next";
+import { COMPANY } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Política de privacidade",
@@ -17,6 +18,13 @@ export default function Privacy() {
           O CurriculosPRO foi criado para permitir que você monte seu currículo sem entregar mais dados do que
           o necessário.
         </p>
+        <section>
+          <h2>Responsável pelos dados</h2>
+          <p>
+            {COMPANY.legalName}, CNPJ {COMPANY.cnpj}. Para dúvidas ou pedidos sobre seus dados, fale pelo
+            telefone e WhatsApp {COMPANY.phone}.
+          </p>
+        </section>
         <section>
           <h2>O que fica no seu dispositivo</h2>
           <p>

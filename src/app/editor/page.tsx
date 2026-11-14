@@ -4,7 +4,10 @@ import { CheckoutModal } from "@/components/checkout-modal";
 import { useAccess } from "@/lib/use-access";
 import { ACCESS_DAYS, ACCESS_PRICE_LABEL, formatAccessUntil } from "@/lib/billing";
 import { trackUsage } from "@/lib/analytics";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { A4_HEIGHT, A4_WIDTH, ResumeThumb, ResumeView } from "@/components/resume-view";
+import { ACCENT_COLORS, TEMPLATES, templateMeta, type TemplateId } from "@/lib/templates";
+import { exampleById } from "@/lib/examples";
 import {
   ACTIVE_RESUME_KEY,
   JOB_SELECTION_KEY,
@@ -37,7 +40,7 @@ type CV = {
   skills: string[];
   languages: string[];
 };
-type Template = "essential" | "modern" | "executive" | "minimal" | "creative";
+type Template = TemplateId;
 type SectionKey = "summary" | "experiences" | "education" | "skills" | "languages" | "courses";
 const defaultOrder: SectionKey[] = ["summary", "experiences", "education", "skills", "languages", "courses"];
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -88,13 +91,16 @@ export default function Editor() {
   const [cv, setCv] = useState(initial),
     [tab, setTab] = useState<(typeof tabs)[number]>("Conteúdo"),
     [template, setTemplate] = useState<Template>("essential"),
-    [accent, setAccent] = useState("#087cf0"),
+    [accent, setAccent] = useState("#0b6bcb"),
     [mobilePreview, setMobilePreview] = useState(false),
     [density, setDensity] = useState<"comfortable" | "compact">("comfortable"),
     [sectionOrder, setSectionOrder] = useState<SectionKey[]>(defaultOrder),
     [hidden, setHidden] = useState<SectionKey[]>([]),
     [pdfHint, setPdfHint] = useState(false),
     [checkoutOpen, setCheckoutOpen] = useState(false),
+    [fitOn, setFitOn] = useState(false),
+    [pageInfo, setPageInfo] = useState({ pages: 1, natural: 1, scale: 1, fits: true }),
+    [stageZoom, setStageZoom] = useState(1),
     [photoError, setPhotoError] = useState("");
   useEffect(() => {
     try {
@@ -109,11 +115,15 @@ export default function Editor() {
       let doc: ResumeDocument | undefined;
       if (mode === "blank" || mode === "example") {
         doc = createResume(mode, isResumeTemplate(requested) ? requested : "essential");
+        if (isResumeTemplate(requested)) doc.accent = templateMeta(requested).accent;
         if (mode === "example") {
           const exampleId = params.get("example");
-          if (exampleId) {
-            doc.cv = exampleResumeDataFor(exampleId);
-            doc.title = "Exemplo — " + doc.cv.role;
+          const example = exampleById(exampleId);
+          if (example) {
+            doc.cv = exampleResumeDataFor(example.id);
+            doc.title = "Exemplo — " + example.title;
+            if (!isResumeTemplate(requested)) doc.template = example.template;
+            doc.accent = isResumeTemplate(requested) ? templateMeta(requested).accent : example.accent;
           }
         }
         docs = [doc, ...docs];
@@ -709,6 +719,83 @@ export default function Editor() {
     !(key === "courses" && guidance.courses === "none") &&
     !(key === "languages" && guidance.languages === "none") &&
     !(key === "education" && guidance.education === "none");
+  const visibleSections = useMemo(
+    () => sectionOrder.filter(visible),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sectionOrder, hidden, guidance],
+  );
+  const measureRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLElement>(null);
+  const fitKey = (id: string) => "curriculospro.fit.v1:" + id;
+  const toggleFit = (on: boolean) => {
+    setFitOn(on);
+    try {
+      if (activeId.current) localStorage.setItem(fitKey(activeId.current), on ? "1" : "0");
+    } catch {}
+  };
+  useEffect(() => {
+    try {
+      if (activeId.current) setFitOn(localStorage.getItem(fitKey(activeId.current)) === "1");
+    } catch {}
+  }, []);
+  // Mede o currículo fora da tela para saber quantas folhas o PDF terá e, se pedido,
+  // reduz a escala do texto (até 78%) para caber em uma única folha A4.
+  const measure = useCallback(() => {
+    const el = measureRef.current?.querySelector<HTMLElement>(".cv");
+    if (!el) return;
+    const heightAt = (scale: number) => {
+      el.style.setProperty("--s", String(scale));
+      return el.scrollHeight;
+    };
+    // A folha A4 tem 1122,5 px; usamos ~1 mm de folga porque a impressão pode
+    // quebrar linhas de forma levemente diferente da tela.
+    const limit = A4_HEIGHT - 5;
+    const pagesFor = (height: number) =>
+      height <= limit ? 1 : Math.max(2, Math.ceil((height - 5) / A4_HEIGHT));
+    const naturalHeight = heightAt(1);
+    const natural = pagesFor(naturalHeight);
+    let scale = 1;
+    const fits = heightAt(0.78) <= limit;
+    if (natural > 1 && fits) {
+      let lo = 0.78,
+        hi = 1;
+      for (let i = 0; i < 9; i++) {
+        const mid = (lo + hi) / 2;
+        if (heightAt(mid) <= limit) lo = mid;
+        else hi = mid;
+      }
+      scale = Math.floor(lo * 100) / 100;
+    }
+    const used = fitOn && natural > 1 && fits ? scale : 1;
+    const pages = pagesFor(heightAt(used));
+    el.style.setProperty("--s", "1");
+    setPageInfo((prev) =>
+      prev.pages === pages && prev.natural === natural && prev.scale === scale && prev.fits === fits
+        ? prev
+        : { pages, natural, scale, fits },
+    );
+  }, [fitOn]);
+  useLayoutEffect(() => {
+    measure();
+  }, [measure, cv, template, accent, density, visibleSections]);
+  useEffect(() => {
+    if (typeof document === "undefined" || !document.fonts) return;
+    document.fonts.ready.then(() => measure()).catch(() => {});
+  }, [measure]);
+  // Ajusta a prévia à largura disponível (celular e telas pequenas).
+  useEffect(() => {
+    const section = previewRef.current;
+    if (!section || typeof ResizeObserver === "undefined") return;
+    const update = () => {
+      const width = section.clientWidth - 24;
+      setStageZoom(Math.max(0.3, Math.min(1, width / A4_WIDTH)));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [mobilePreview]);
+  const thumbSample = useMemo(() => exampleResumeDataFor("administrative"), []);
   const formatPhone = (value: string) => {
     let d = value.replace(/\D/g, "");
     if ((d.length === 12 || d.length === 13) && d.startsWith("55")) d = d.slice(2);
@@ -1465,35 +1552,51 @@ export default function Editor() {
                 </div>
               </div>
               <h4>MODELO</h4>
-              <div className="templateGrid">
-                {(["essential", "modern", "executive", "minimal", "creative"] as Template[]).map((t) => (
-                  <button onClick={() => setTemplate(t)} className={template === t ? "selected" : ""} key={t}>
-                    <i className={"templateThumb " + t} />
-                    <b>
-                      {
-                        {
-                          essential: "Essencial",
-                          modern: "Moderno",
-                          executive: "Executivo",
-                          minimal: "Minimalista",
-                          creative: "Criativo",
-                        }[t]
-                      }
-                    </b>
+              <div className="templatePicker">
+                {TEMPLATES.map((t) => (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTemplate(t.id);
+                      if (template !== t.id && accent === templateMeta(template).accent) setAccent(t.accent);
+                    }}
+                    className={template === t.id ? "selected" : ""}
+                    key={t.id}
+                    aria-pressed={template === t.id}
+                    title={t.description}
+                  >
+                    <ResumeThumb
+                      width={150}
+                      cv={cv.name || cv.experiences.length ? cv : thumbSample}
+                      template={t.id}
+                      accent={template === t.id ? accent : t.accent}
+                      density={density}
+                      sections={visibleSections}
+                    />
+                    <span>
+                      <b>{t.name}</b>
+                      {t.isNew && <em>Novo</em>}
+                    </span>
                   </button>
                 ))}
               </div>
               <h4>COR DE DESTAQUE</h4>
               <div className="swatches">
-                {["#087cf0", "#2563eb", "#0f766e", "#b45309", "#be123c", "#202938"].map((c) => (
+                {ACCENT_COLORS.map((c) => (
                   <button
+                    type="button"
                     aria-label={"Cor " + c}
+                    aria-pressed={accent === c}
                     className={accent === c ? "selected" : ""}
                     style={{ background: c }}
                     onClick={() => setAccent(c)}
                     key={c}
                   />
                 ))}
+                <label className="swatchCustom" title="Escolher outra cor">
+                  <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} />
+                  <span aria-hidden="true">+</span>
+                </label>
               </div>
               <h4>ESPAÇAMENTO</h4>
               <div className="densityToggle">
@@ -1539,7 +1642,7 @@ export default function Editor() {
             </div>
           )}
         </aside>
-        <section className="preview">
+        <section className="preview" ref={previewRef}>
           <div className="mobilePdfAction">
             <button type="button" className="download" onClick={printResume}>
               {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
@@ -1557,36 +1660,63 @@ export default function Editor() {
                 Prévia com marca d&apos;água · liberar download por {ACCESS_PRICE_LABEL} ({ACCESS_DAYS} dias)
               </button>
             )}
-            <span>
-              A4 ·{" "}
-              {
-                {
-                  essential: "Essencial",
-                  modern: "Moderno",
-                  executive: "Executivo",
-                  minimal: "Minimalista",
-                  creative: "Criativo",
-                }[template]
-              }
-            </span>
+            <span>A4 · {templateMeta(template).name}</span>
           </div>
-          <article
-            className={"paper " + template + " " + density}
-            style={{ "--accent": accent } as React.CSSProperties}
-          >
-            <header>
-              {cv.photo ? <img className="resumePhoto" src={cv.photo} alt="" /> : <></>}
-              <div>
-                <h1 className={!cv.name ? "previewPlaceholder" : ""}>{cv.name || "Seu nome"}</h1>
-                <h2 className={!cv.role ? "previewPlaceholder" : ""}>{cv.role || "Título profissional"}</h2>
-                <p>{[cv.email, cv.phone, cv.city].filter(Boolean).join("  •  ")}</p>
-              </div>
-            </header>
-            {sectionOrder.filter(visible).map((key) => (
-              <PreviewSection key={key} sectionKey={key} cv={cv} />
-            ))}
-            {!access.active && !access.loading && <div className="paperWatermark" aria-hidden="true" />}
-          </article>
+          <div className={"fitBar " + (pageInfo.pages > 1 ? "warn" : "ok")} role="status">
+            {pageInfo.pages === 1 ? (
+              <span>
+                <b>✓ Cabe em 1 página</b>
+                {fitOn && pageInfo.scale < 1 && (
+                  <> · texto ajustado para {Math.round(pageInfo.scale * 100)}%</>
+                )}
+              </span>
+            ) : (
+              <span>
+                <b>{pageInfo.pages} páginas</b> · o PDF vai ocupar {pageInfo.pages} folhas
+              </span>
+            )}
+            {pageInfo.natural > 1 &&
+              (fitOn ? (
+                <button type="button" onClick={() => toggleFit(false)}>
+                  Desfazer ajuste
+                </button>
+              ) : pageInfo.fits ? (
+                <button type="button" className="primaryFit" onClick={() => toggleFit(true)}>
+                  Ajustar para 1 página
+                </button>
+              ) : (
+                <small>Muito conteúdo para 1 página: resuma descrições ou use o modelo Compacto.</small>
+              ))}
+          </div>
+          <div className="cvStage" style={{ zoom: stageZoom }}>
+            <ResumeView
+              cv={cv}
+              template={template}
+              accent={accent}
+              density={density}
+              sections={visibleSections}
+              scale={fitOn ? pageInfo.scale : 1}
+              placeholders
+              className="cvLive"
+            >
+              {pageInfo.pages > 1 &&
+                Array.from({ length: pageInfo.pages - 1 }, (_, i) => (
+                  <div className="pageGuide" key={i} style={{ top: A4_HEIGHT * (i + 1) }} aria-hidden="true">
+                    <span>Fim da página {i + 1}</span>
+                  </div>
+                ))}
+              {!access.active && !access.loading && <div className="paperWatermark" aria-hidden="true" />}
+            </ResumeView>
+          </div>
+          <div className="cvMeasure" ref={measureRef} aria-hidden="true">
+            <ResumeView
+              cv={cv}
+              template={template}
+              accent={accent}
+              density={density}
+              sections={visibleSections}
+            />
+          </div>
           <div className="printLockedNotice">
             <strong>CurriculosPRO</strong>
             <p>
@@ -2757,96 +2887,6 @@ function sectionLabel(key: SectionKey) {
     languages: "Idiomas",
     courses: "Cursos e certificações",
   }[key];
-}
-function PreviewSection({ sectionKey, cv }: { sectionKey: SectionKey; cv: CV }) {
-  if (sectionKey === "summary")
-    return cv.summary ? (
-      <section>
-        <h3>OBJETIVO PROFISSIONAL</h3>
-        <p>{cv.summary}</p>
-      </section>
-    ) : null;
-  if (sectionKey === "experiences")
-    return cv.experiences.length ? (
-      <section>
-        <h3>EXPERIÊNCIA PROFISSIONAL</h3>
-        {cv.experiences.map((x) => (
-          <div className="resumeItem" key={x.id}>
-            <div className="row">
-              <div>
-                <h4>{x.title || "Cargo"}</h4>
-                <b>{x.subtitle}</b>
-              </div>
-              <span>{x.period}</span>
-            </div>
-            <p>{x.description}</p>
-          </div>
-        ))}
-      </section>
-    ) : null;
-  if (sectionKey === "education")
-    return cv.education.length ? (
-      <section>
-        <h3>FORMAÇÃO</h3>
-        {cv.education.map((x) => (
-          <div className="resumeItem" key={x.id}>
-            <div className="row">
-              <div>
-                <h4>{x.title || "Curso"}</h4>
-                <b>{x.subtitle}</b>
-              </div>
-              <span>{x.period}</span>
-            </div>
-          </div>
-        ))}
-      </section>
-    ) : null;
-  if (sectionKey === "skills")
-    return cv.skills.filter(Boolean).length ? (
-      <section>
-        <h3>HABILIDADES</h3>
-        <div className="chips">
-          {cv.skills.filter(Boolean).map((x, i) => (
-            <i key={x + i}>{x}</i>
-          ))}
-        </div>
-      </section>
-    ) : null;
-  if (sectionKey === "languages")
-    return cv.languages.filter(Boolean).length ? (
-      <section>
-        <h3>IDIOMAS</h3>
-        {cv.languages.filter(Boolean).map((x, i) => (
-          <p key={x + i}>{x}</p>
-        ))}
-      </section>
-    ) : null;
-  return cv.courses.filter(Boolean).length ? (
-    <section>
-      <h3>CURSOS E CERTIFICAÇÕES</h3>
-      <div className="courseList">
-        {cv.courses
-          .flatMap((value) => value.split(/\s*[•·]\s*/))
-          .filter(Boolean)
-          .map((entry, index) => {
-            const parts = entry
-              .split(/\s+[—–-]\s+/)
-              .map((part) => part.trim())
-              .filter(Boolean);
-            const institution = parts.length > 1 ? parts[0] : "";
-            const title = parts.length > 1 ? parts[1] : parts[0];
-            const details = parts.length > 2 ? parts.slice(2).join(" · ") : "";
-            return (
-              <div className="courseEntry" key={entry + index}>
-                {institution && <span className="courseInstitution">{institution}</span>}
-                <strong>{title}</strong>
-                {details && <small>{details}</small>}
-              </div>
-            );
-          })}
-      </div>
-    </section>
-  ) : null;
 }
 function ProfilePickGroup({ title, children }: { title: string; children: ReactNode }) {
   return (

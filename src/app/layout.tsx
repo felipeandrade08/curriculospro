@@ -1,6 +1,12 @@
 import "@neondatabase/auth-ui/css";
 import type { Metadata } from "next";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/lora";
+import "@fontsource-variable/jetbrains-mono";
+import "@fontsource-variable/bricolage-grotesque";
 import "./globals.css";
+import "./resume.css";
+import "./site.css";
 import { Providers } from "./providers";
 import { UsageBeacon } from "@/components/usage-beacon";
 export const metadata: Metadata = {

@@ -55,14 +55,11 @@ const faq = [
 
 export default function PricingPage() {
   return (
-    <main className="pricingPage">
+    <main className="pricingPage lp">
       <UsageBeacon event="pricing_view" />
       <SiteHeader active="precos" />
       <section className="pricingHero shell">
-        <span className="pill">PREÇO SIMPLES</span>
-        <h1>
-          Crie de graça. <em>Pague só quando for baixar.</em>
-        </h1>
+        <h1>Crie de graça. Pague só quando for baixar.</h1>
         <p>
           Monte seu currículo com calma, teste modelos e ajuste cada detalhe sem pagar nada. Quando estiver
           pronto, libere o PDF com um único Pix.
@@ -82,12 +79,11 @@ export default function PricingPage() {
             <li>Prévia em tempo real com marca d&apos;água</li>
             <li>Salvo no seu navegador, sem cadastro</li>
           </ul>
-          <Link href="/editor?new=blank" className="secondary">
+          <Link href="/editor?new=blank" className="btn btn-ghost btn-lg">
             Começar grátis
           </Link>
         </article>
         <article className="pricingPlan featured">
-          <div className="pricingBadge">MAIS ESCOLHIDO</div>
           <header>
             <h2>Acesso {ACCESS_DAYS} dias</h2>
             <strong>{ACCESS_PRICE_LABEL}</strong>
@@ -105,8 +101,8 @@ export default function PricingPage() {
             <li>Seus currículos salvos na nuvem</li>
             <li>Sem assinatura e sem renovação automática</li>
           </ul>
-          <Link href="/editor?new=blank" className="primary">
-            Criar meu currículo →
+          <Link href="/editor?new=blank" className="btn btn-primary btn-lg">
+            Criar meu currículo
           </Link>
           <small>Você só paga na hora de baixar.</small>
         </article>
