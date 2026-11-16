@@ -1,5 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { NextResponse } from "next/server";
+import { getServerSession } from "@/lib/server/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +25,9 @@ export async function POST(request: Request) {
       category?: unknown;
       message?: unknown;
       website?: unknown;
+      authorName?: unknown;
+      authorRole?: unknown;
+      allowPublic?: unknown;
     };
 
     // Honeypot: silently accept bot submissions without storing them.
@@ -73,9 +77,28 @@ export async function POST(request: Request) {
       );
     }
 
+    const text = (v: unknown, max: number) =>
+      typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, max) || null : null;
+    const authorName = text(body.authorName, 60);
+    const authorRole = text(body.authorRole, 60);
+    const allowPublic = body.allowPublic === true && !!authorName;
+    let userId: string | null = null;
+    try {
+      userId = (await getServerSession())?.userId || null;
+    } catch {
+      userId = null;
+    }
+
     const sql = neon(databaseUrl);
-    await sql`INSERT INTO user_feedback (rating, category, message)
-      VALUES (${rating}, ${category}, ${message})`;
+    try {
+      await sql`INSERT INTO user_feedback (rating, category, message, author_name, author_role, allow_public, user_id)
+        VALUES (${rating}, ${category}, ${message}, ${authorName}, ${authorRole}, ${allowPublic}, ${userId})`;
+    } catch (error) {
+      // Banco ainda sem a migração dos depoimentos: guarda o essencial.
+      if ((error as { code?: string }).code !== "42703") throw error;
+      await sql`INSERT INTO user_feedback (rating, category, message)
+        VALUES (${rating}, ${category}, ${message})`;
+    }
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json(

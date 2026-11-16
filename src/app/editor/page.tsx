@@ -99,6 +99,7 @@ export default function Editor() {
     [sectionOrder, setSectionOrder] = useState<SectionKey[]>(defaultOrder),
     [hidden, setHidden] = useState<SectionKey[]>([]),
     [pdfHint, setPdfHint] = useState(false),
+    [askReview, setAskReview] = useState(false),
     [checkoutOpen, setCheckoutOpen] = useState(false),
     [fitOn, setFitOn] = useState(false),
     [pageInfo, setPageInfo] = useState({ pages: 1, natural: 1, scale: 1, fits: true }),
@@ -126,6 +127,7 @@ export default function Editor() {
             doc.title = "Exemplo — " + example.title;
             if (!isResumeTemplate(requested)) doc.template = example.template;
             doc.accent = isResumeTemplate(requested) ? templateMeta(requested).accent : example.accent;
+            trackUsage("example_used");
           }
         }
         docs = [doc, ...docs];
@@ -400,6 +402,9 @@ export default function Editor() {
     }
     trackUsage("pdf_print_requested");
     setPdfHint(true);
+    try {
+      setAskReview(!localStorage.getItem("curriculospro.reviewAsked.v1"));
+    } catch {}
     const previous = document.title;
     document.title = safeFilename(documentTitle || cv.name || "curriculo") + "-CurriculosPRO";
     setTimeout(() => {
@@ -936,6 +941,19 @@ export default function Editor() {
           <button type="button" onClick={() => setPdfHint(false)}>
             Entendi
           </button>
+          {askReview && (
+            <a
+              className="pdfHintReview"
+              href="/feedback"
+              onClick={() => {
+                try {
+                  localStorage.setItem("curriculospro.reviewAsked.v1", "1");
+                } catch {}
+              }}
+            >
+              Deu certo? Conte como foi ★
+            </a>
+          )}
         </div>
       )}
       <div className={"workspace " + (mobilePreview ? "showPreview" : "")}>

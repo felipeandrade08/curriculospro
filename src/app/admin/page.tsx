@@ -1,377 +1,119 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import "./admin.css";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { getServerSession } from "@/lib/server/session";
+import { checkAdmin } from "@/lib/server/admin";
 import { db } from "@/lib/server/db";
-import { formatBRL } from "@/lib/billing";
+import { CustomersTab, FeedbackTab, OverviewTab, SalesTab } from "./sections";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Administração", robots: { index: false, follow: false } };
 
-const labels: Record<string, string> = {
-  site_visit: "Visitas ao site",
-  resume_started: "Editor iniciado",
-  paywall_view: "Viram a oferta",
-  checkout_started: "Pix gerados",
-  pdf_print_requested: "PDFs baixados",
-};
-const descriptions: Record<string, string> = {
-  site_visit: "Acessos registrados na página inicial",
-  resume_started: "Aberturas do editor de currículos",
-  paywall_view: "Aberturas da janela de pagamento",
-  checkout_started: "Códigos Pix solicitados",
-  pdf_print_requested: "Downloads feitos com acesso ativo",
-};
+const TABS = [
+  { id: "geral", label: "Visão geral" },
+  { id: "vendas", label: "Vendas" },
+  { id: "avaliacoes", label: "Avaliações" },
+  { id: "clientes", label: "Clientes" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+const PERIODS = [7, 30, 90] as const;
 
-const statusLabel: Record<string, string> = {
-  approved: "Pago",
-  pending: "Aguardando",
-  in_process: "Em análise",
-  rejected: "Recusado",
-  cancelled: "Cancelado/expirado",
-  refunded: "Estornado",
-  charged_back: "Contestado",
-};
+type Search = Promise<Record<string, string | string[] | undefined>>;
 
-const dateTime = (value: string | null) =>
-  value
-    ? new Date(value).toLocaleString("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-        timeZone: "America/Sao_Paulo",
-      })
-    : "—";
-
-export default async function AdminPage() {
-  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  if (!adminEmail) {
+export default async function AdminPage({ searchParams }: { searchParams: Search }) {
+  const params = await searchParams;
+  const one = (k: string) => (typeof params[k] === "string" ? (params[k] as string) : "");
+  const check = await checkAdmin();
+  if (!check.ok) {
+    if (check.reason === "signed-out") redirect("/auth/sign-in?callbackURL=%2Fadmin");
     return (
-      <main>
+      <main className="ad">
         <SiteHeader />
-        <section className="shell adminNotice">
-          <h1>Admin ainda não configurado</h1>
-          <p>Configure ADMIN_EMAIL no ambiente Production da Vercel e publique um novo deployment.</p>
+        <section className="ad-notice">
+          <h1>
+            {check.reason === "not-configured"
+              ? "Admin ainda não configurado"
+              : "Esta conta não é administradora"}
+          </h1>
+          <p>
+            {check.reason === "not-configured"
+              ? "Configure ADMIN_EMAIL no ambiente Production da Vercel e publique um novo deployment."
+              : "A sessão atual não corresponde ao e-mail autorizado em ADMIN_EMAIL."}
+          </p>
+          {check.reason === "forbidden" && (
+            <Link href="/auth/sign-in?callbackURL=%2Fadmin">Entrar com outra conta</Link>
+          )}
         </section>
-        <SiteFooter />
-      </main>
-    );
-  }
-  const session = await getServerSession();
-  if (!session) redirect("/auth/sign-in?callbackURL=%2Fadmin");
-  if (session.email.trim().toLowerCase() !== adminEmail) {
-    return (
-      <main>
-        <SiteHeader />
-        <section className="shell adminNotice">
-          <span className="adminEyebrow">ACESSO RESTRITO</span>
-          <h1>Esta conta não é administradora</h1>
-          <p>A sessão atual não corresponde ao e-mail autorizado em ADMIN_EMAIL.</p>
-          <Link href="/auth/sign-in?callbackURL=%2Fadmin">Entrar com outra conta →</Link>
-        </section>
-        <SiteFooter />
       </main>
     );
   }
 
-  let metrics: { event_name: string; total: string }[] = [];
-  let feedback: { id: string; rating: number; category: string; message: string; created_at: string }[] = [];
-  let daily: { day: string; event_name: string; total: string }[] = [];
-  let sales = { approved: 0, revenue: 0, refunded: 0, activeAccess: 0 };
-  let salesDaily: { day: string; total: string }[] = [];
-  let recentPayments: {
-    id: string;
-    email: string;
-    amount_cents: number;
-    status: string;
-    created_at: string;
-    approved_at: string | null;
-    revoked_at: string | null;
-    access_until: string | null;
-  }[] = [];
-  let paymentsReady = true;
+  const tab: TabId = (TABS.find((t) => t.id === one("aba"))?.id as TabId) || "geral";
+  const days = PERIODS.find((p) => String(p) === one("dias")) || 30;
+  let newFeedback = 0;
+  let dbError = false;
   try {
-    const sql = db();
-    const [summary] = await sql`SELECT
-        count(*) FILTER (WHERE granted_at IS NOT NULL AND revoked_at IS NULL)::int AS approved,
-        COALESCE(sum(amount_cents) FILTER (WHERE granted_at IS NOT NULL AND revoked_at IS NULL), 0)::int AS revenue,
-        count(*) FILTER (WHERE revoked_at IS NOT NULL)::int AS refunded
-      FROM payments WHERE created_at >= now() - interval '30 days'`;
-    const [active] = await sql`SELECT count(*)::int AS total FROM app_users WHERE access_until > now()`;
-    sales = {
-      approved: Number(summary?.approved || 0),
-      revenue: Number(summary?.revenue || 0),
-      refunded: Number(summary?.refunded || 0),
-      activeAccess: Number(active?.total || 0),
-    };
-    salesDaily =
-      (await sql`SELECT to_char((approved_at AT TIME ZONE 'America/Sao_Paulo')::date,'YYYY-MM-DD') AS day, count(*)::text AS total
-      FROM payments WHERE granted_at IS NOT NULL AND revoked_at IS NULL AND approved_at >= now() - interval '7 days' GROUP BY 1`) as typeof salesDaily;
-    recentPayments =
-      (await sql`SELECT p.id, u.email, p.amount_cents, p.status, p.created_at::text, p.approved_at::text,
-        p.revoked_at::text, u.access_until::text
-      FROM payments p JOIN app_users u ON u.id = p.user_id
-      ORDER BY p.created_at DESC LIMIT 25`) as typeof recentPayments;
-  } catch {
-    paymentsReady = false;
+    const [row] = await db()`SELECT count(*)::int AS n FROM user_feedback WHERE status = 'new'`;
+    newFeedback = Number(row?.n || 0);
+  } catch (error) {
+    // Coluna "status" ainda não existe: falta rodar a migração nova.
+    dbError = (error as { code?: string }).code === "42703";
+    if (!dbError) newFeedback = 0;
   }
-  try {
-    const sql = db();
-    metrics =
-      (await sql`SELECT event_name,count(*)::text AS total FROM usage_events WHERE created_at >= now()-interval '30 days' GROUP BY event_name`) as typeof metrics;
-    feedback =
-      (await sql`SELECT id::text,rating,category,message,created_at::text FROM user_feedback ORDER BY created_at DESC LIMIT 30`) as typeof feedback;
-    daily =
-      (await sql`SELECT to_char((created_at AT TIME ZONE 'America/Sao_Paulo')::date,'YYYY-MM-DD') AS day,event_name,count(*)::text AS total FROM usage_events WHERE created_at >= now()-interval '7 days' GROUP BY 1,2 ORDER BY 1`) as typeof daily;
-  } catch {
-    return (
-      <main>
-        <SiteHeader />
-        <section className="shell adminNotice">
-          <h1>Painel temporariamente indisponível</h1>
-          <p>Não foi possível consultar as métricas. Confira a conexão e as migrações do banco de dados.</p>
-        </section>
-        <SiteFooter />
-      </main>
-    );
-  }
-
-  const totals = new Map(metrics.map((item) => [item.event_name, Number(item.total)]));
-  const days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - index));
-    const key = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Sao_Paulo",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(date);
-    const row = daily.filter((item) => item.day === key);
-    return {
-      key,
-      label: new Intl.DateTimeFormat("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        weekday: "short",
-        day: "2-digit",
-        month: "2-digit",
-      }).format(date),
-      site: row.filter((x) => x.event_name === "site_visit").reduce((n, x) => n + Number(x.total), 0),
-      sales: Number(salesDaily.find((x) => x.day === key)?.total || 0),
-    };
-  });
-  const maxDaily = Math.max(1, ...days.map((x) => x.site));
-  const totalEvents = metrics.reduce((sum, item) => sum + Number(item.total), 0);
-  const offers = totals.get("paywall_view") || 0;
-  const conversion = offers ? Math.round((sales.approved / offers) * 1000) / 10 : 0;
+  const href = (patch: Record<string, string>) => {
+    const next = new URLSearchParams({ aba: tab, dias: String(days), ...patch });
+    if (next.get("dias") === "30") next.delete("dias");
+    if (next.get("aba") === "geral") next.delete("aba");
+    const qs = next.toString();
+    return "/admin" + (qs ? "?" + qs : "");
+  };
 
   return (
-    <main className="adminPage">
+    <main className="ad">
       <SiteHeader />
-      <section className="shell adminShell">
-        <div className="adminHeading">
+      <div className="ad-top">
+        <div className="wrap ad-top-inner">
           <div>
-            <span className="adminEyebrow">CENTRAL DE CONTROLE</span>
-            <h1>Painel administrativo</h1>
-            <p>Acompanhe vendas, utilização do CurriculosPRO e as mensagens enviadas pelos usuários.</p>
+            <h1>Administração</h1>
+            <p>
+              Atualizado agora ·{" "}
+              {new Date().toLocaleString("pt-BR", {
+                timeZone: "America/Sao_Paulo",
+                dateStyle: "short",
+                timeStyle: "short",
+              })}
+            </p>
           </div>
-          <div className="adminPeriod">
-            <span className="adminLiveDot" /> Dados atualizados a cada acesso <small>Últimos 30 dias</small>
-          </div>
+          <nav className="ad-period" aria-label="Período">
+            {PERIODS.map((p) => (
+              <Link key={p} href={href({ dias: String(p) })} aria-current={p === days ? "true" : undefined}>
+                {p} dias
+              </Link>
+            ))}
+          </nav>
         </div>
-        {!paymentsReady && (
-          <div className="adminWarning">
-            Não foi possível ler as vendas. Rode <code>npm run db:migrate</code> com a DATABASE_URL de
-            produção.
+        <nav className="wrap ad-tabs" aria-label="Seções">
+          {TABS.map((t) => (
+            <Link key={t.id} href={href({ aba: t.id })} aria-current={t.id === tab ? "page" : undefined}>
+              {t.label}
+              {t.id === "avaliacoes" && newFeedback > 0 && <span className="ad-badge">{newFeedback}</span>}
+            </Link>
+          ))}
+        </nav>
+      </div>
+      <div className="wrap ad-body">
+        {dbError && (
+          <div className="ad-alert">
+            Falta atualizar o banco de dados: rode <code>npm run db:migrate</code> com a DATABASE_URL de
+            produção para ativar depoimentos e liberação manual de acesso.
           </div>
         )}
-        <div className="adminStats adminSalesStats">
-          <article className="adminStat supportStat">
-            <span>Faturamento</span>
-            <strong>{formatBRL(sales.revenue)}</strong>
-            <small>Pagamentos aprovados nos últimos 30 dias</small>
-          </article>
-          <article className="adminStat">
-            <span>Vendas</span>
-            <strong>{sales.approved}</strong>
-            <small>
-              {sales.refunded ? sales.refunded + " estorno(s) no período" : "Nenhum estorno no período"}
-            </small>
-          </article>
-          <article className="adminStat">
-            <span>Conversão</span>
-            <strong>{conversion.toLocaleString("pt-BR")}%</strong>
-            <small>Vendas ÷ pessoas que viram a oferta</small>
-          </article>
-          <article className="adminStat">
-            <span>Acessos ativos</span>
-            <strong>{sales.activeAccess}</strong>
-            <small>Contas com download liberado agora</small>
-          </article>
-        </div>
-        <div className="adminStats">
-          {Object.entries(labels).map(([key, label]) => (
-            <article className="adminStat" key={key}>
-              <span>{label}</span>
-              <strong>{totals.get(key) || 0}</strong>
-              <small>{descriptions[key]}</small>
-            </article>
-          ))}
-        </div>
-        <div className="adminGrid">
-          <section className="adminPanel adminActivity">
-            <div className="adminPanelHead">
-              <div>
-                <h2>Movimento do site</h2>
-                <p>Visitas registradas nos últimos 7 dias</p>
-              </div>
-              <span className="adminTag">7 DIAS</span>
-            </div>
-            <div className="adminChart">
-              {days.map((day) => (
-                <div className="adminChartRow" key={day.key}>
-                  <span>{day.label}</span>
-                  <div className="adminBarTrack">
-                    <i style={{ width: (day.site / maxDaily) * 100 + "%" }} />
-                  </div>
-                  <b>{day.site}</b>
-                  <small title="Vendas aprovadas no dia">$ {day.sales}</small>
-                </div>
-              ))}
-            </div>
-            <div className="adminLegend">
-              <span>
-                <i /> Visitas ao site
-              </span>
-              <span>$ Vendas aprovadas</span>
-            </div>
-          </section>
-          <section className="adminPanel adminSummary">
-            <div className="adminPanelHead">
-              <div>
-                <h2>Funil de vendas</h2>
-                <p>Últimos 30 dias</p>
-              </div>
-            </div>
-            <div className="adminSummaryValue">
-              <strong>{sales.approved}</strong>
-              <span>vendas confirmadas</span>
-            </div>
-            <div className="adminSummaryLine">
-              <span>1. Editor iniciado</span>
-              <b>{totals.get("resume_started") || 0}</b>
-            </div>
-            <div className="adminSummaryLine">
-              <span>2. Viram a oferta</span>
-              <b>{offers}</b>
-            </div>
-            <div className="adminSummaryLine">
-              <span>3. Geraram Pix</span>
-              <b>{totals.get("checkout_started") || 0}</b>
-            </div>
-            <div className="adminSummaryLine">
-              <span>4. Pagaram</span>
-              <b>{sales.approved}</b>
-            </div>
-            <p className="adminDisclaimer">
-              Vendas vêm da confirmação do Mercado Pago. As demais etapas são contagens aproximadas por
-              sessão.
-            </p>
-          </section>
-        </div>
-        <section className="adminPanel adminPayments">
-          <div className="adminPanelHead">
-            <div>
-              <h2>Pagamentos recentes</h2>
-              <p>
-                Últimos 25 Pix gerados. Estornos são feitos no painel do Mercado Pago e removem o acesso
-                automaticamente.
-              </p>
-            </div>
-            <span className="adminTag">{recentPayments.length} REGISTROS</span>
-          </div>
-          {recentPayments.length === 0 ? (
-            <div className="adminEmpty">Nenhum pagamento ainda.</div>
-          ) : (
-            <div className="adminTableWrap">
-              <table className="adminTable">
-                <thead>
-                  <tr>
-                    <th>Criado em</th>
-                    <th>Conta</th>
-                    <th>Valor</th>
-                    <th>Status</th>
-                    <th>Acesso até</th>
-                    <th>ID Mercado Pago</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentPayments.map((payment) => {
-                    const status = payment.revoked_at ? "refunded" : payment.status;
-                    return (
-                      <tr key={payment.id}>
-                        <td>{dateTime(payment.created_at)}</td>
-                        <td>{payment.email}</td>
-                        <td>{formatBRL(Number(payment.amount_cents))}</td>
-                        <td>
-                          <span className={"adminPayStatus " + status}>{statusLabel[status] || status}</span>
-                        </td>
-                        <td>{status === "approved" ? dateTime(payment.access_until) : "—"}</td>
-                        <td>
-                          <code>{payment.id}</code>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-        <section className="adminPanel adminFeedback">
-          <div className="adminPanelHead">
-            <div>
-              <h2>Feedback dos usuários</h2>
-              <p>Mensagens mais recentes recebidas pelo projeto</p>
-            </div>
-            <span className="adminTag">{feedback.length} REGISTROS</span>
-          </div>
-          {feedback.length === 0 ? (
-            <div className="adminEmpty">Ainda não há feedbacks por aqui.</div>
-          ) : (
-            <div className="adminFeedbackList">
-              {feedback.map((item) => (
-                <article className="adminFeedbackItem" key={item.id}>
-                  <div className="adminFeedbackMeta">
-                    <strong>{"★".repeat(Math.max(0, Math.min(5, item.rating)))}</strong>
-                    <span className={"adminCategory " + item.category}>
-                      {item.category === "problem"
-                        ? "Problema"
-                        : item.category === "praise"
-                          ? "Elogio"
-                          : "Sugestão"}
-                    </span>
-                    <time>
-                      {new Date(item.created_at).toLocaleString("pt-BR", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                        timeZone: "America/Sao_Paulo",
-                      })}
-                    </time>
-                  </div>
-                  <p>{item.message}</p>
-                </article>
-              ))}
-            </div>
-          )}
-          <Link className="adminTextLink" href="/feedback">
-            Abrir página de feedback →
-          </Link>
-        </section>
-        <footer className="adminFoot">
-          <span>CurriculosPRO · Administração</span>
-          <span>{totalEvents} eventos agregados nos últimos 30 dias</span>
-        </footer>
-      </section>
-      <SiteFooter />
+        {tab === "geral" && <OverviewTab days={days} href={href} />}
+        {tab === "vendas" && <SalesTab days={days} q={one("q")} status={one("status")} href={href} />}
+        {tab === "avaliacoes" && <FeedbackTab filter={one("filtro") || "novas"} href={href} />}
+        {tab === "clientes" && <CustomersTab q={one("q")} msg={one("msg")} />}
+      </div>
     </main>
   );
 }

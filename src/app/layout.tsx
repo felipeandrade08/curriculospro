@@ -8,6 +8,7 @@ import "./globals.css";
 import "./resume.css";
 import "./site.css";
 import "./start.css";
+import "./community.css";
 import { SITE_URL } from "@/lib/site";
 import { Providers } from "./providers";
 import { UsageBeacon } from "@/components/usage-beacon";

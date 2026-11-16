@@ -1,176 +1,202 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { trackUsage } from "@/lib/analytics";
 
-const inputStyle = {
-  width: "100%",
-  padding: "13px 14px",
-  border: "1px solid #dce1e9",
-  borderRadius: 12,
-  font: "inherit",
-  background: "#fff",
-  color: "#172033",
-} as const;
+const CATEGORIES = [
+  { id: "praise", label: "Elogio" },
+  { id: "suggestion", label: "Sugestão" },
+  { id: "problem", label: "Problema" },
+] as const;
+
+const RATING_LABEL = ["", "Muito ruim", "Ruim", "Regular", "Boa", "Excelente"];
 
 export default function FeedbackPage() {
-  const [rating, setRating] = useState(5);
-  const [category, setCategory] = useState("suggestion");
+  const [rating, setRating] = useState(0);
+  const [category, setCategory] = useState<(typeof CATEGORIES)[number]["id"]>("praise");
   const [message, setMessage] = useState("");
+  const [allowPublic, setAllowPublic] = useState(true);
+  const [authorName, setAuthorName] = useState("");
+  const [authorRole, setAuthorRole] = useState("");
   const [website, setWebsite] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "success">("idle");
+  const [sentPublic, setSentPublic] = useState(false);
   const [error, setError] = useState("");
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  const canPublish = category !== "problem";
+  const publicOn = canPublish && allowPublic;
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!rating) return setError("Escolha uma nota de 1 a 5 estrelas.");
+    if (publicOn && !authorName.trim()) return setError("Para publicar, informe como quer ser identificado.");
     setStatus("sending");
     setError("");
     try {
       const response = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating, category, message, website }),
+        body: JSON.stringify({
+          rating,
+          category,
+          message,
+          website,
+          allowPublic: publicOn,
+          authorName: publicOn ? authorName : "",
+          authorRole: publicOn ? authorRole : "",
+        }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Não foi possível enviar seu feedback.");
+      if (!response.ok) throw new Error(result.error || "Não foi possível enviar sua avaliação.");
       trackUsage("feedback_sent");
+      setSentPublic(publicOn);
       setStatus("success");
       setMessage("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Tente novamente em instantes.");
-      setStatus("error");
+      setStatus("idle");
     }
   }
 
   return (
-    <main>
+    <main className="lp fb">
       <SiteHeader />
-      <section className="shell" style={{ maxWidth: 760, paddingTop: 72, paddingBottom: 80 }}>
-        <Link href="/" style={{ color: "#1553d6", fontWeight: 700, textDecoration: "none" }}>
-          ← Voltar ao início
-        </Link>
-        <div
-          style={{
-            marginTop: 24,
-            background: "#eaf5ff",
-            color: "#1553d6",
-            display: "inline-block",
-            padding: "8px 12px",
-            borderRadius: 999,
-            fontSize: 12,
-            fontWeight: 800,
-          }}
-        >
-          SUA OPINIÃO AJUDA A EVOLUIR
+      <section className="wrap fb-wrap">
+        <div className="fb-intro">
+          <h1>Como foi criar seu currículo aqui?</h1>
+          <p>
+            Sua avaliação ajuda outras pessoas a decidir e mostra para nós o que melhorar. Leva menos de um
+            minuto.
+          </p>
+          <Link href="/depoimentos" className="fb-link">
+            Ler o que outras pessoas disseram
+          </Link>
         </div>
-        <h1
-          style={{
-            fontSize: "clamp(36px,6vw,54px)",
-            letterSpacing: "-2px",
-            lineHeight: 1.08,
-            margin: "18px 0",
-          }}
-        >
-          Conte como foi sua experiência.
-        </h1>
-        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#687386", maxWidth: 620 }}>
-          O CurriculosPRO evolui com a ajuda de quem usa. Você não precisa criar conta nem informar seu nome
-          ou e-mail.
-        </p>
+
         {status === "success" ? (
-          <div
-            role="status"
-            style={{ marginTop: 28, padding: 24, borderRadius: 16, background: "#ecfdf5", color: "#166534" }}
-          >
-            <h2 style={{ marginTop: 0 }}>Obrigado pelo feedback! 💙</h2>
-            <p>Sua mensagem foi recebida e vai nos ajudar a priorizar melhorias.</p>
-            <button
-              onClick={() => setStatus("idle")}
-              style={{
-                border: 0,
-                borderRadius: 10,
-                padding: "12px 16px",
-                background: "#166534",
-                color: "#fff",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              Enviar outro feedback
-            </button>
+          <div className="fb-card fb-done" role="status">
+            <h2>Obrigado pela avaliação!</h2>
+            <p>
+              {sentPublic
+                ? "Recebemos seu depoimento. Assim que for revisado, ele aparece na página de depoimentos."
+                : "Recebemos sua mensagem. Lemos todas e usamos para decidir as próximas melhorias."}
+            </p>
+            <div className="fb-done-actions">
+              <Link className="btn btn-primary" href="/depoimentos">
+                Ver depoimentos
+              </Link>
+              <button type="button" className="btn btn-ghost" onClick={() => setStatus("idle")}>
+                Enviar outra mensagem
+              </button>
+            </div>
           </div>
         ) : (
-          <form
-            onSubmit={submit}
-            style={{
-              marginTop: 28,
-              background: "#fff",
-              border: "1px solid #e8ebf0",
-              borderRadius: 20,
-              padding: 24,
-              boxShadow: "0 16px 45px #25335b0c",
-              display: "grid",
-              gap: 22,
-            }}
-          >
-            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-              <legend style={{ fontWeight: 800, marginBottom: 12 }}>
-                Que nota você dá para sua experiência?
-              </legend>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <form className="fb-card" onSubmit={submit} noValidate>
+            <fieldset className="fb-stars">
+              <legend>Sua nota</legend>
+              <div>
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
                     type="button"
+                    aria-label={n + " de 5 — " + RATING_LABEL[n]}
                     aria-pressed={rating === n}
+                    className={n <= rating ? "on" : ""}
                     onClick={() => setRating(n)}
-                    style={{
-                      width: 52,
-                      height: 48,
-                      borderRadius: 12,
-                      border: rating === n ? "2px solid #1553d6" : "1px solid #dce1e9",
-                      background: rating === n ? "#eaf5ff" : "#fff",
-                      color: rating === n ? "#1553d6" : "#526075",
-                      fontSize: 20,
-                      cursor: "pointer",
-                    }}
                   >
-                    ★<span style={{ display: "block", fontSize: 10 }}>{n}</span>
+                    ★
+                  </button>
+                ))}
+                <span>{rating ? RATING_LABEL[rating] : "Toque nas estrelas"}</span>
+              </div>
+            </fieldset>
+
+            <fieldset className="fb-cats">
+              <legend>Sobre o que é?</legend>
+              <div role="radiogroup">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={category === c.id}
+                    className={category === c.id ? "on" : ""}
+                    onClick={() => setCategory(c.id)}
+                  >
+                    {c.label}
                   </button>
                 ))}
               </div>
             </fieldset>
-            <label style={{ display: "grid", gap: 8, fontWeight: 800 }}>
-              Sobre o que você quer falar?
-              <select value={category} onChange={(e) => setCategory(e.target.value)} style={inputStyle}>
-                <option value="suggestion">Sugestão de melhoria</option>
-                <option value="problem">Encontrei um problema</option>
-                <option value="praise">Elogio</option>
-              </select>
-            </label>
-            <label style={{ display: "grid", gap: 8, fontWeight: 800 }}>
-              Sua mensagem
+
+            <label className="fb-field">
+              <span>
+                {category === "problem"
+                  ? "O que aconteceu? Em qual tela?"
+                  : category === "suggestion"
+                    ? "O que poderíamos melhorar?"
+                    : "Conte como o site ajudou você"}
+              </span>
               <textarea
                 required
                 minLength={3}
                 maxLength={2000}
-                rows={6}
+                rows={5}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="O que funcionou bem? O que poderíamos melhorar?"
-                style={{ ...inputStyle, resize: "vertical" }}
+                placeholder={
+                  category === "praise"
+                    ? "Ex.: Consegui montar meu currículo pelo celular em 15 minutos e já mandei para 3 vagas."
+                    : ""
+                }
               />
-              <span style={{ fontSize: 12, fontWeight: 400, color: "#7b8494", textAlign: "right" }}>
-                {message.length}/2000
-              </span>
+              <small>{message.length}/2000</small>
             </label>
-            <label
-              aria-hidden="true"
-              style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}
-            >
+
+            {canPublish ? (
+              <div className="fb-public">
+                <label className="fb-check">
+                  <input
+                    type="checkbox"
+                    checked={allowPublic}
+                    onChange={(e) => setAllowPublic(e.target.checked)}
+                  />
+                  <span>Autorizo publicar meu comentário na página de depoimentos</span>
+                </label>
+                {allowPublic && (
+                  <div className="fb-who">
+                    <label className="fb-field">
+                      <span>Como quer aparecer</span>
+                      <input
+                        value={authorName}
+                        maxLength={60}
+                        onChange={(e) => setAuthorName(e.target.value)}
+                        placeholder="Ex.: Ana P., Ribeirão Preto"
+                      />
+                    </label>
+                    <label className="fb-field">
+                      <span>Profissão (opcional)</span>
+                      <input
+                        value={authorRole}
+                        maxLength={60}
+                        onChange={(e) => setAuthorRole(e.target.value)}
+                        placeholder="Ex.: Recepcionista"
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="fb-note">
+                Relatos de problema não são publicados. Se precisar de ajuda rápida, fale com a gente pelo
+                WhatsApp no rodapé.
+              </p>
+            )}
+
+            <label aria-hidden="true" className="fb-hp">
               Deixe este campo vazio
               <input
                 tabIndex={-1}
@@ -179,31 +205,18 @@ export default function FeedbackPage() {
                 onChange={(e) => setWebsite(e.target.value)}
               />
             </label>
+
             {error && (
-              <p role="alert" style={{ margin: 0, color: "#b42318" }}>
+              <p role="alert" className="fb-error">
                 {error}
               </p>
             )}
-            <button
-              type="submit"
-              disabled={status === "sending"}
-              style={{
-                border: 0,
-                borderRadius: 12,
-                padding: "15px 20px",
-                background: "#1553d6",
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: 15,
-                cursor: status === "sending" ? "wait" : "pointer",
-                opacity: status === "sending" ? 0.7 : 1,
-              }}
-            >
-              {status === "sending" ? "Enviando…" : "Enviar feedback →"}
+            <button type="submit" className="btn btn-primary btn-lg" disabled={status === "sending"}>
+              {status === "sending" ? "Enviando…" : "Enviar avaliação"}
             </button>
-            <p style={{ fontSize: 12, lineHeight: 1.6, color: "#7b8494", margin: 0 }}>
-              Não pedimos dados pessoais. Sua mensagem e nota serão armazenadas para que possamos analisar
-              opiniões e melhorar o serviço. Evite incluir informações pessoais no texto.
+            <p className="fb-note">
+              Depoimentos passam por revisão antes de aparecer. Não coloque telefone, e-mail ou documentos no
+              texto.
             </p>
           </form>
         )}

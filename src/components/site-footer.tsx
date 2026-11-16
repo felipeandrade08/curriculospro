@@ -37,7 +37,8 @@ export function SiteFooter() {
           <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
             Falar no WhatsApp
           </a>
-          <Link href="/feedback">Enviar sugestão</Link>
+          <Link href="/depoimentos">Depoimentos</Link>
+          <Link href="/feedback">Avaliar o site</Link>
           <Link href="/termos">Termos de uso</Link>
           <Link href="/privacidade">Privacidade</Link>
         </nav>
