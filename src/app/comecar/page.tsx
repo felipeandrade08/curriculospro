@@ -14,6 +14,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { ResumeThumb } from "@/components/resume-view";
 import { EXAMPLE_CATEGORIES, RESUME_EXAMPLES, type ExampleCategory } from "@/lib/examples";
 import { defaultOrder, type ProfessionalProfile, type ResumeData, type ResumeDocument } from "@/lib/resume";
+import { trackUsage } from "@/lib/analytics";
 import { profileHasContent, readLibrary, readProfile, resumeFromProfile, saveNewResume } from "@/lib/start";
 
 const fold = (s: string) => s.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -36,6 +37,7 @@ export default function StartPage() {
   const [category, setCategory] = useState<ExampleCategory | "">("");
 
   useEffect(() => {
+    trackUsage("start_page_view");
     const docs = readLibrary().sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
     setLast(docs[0] || null);
     const p = readProfile();

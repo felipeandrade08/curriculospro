@@ -7,7 +7,10 @@ export type UsageEvent =
   | "paywall_view"
   | "checkout_started"
   | "payment_approved"
-  | "pricing_view";
+  | "pricing_view"
+  | "start_page_view"
+  | "resume_imported"
+  | "example_used";
 
 const repeatable = new Set<UsageEvent>([
   "pdf_print_requested",

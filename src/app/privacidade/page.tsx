@@ -53,9 +53,12 @@ export default function Privacy() {
         <section>
           <h2>Feedbacks enviados</h2>
           <p>
-            Se você enviar um feedback, armazenamos a nota, a categoria, o texto e a data de envio para
-            analisar sugestões e corrigir problemas. O formulário não solicita nome, e-mail ou criação de
-            conta. Evite inserir dados pessoais no texto enviado.
+            Se você enviar uma avaliação, armazenamos a nota, a categoria, o texto e a data de envio para
+            analisar sugestões e corrigir problemas. Se você estiver conectado, a avaliação fica vinculada à
+            sua conta. O nome e a profissão são opcionais e só são pedidos quando você autoriza a publicação.
+            Depoimentos autorizados podem aparecer no site, com o nome que você escolheu, depois de revisados;
+            para retirar um depoimento publicado, fale conosco pelo WhatsApp. Evite inserir dados pessoais no
+            texto enviado.
           </p>
         </section>
         <section>

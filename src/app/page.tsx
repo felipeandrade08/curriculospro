@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { getTestimonials } from "@/lib/server/testimonials";
+import { Stars, TestimonialCard } from "@/components/testimonials";
+
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -48,7 +51,10 @@ const featured = [
   .map((id) => exampleById(id))
   .filter((x): x is ResumeExample => !!x);
 
-export default function Home() {
+export const revalidate = 300;
+
+export default async function Home() {
+  const { items: testimonials, stats } = await getTestimonials(6);
   const hrBase = exampleById("hr")!;
   // Versão mais completa do exemplo para a vitrine do topo.
   const hr: ResumeExample = {
@@ -245,6 +251,32 @@ export default function Home() {
           <Thumb example={exampleById("finance")!} width={360} />
         </div>
       </section>
+
+      {testimonials.length > 0 && (
+        <section className="wrap tm-home" aria-labelledby="tm-title">
+          <div className="tm-home-head">
+            <h2 id="tm-title">Quem usou, recomenda</h2>
+            <div className="tm-home-score">
+              <Stars value={stats.average} />
+              <span>
+                {stats.average.toLocaleString("pt-BR", {
+                  maximumFractionDigits: 1,
+                  minimumFractionDigits: 1,
+                })}{" "}
+                de 5 · {stats.total} {stats.total === 1 ? "avaliação" : "avaliações"}
+              </span>
+            </div>
+          </div>
+          <div className="tm-grid">
+            {testimonials.slice(0, 3).map((item) => (
+              <TestimonialCard key={item.id} item={item} />
+            ))}
+          </div>
+          <Link href="/depoimentos" className="price-link">
+            Ver todos os depoimentos
+          </Link>
+        </section>
+      )}
 
       <section className="price-band" aria-labelledby="price-title">
         <div className="wrap price-grid">

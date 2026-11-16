@@ -14,6 +14,9 @@ const allowed = new Set([
   "checkout_started",
   "payment_approved",
   "pricing_view",
+  "start_page_view",
+  "resume_imported",
+  "example_used",
 ]);
 const recent = new Map<string, number>();
 const WINDOW_MS = 60_000;

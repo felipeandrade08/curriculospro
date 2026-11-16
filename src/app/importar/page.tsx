@@ -24,6 +24,7 @@ import { ImportError, readResumeFile } from "@/lib/import/read-file";
 import { defaultOrder, emptyResumeData, uid, type ResumeData, type ResumeItem } from "@/lib/resume";
 import { TEMPLATES, templateMeta, type TemplateId } from "@/lib/templates";
 import { mergeIntoProfile, saveNewResume } from "@/lib/start";
+import { trackUsage } from "@/lib/analytics";
 
 type Stage = "upload" | "review";
 
@@ -81,6 +82,7 @@ export default function ImportResumePage() {
         accent: meta.accent,
       });
       if (saveProfile) mergeIntoProfile(cv);
+      trackUsage("resume_imported");
       router.push("/editor");
     } catch {
       setError("Não foi possível salvar neste navegador. Verifique se há espaço livre e tente de novo.");
