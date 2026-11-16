@@ -1557,6 +1557,10 @@ export default function Editor() {
                       </span>
                     </div>
                   </div>
+                  <a className="letterCta" href="/carta">
+                    <b>✉ Próximo passo: carta de apresentação</b>
+                    <span>Montamos o texto com base neste currículo. Você escolhe a vaga e o tom.</span>
+                  </a>
                 </section>
               )}
               <div className="wizFoot">
@@ -1698,6 +1702,9 @@ export default function Editor() {
                 Prévia com marca d&apos;água · liberar download por {ACCESS_PRICE_LABEL} ({ACCESS_DAYS} dias)
               </button>
             )}
+            <a className="letterLink" href="/carta">
+              ✉ Carta de apresentação
+            </a>
             <span>A4 · {templateMeta(template).name}</span>
           </div>
           <div className={"fitBar " + (pageInfo.pages > 1 ? "warn" : "ok")} role="status">

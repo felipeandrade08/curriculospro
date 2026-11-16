@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { hasActiveAccess } from "@/lib/billing";
+import { clearReferral, storedReferral } from "@/lib/referral";
 
 export type AccessInfo = {
   loading: boolean;
@@ -8,9 +9,32 @@ export type AccessInfo = {
   email: string | null;
   accessUntil: string | null;
   active: boolean;
+  /** Foi indicado e ganha dias extras na primeira compra. */
+  referralBonus: boolean;
 };
 
-const initial: AccessInfo = { loading: true, signedIn: false, email: null, accessUntil: null, active: false };
+const initial: AccessInfo = {
+  loading: true,
+  signedIn: false,
+  email: null,
+  accessUntil: null,
+  active: false,
+  referralBonus: false,
+};
+
+/** Vincula a indicação guardada no navegador assim que a pessoa entra na conta. */
+async function linkStoredReferral() {
+  const code = storedReferral();
+  if (!code) return;
+  try {
+    const r = await fetch("/api/account/referral", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    if (r.ok || r.status === 400) clearReferral();
+  } catch {}
+}
 
 /** Estado da conta e do acesso pago. Sem conta ou com falha de rede, o download fica bloqueado. */
 export function useAccess() {
@@ -23,15 +47,21 @@ export function useAccess() {
         return;
       }
       if (!response.ok) throw new Error("account");
-      const data = (await response.json()) as {
-        account: { email: string; accessUntil: string | null; active: boolean };
+      let data = (await response.json()) as {
+        account: { email: string; accessUntil: string | null; active: boolean; referralBonus?: boolean };
       };
+      if (storedReferral()) {
+        await linkStoredReferral();
+        const again = await fetch("/api/account", { cache: "no-store" });
+        if (again.ok) data = await again.json();
+      }
       setAccess({
         loading: false,
         signedIn: true,
         email: data.account.email,
         accessUntil: data.account.accessUntil,
         active: data.account.active || hasActiveAccess(data.account.accessUntil),
+        referralBonus: !!data.account.referralBonus,
       });
     } catch {
       setAccess({ ...initial, loading: false });

@@ -11,6 +11,7 @@ import "./start.css";
 import "./community.css";
 import { SITE_URL } from "@/lib/site";
 import { Providers } from "./providers";
+import { SiteTracking } from "@/components/site-tracking";
 import { UsageBeacon } from "@/components/usage-beacon";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <UsageBeacon />
         <Providers>{children}</Providers>
+        <SiteTracking />
       </body>
     </html>
   );

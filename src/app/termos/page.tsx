@@ -1,7 +1,7 @@
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import type { Metadata } from "next";
-import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
+import { ACCESS_DAYS, ACCESS_PRICE_LABEL, REFERRED_BONUS_DAYS, REFERRER_BONUS_DAYS } from "@/lib/billing";
 import { COMPANY, SUPPORT_WHATSAPP_URL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Termos de uso", alternates: { canonical: "/termos" } };
@@ -62,6 +62,16 @@ export default function Terms() {
             </a>{" "}
             informando o e-mail da conta. O estorno é feito pelo Mercado Pago e o acesso correspondente é
             encerrado.
+          </p>
+        </section>
+        <section>
+          <h2>Programa de indicação</h2>
+          <p>
+            Cada conta tem um link de indicação. Quando uma pessoa cria a conta por esse link e faz a primeira
+            compra, quem indicou ganha {REFERRER_BONUS_DAYS} dias de acesso e a pessoa indicada ganha{" "}
+            {REFERRED_BONUS_DAYS} dias extras. O bônus vale uma vez por pessoa indicada, não vale para a
+            própria conta e é retirado se a compra for estornada. Contas criadas só para obter bônus podem ter
+            os dias removidos. Os dias de bônus não podem ser trocados por dinheiro.
           </p>
         </section>
         <section>

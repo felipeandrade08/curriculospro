@@ -1,7 +1,15 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ACCESS_DAYS, ACCESS_PRICE_LABEL, formatAccessUntil, type CheckoutPix } from "@/lib/billing";
+import {
+  ACCESS_DAYS,
+  ACCESS_PRICE_LABEL,
+  REFERRED_BONUS_DAYS,
+  formatAccessUntil,
+  type CheckoutPix,
+} from "@/lib/billing";
+import { storedReferral } from "@/lib/referral";
+import { metaTrack } from "@/lib/meta-pixel";
 import type { AccessInfo } from "@/lib/use-access";
 import { trackUsage } from "@/lib/analytics";
 
@@ -32,11 +40,13 @@ export function CheckoutModal({
   const [now, setNow] = useState(() => Date.now());
   const dialog = useRef<HTMLElement>(null);
   const unlockedRef = useRef(false);
+  const [hasRef, setHasRef] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     unlockedRef.current = false;
     setStage(access.active ? "approved" : "offer");
+    setHasRef(!!storedReferral());
     setError("");
     trackUsage("paywall_view");
     dialog.current?.focus();
@@ -60,6 +70,7 @@ export function CheckoutModal({
         if (!unlockedRef.current) {
           unlockedRef.current = true;
           trackUsage("payment_approved");
+          metaTrack("Purchase", { value: next.amountCents / 100, currency: "BRL" }, "pix-" + next.paymentId);
           onUnlocked(next.accessUntil ?? null);
         }
       } else if (next.status === "pending") setStage("pix");
@@ -181,9 +192,15 @@ export function CheckoutModal({
               </div>
               <em>Pix</em>
             </div>
+            {(access.referralBonus || (!access.signedIn && !access.loading && hasRef)) && (
+              <p className="checkoutBonus">
+                🎁 Você chegou por indicação: ganha <b>+{REFERRED_BONUS_DAYS} dias</b> extras nesta compra (
+                {ACCESS_DAYS + REFERRED_BONUS_DAYS} dias no total).
+              </p>
+            )}
             <ul className="checkoutBenefits">
               <li>PDF sem marca d&apos;água, pronto para enviar</li>
-              <li>Downloads ilimitados de todos os seus currículos</li>
+              <li>Downloads ilimitados de todos os seus currículos e cartas de apresentação</li>
               <li>Ajuste para cada vaga e baixe de novo sem pagar outra vez</li>
               <li>Sem assinatura e sem renovação automática</li>
             </ul>
