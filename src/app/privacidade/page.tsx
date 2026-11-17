@@ -89,6 +89,14 @@ export default function Privacy() {
           </p>
         </section>
         <section>
+          <h2>Currículo feito pela equipe</h2>
+          <p>
+            Ao pedir que a equipe monte seu currículo, guardamos o que você enviar (nome, WhatsApp, cargo,
+            cidade, texto e currículo de base) para fazer o trabalho e falar com você. Só a equipe do
+            CurriculosPRO tem acesso a esses dados, que não são usados para outra finalidade.
+          </p>
+        </section>
+        <section>
           <h2>Indicações</h2>
           <p>
             Quando alguém cria a conta pelo seu link de indicação, registramos essa ligação para conceder os

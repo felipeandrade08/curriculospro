@@ -1,17 +1,10 @@
-import { timingSafeEqual } from "node:crypto";
+import { cronAuthorized as authorized } from "@/lib/server/cron";
 import { db } from "@/lib/server/db";
 import { emailConfigured, expiryReminderEmail, sendEmail } from "@/lib/server/email";
+import { sendPixRecoveries } from "@/lib/server/recovery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function authorized(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const given = Buffer.from(request.headers.get("authorization") || "");
-  const expected = Buffer.from("Bearer " + secret);
-  return given.length === expected.length && timingSafeEqual(given, expected);
-}
 
 /**
  * Rodado uma vez por dia pela Vercel (vercel.json). Avisa quem tem o acesso
@@ -48,5 +41,9 @@ export async function GET(request: Request) {
       await sql`UPDATE app_users SET expiry_reminder_for = NULL WHERE id = ${String(u.id)}`;
     }
   }
-  return Response.json({ ok: true, sent, failed: failed.length });
+  const recovery = await sendPixRecoveries().catch((error) => {
+    console.error("Recuperação de Pix falhou", error);
+    return { sent: 0, failed: -1 };
+  });
+  return Response.json({ ok: true, sent, failed: failed.length, recovery });
 }

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { checkAdmin } from "@/lib/server/admin";
 import { db } from "@/lib/server/db";
-import { CustomersTab, FeedbackTab, OverviewTab, SalesTab } from "./sections";
+import { CustomersTab, FeedbackTab, OrdersTab, OverviewTab, SalesTab } from "./sections";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Administração", robots: { index: false, follow: false } };
@@ -13,6 +13,7 @@ export const metadata: Metadata = { title: "Administração", robots: { index: f
 const TABS = [
   { id: "geral", label: "Visão geral" },
   { id: "vendas", label: "Vendas" },
+  { id: "pedidos", label: "Pedidos" },
   { id: "avaliacoes", label: "Avaliações" },
   { id: "clientes", label: "Clientes" },
 ] as const;
@@ -52,6 +53,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
   const tab: TabId = (TABS.find((t) => t.id === one("aba"))?.id as TabId) || "geral";
   const days = PERIODS.find((p) => String(p) === one("dias")) || 30;
   let newFeedback = 0;
+  let openOrders = 0;
+  try {
+    const [o] =
+      await db()`SELECT count(*)::int AS n FROM service_requests WHERE status IN ('new', 'in_progress')`;
+    openOrders = Number(o?.n || 0);
+  } catch {}
   let dbError = false;
   try {
     const [row] = await db()`SELECT count(*)::int AS n FROM user_feedback WHERE status = 'new'`;
@@ -98,6 +105,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
             <Link key={t.id} href={href({ aba: t.id })} aria-current={t.id === tab ? "page" : undefined}>
               {t.label}
               {t.id === "avaliacoes" && newFeedback > 0 && <span className="ad-badge">{newFeedback}</span>}
+              {t.id === "pedidos" && openOrders > 0 && <span className="ad-badge">{openOrders}</span>}
             </Link>
           ))}
         </nav>
@@ -111,6 +119,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
         )}
         {tab === "geral" && <OverviewTab days={days} href={href} />}
         {tab === "vendas" && <SalesTab days={days} q={one("q")} status={one("status")} href={href} />}
+        {tab === "pedidos" && (
+          <OrdersTab
+            adminUserId={check.session.userId}
+            filter={one("filtro") || "abertos"}
+            msg={one("msg")}
+            href={href}
+          />
+        )}
         {tab === "avaliacoes" && <FeedbackTab filter={one("filtro") || "novas"} href={href} />}
         {tab === "clientes" && <CustomersTab q={one("q")} msg={one("msg")} />}
       </div>

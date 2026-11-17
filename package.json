@@ -21,6 +21,7 @@
     "@neondatabase/auth-ui": "0.3.0-beta",
     "@neondatabase/serverless": "^1.0.2",
     "@phosphor-icons/react": "^2.1.10",
+    "docx": "^9.15.4",
     "next": "^16.3.8",
     "pdfjs-dist": "^4.10.38",
     "react": "^19.1.0",

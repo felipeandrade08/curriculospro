@@ -791,3 +791,340 @@
   margin: 0 0 20px;
   font-size: 17px;
 }
+
+/* Botão de download em Word */
+.downloadWord {
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  color: #1553d6;
+  background: #ffffff;
+  border: 1.5px solid #c9d8fb;
+  border-radius: 10px;
+  padding: 0 14px;
+  min-height: 40px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.downloadWord:hover:not(:disabled) {
+  border-color: #1553d6;
+  background: #f3f7ff;
+}
+.downloadWord:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.mobileDownloadBar .downloadWord {
+  flex: none;
+  margin-left: 8px;
+  min-height: 48px;
+}
+.mobileDownloadBar {
+  gap: 0;
+}
+.mobilePdfAction .downloadWord {
+  margin-left: 8px;
+}
+@media print {
+  .downloadWord {
+    display: none !important;
+  }
+}
+@media screen and (max-width: 850px) {
+  .mobileDownloadBar .download {
+    width: auto;
+    flex: 1 1 auto;
+    max-width: 420px;
+  }
+}
+
+/* Fazemos para você (/feito-para-voce) */
+.fy-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 40px;
+  align-items: center;
+  padding: 56px 0 32px;
+}
+.fy-hero h1 {
+  font-size: clamp(34px, 4.6vw, 54px);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  margin: 0 0 14px;
+}
+.fy-hero p {
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin: 0 0 18px;
+  max-width: 56ch;
+}
+.fy-trust {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.fy-trust li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.fy-trust li::before {
+  content: "✓";
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #fff;
+  font-size: 13px;
+  flex: none;
+}
+.fy-steps {
+  list-style: none;
+  counter-reset: s;
+  margin: 0;
+  padding: 26px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 20px;
+  display: grid;
+  gap: 18px;
+}
+.fy-steps li {
+  counter-increment: s;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 2px 14px;
+}
+.fy-steps li::before {
+  content: counter(s);
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--marker);
+  color: var(--ink);
+  font-weight: 800;
+  font-family: var(--font-display);
+}
+.fy-steps span {
+  color: #b9c6db;
+  line-height: 1.5;
+}
+.fy-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  align-items: start;
+  padding-bottom: 72px;
+}
+.fy-body > :not(.fy-help) {
+  grid-column: 1;
+}
+.fy-help {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  position: sticky;
+  top: 90px;
+}
+.fy-card {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+.lp section .fy-card h2:not(.cv *) {
+  font-size: 22px;
+  margin: 0 0 10px;
+}
+.fy-card p {
+  color: var(--ink-2);
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+.fy-form {
+  display: grid;
+  gap: 14px;
+}
+.fy-form label {
+  display: grid;
+  gap: 4px;
+}
+.fy-form label > span {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+.fy-form input,
+.fy-form select,
+.fy-form textarea {
+  font: inherit;
+  font-size: 15px;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  padding: 10px 12px;
+  width: 100%;
+  min-width: 0;
+  background: #fff;
+}
+.fy-form textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+.fy-form input:focus,
+.fy-form select:focus,
+.fy-form textarea:focus {
+  outline: 0;
+  border-color: var(--pen);
+  box-shadow: 0 0 0 3px var(--pen-soft);
+}
+.fy-form .btn {
+  justify-self: start;
+}
+.fy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.fy-small {
+  font-size: 13px;
+  color: var(--ink-3) !important;
+  margin: 0 !important;
+}
+.fy-err {
+  color: #b42318 !important;
+  font-weight: 600;
+  margin: 0 !important;
+}
+.fy-ok {
+  background: #e7f6ef;
+  color: #0b5d42 !important;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+}
+.fy-reqs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.fy-reqs li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--desk);
+}
+.fy-reqs li div {
+  display: grid;
+  gap: 2px;
+}
+.fy-reqs span {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.fy-reqs em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--pen);
+}
+.fy-reqs .st-delivered em {
+  color: var(--ok);
+}
+.fy-reqs small {
+  color: var(--ink-2);
+}
+.fy-cta .btn {
+  margin-bottom: 8px;
+}
+@media (max-width: 900px) {
+  .fy-hero,
+  .fy-body {
+    grid-template-columns: 1fr;
+  }
+  .fy-help {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+  }
+  .fy-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Botão flutuante de suporte */
+.wa-float {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: #128c4b;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(14, 27, 46, 0.25);
+}
+.wa-float:hover {
+  background: #0e7a40;
+  color: #fff;
+}
+.wa-float svg {
+  width: 22px;
+  height: 22px;
+}
+@media (max-width: 640px) {
+  .wa-float span {
+    display: none;
+  }
+  .wa-float {
+    padding: 13px;
+  }
+}
+@media print {
+  .wa-float {
+    display: none !important;
+  }
+}
+.fy-band {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px 40px;
+  flex-wrap: wrap;
+  margin-top: 72px;
+  padding: 32px 36px;
+  border-radius: 20px;
+  background: #fffbea;
+  border: 1px solid #f0dc8f;
+}
+.fy-band > div {
+  max-width: 680px;
+}
+.lp section.fy-band h2:not(.cv *) {
+  font-size: clamp(24px, 2.8vw, 32px);
+  margin: 0 0 8px;
+}
+.fy-band p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 17px;
+  line-height: 1.55;
+}

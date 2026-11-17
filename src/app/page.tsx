@@ -252,6 +252,19 @@ export default async function Home() {
         </div>
       </section>
 
+      <section className="wrap fy-band" aria-labelledby="fy-band-title">
+        <div>
+          <h2 id="fy-band-title">Sem tempo ou sem jeito com o celular? A gente faz para você.</h2>
+          <p>
+            Conte sua experiência e nossa equipe monta seu currículo em até 24 horas, incluído no acesso de{" "}
+            {ACCESS_PRICE_LABEL}. Atendimento humano pelo WhatsApp do começo ao fim.
+          </p>
+        </div>
+        <Link href="/feito-para-voce" className="btn btn-primary btn-lg">
+          Quero que façam o meu
+        </Link>
+      </section>
+
       {testimonials.length > 0 && (
         <section className="wrap tm-home" aria-labelledby="tm-title">
           <div className="tm-home-head">

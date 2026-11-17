@@ -153,3 +153,67 @@ export function expiryReminderEmail(p: { name: string | null; accessUntil: strin
     }),
   };
 }
+
+export function pixRecoveryEmail(p: { name: string | null; userId: string }) {
+  const unsub = unsubscribeUrl(p.userId);
+  const url = SITE_URL + "/editor?checkout=1";
+  return {
+    unsubscribeUrl: unsub,
+    subject: "Seu currículo está pronto — falta só liberar o download",
+    text: `${firstName(p.name) ? "Oi, " + firstName(p.name) + "! " : ""}Vimos que você gerou um Pix para baixar seu currículo, mas o pagamento não foi concluído e o código expirou.\n\nSeu currículo continua salvo. Para gerar um Pix novo de ${ACCESS_PRICE_LABEL}: ${url}\n\nTeve algum problema? Responda este e-mail ou chame no WhatsApp: ${SUPPORT_WHATSAPP_URL}\n\nNão quer mais lembretes? ${unsub}`,
+    html: layout({
+      preheader: "Seu currículo continua salvo. Gere um Pix novo em 1 clique.",
+      title: "Falta só liberar o download",
+      body: `<p>${firstName(p.name) ? "Oi, " + esc(firstName(p.name)) + "! " : ""}Vimos que você gerou um Pix para baixar seu currículo, mas o pagamento não foi concluído e o código expirou.</p>
+<p>Fique tranquilo: <b>seu currículo continua salvo</b>. É só gerar um Pix novo de ${ACCESS_PRICE_LABEL} e baixar na hora — são 7 dias para baixar quantas vezes quiser, com carta de apresentação e versão em Word.</p>
+<p style="font-size:14px;color:#6b778c">Teve algum problema para pagar? Responda este e-mail ou chame no WhatsApp que a gente resolve com você.</p>`,
+      cta: { label: "Gerar novo Pix e baixar", url },
+      footer: `<a href="${unsub}" style="color:#6b778c">Não quero receber lembretes</a>`,
+    }),
+  };
+}
+
+export function serviceReceivedEmail(p: { name: string; role: string }) {
+  return {
+    subject: "Recebemos seu pedido — seu currículo fica pronto em até 24 horas",
+    text: `Olá, ${firstName(p.name) || "tudo bem"}! Recebemos seu pedido de currículo para ${p.role}. Nossa equipe vai montar e entregar em até 24 horas. Se precisarmos de algum detalhe, chamamos no seu WhatsApp.\n\nAcompanhe: ${SITE_URL}/feito-para-voce`,
+    html: layout({
+      preheader: "Nossa equipe já está cuidando do seu currículo.",
+      title: "Pedido recebido",
+      body: `<p>Olá, ${esc(firstName(p.name) || "tudo bem")}! Recebemos seu pedido de currículo para <b>${esc(p.role)}</b>.</p>
+<p>Nossa equipe vai montar e entregar <b>em até 24 horas</b>. Se precisarmos de algum detalhe, chamamos no seu WhatsApp.</p>
+<p>Quando ficar pronto, você recebe um e-mail e o currículo aparece na sua conta para editar e baixar em PDF ou Word.</p>`,
+      cta: { label: "Acompanhar meu pedido", url: SITE_URL + "/feito-para-voce" },
+    }),
+  };
+}
+
+export function serviceAdminEmail(p: { name: string; role: string; whatsapp: string; email: string }) {
+  return {
+    subject: `Novo pedido "Fazemos para você": ${p.name} — ${p.role}`,
+    text: `Novo pedido de ${p.name} (${p.email}), WhatsApp ${p.whatsapp}, para ${p.role}.\n\nAbrir: ${SITE_URL}/admin?aba=pedidos`,
+    html: layout({
+      preheader: "Prazo prometido: 24 horas",
+      title: "Novo pedido de currículo",
+      body: `<p><b>${esc(p.name)}</b> (${esc(p.email)}) pediu um currículo para <b>${esc(p.role)}</b>.</p><p>WhatsApp: ${esc(p.whatsapp)}</p><p>Prazo prometido ao cliente: 24 horas.</p>`,
+      cta: { label: "Abrir pedidos no painel", url: SITE_URL + "/admin?aba=pedidos" },
+    }),
+  };
+}
+
+export function serviceDeliveredEmail(p: { name: string | null; note: string | null }) {
+  return {
+    subject: "Seu currículo está pronto ✅",
+    text: `${firstName(p.name) ? "Olá, " + firstName(p.name) + "! " : ""}Seu currículo feito pela nossa equipe está pronto.${p.note ? "\n\nRecado da equipe: " + p.note : ""}\n\nAbra, revise e baixe em PDF ou Word: ${SITE_URL}/feito-para-voce`,
+    html: layout({
+      preheader: "Abra, revise e baixe em PDF ou Word.",
+      title: "Seu currículo está pronto",
+      body: `<p>${firstName(p.name) ? "Olá, " + esc(firstName(p.name)) + "! " : ""}O currículo que nossa equipe montou para você está pronto e já está na sua conta.</p>${
+        p.note
+          ? `<p style="background:#f4f7fb;border-radius:10px;padding:12px 14px"><b>Recado da equipe:</b> ${esc(p.note)}</p>`
+          : ""
+      }<p>Você pode revisar, mudar o que quiser e baixar em PDF ou Word durante o seu acesso.</p>`,
+      cta: { label: "Abrir meu currículo", url: SITE_URL + "/feito-para-voce" },
+    }),
+  };
+}

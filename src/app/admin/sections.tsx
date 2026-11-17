@@ -2,6 +2,8 @@ import Link from "next/link";
 import { db } from "@/lib/server/db";
 import { formatBRL } from "@/lib/billing";
 import {
+  deliverService,
+  setServiceStatus,
   deleteFeedback,
   grantAccess,
   markAllFeedbackRead,
@@ -10,6 +12,7 @@ import {
   setFeedbackStatus,
 } from "./actions";
 import { ConfirmButton } from "./confirm-button";
+import { BuildInEditor } from "./build-in-editor";
 
 type Href = (patch: Record<string, string>) => string;
 const TZ = "America/Sao_Paulo";
@@ -792,5 +795,204 @@ export async function CustomersTab({ q, msg }: { q: string; msg: string }) {
         )}
       </section>
     </div>
+  );
+}
+
+/* ───────────── Pedidos "Fazemos para você" ───────────── */
+
+const ORDER_STATUS: Record<string, string> = {
+  new: "Novo",
+  in_progress: "Em produção",
+  delivered: "Entregue",
+  cancelled: "Cancelado",
+};
+
+export async function OrdersTab({
+  adminUserId,
+  filter,
+  msg,
+  href,
+}: {
+  adminUserId: string;
+  filter: string;
+  msg: string;
+  href: Href;
+}) {
+  const sql = db();
+  let rows: Record<string, unknown>[], mine: Record<string, unknown>[];
+  try {
+    rows = await sql`SELECT s.id::text, s.status, s.data, s.created_at, s.delivered_at, s.admin_note, u.email
+      FROM service_requests s JOIN app_users u ON u.id = s.user_id
+      WHERE CASE ${filter} WHEN 'abertos' THEN s.status IN ('new', 'in_progress') WHEN 'entregues' THEN s.status = 'delivered' ELSE true END
+      ORDER BY (s.status = 'new') DESC, s.created_at ASC LIMIT 100`;
+    mine =
+      await sql`SELECT id, title, updated_at FROM resumes WHERE user_id = ${adminUserId} AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 40`;
+  } catch {
+    return <Failed what="os pedidos (rode a migração do banco)" />;
+  }
+  const now = Date.now();
+  return (
+    <>
+      <section className="ad-panel">
+        <header>
+          <h2>Como entregar um pedido</h2>
+        </header>
+        <ol className="ad-howto">
+          <li>
+            Clique em <b>Montar no editor</b>: o currículo abre já com os dados do cliente.
+          </li>
+          <li>
+            Ajuste o texto e o modelo. Depois vá em <b>Meus currículos → Sincronizar</b> para salvar na sua
+            conta.
+          </li>
+          <li>
+            Volte aqui, escolha o currículo em <b>Entregar</b> e confirme. O cliente recebe na conta dele e
+            por e-mail.
+          </li>
+        </ol>
+        {msg && (
+          <p className="ad-msg" role="status">
+            {msg}
+          </p>
+        )}
+      </section>
+      <div className="ad-chips">
+        {[
+          ["abertos", "Em aberto"],
+          ["entregues", "Entregues"],
+          ["todos", "Todos"],
+        ].map(([id, label]) => (
+          <Link
+            key={id}
+            href={href({ filtro: id, msg: "" })}
+            aria-current={id === filter ? "true" : undefined}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+      {rows.length === 0 && <p className="ad-empty">Nenhum pedido neste filtro.</p>}
+      <div className="ad-fb-list">
+        {rows.map((r) => {
+          const d = r.data as {
+            name: string;
+            whatsapp: string;
+            role: string;
+            city: string;
+            notes: string;
+            sourceText: string;
+            resume: import("@/lib/resume").ResumeDocument | null;
+          };
+          const st = String(r.status);
+          const hours = (now - new Date(String(r.created_at)).getTime()) / 3_600_000;
+          const late = (st === "new" || st === "in_progress") && hours > 20;
+          const wa =
+            "https://wa.me/55" +
+            d.whatsapp.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "") +
+            "?text=" +
+            encodeURIComponent(
+              "Olá, " +
+                d.name.split(" ")[0] +
+                "! Aqui é da equipe CurriculosPRO, sobre o seu currículo para " +
+                d.role +
+                ".",
+            );
+          return (
+            <article key={String(r.id)} className={"ad-fb-item " + (st === "new" ? "new" : "")}>
+              <div className="ad-fb-meta">
+                <b>
+                  #{String(r.id)} · {d.name}
+                </b>
+                <span
+                  className={
+                    "ad-pill " +
+                    (st === "delivered" ? "approved" : st === "cancelled" ? "refunded" : "pending")
+                  }
+                >
+                  {ORDER_STATUS[st] || st}
+                </span>
+                {late && <span className="ad-pill refunded">Prazo de 24h perto do fim</span>}
+                <time>
+                  {dateTime(r.created_at)} · há {Math.round(hours)}h
+                </time>
+              </div>
+              <p>
+                <b>Vaga:</b> {d.role}
+                {d.city ? " · " + d.city : ""} · <b>Conta:</b> {String(r.email)} · <b>WhatsApp:</b>{" "}
+                <a href={wa} target="_blank" rel="noopener noreferrer">
+                  {d.whatsapp}
+                </a>
+              </p>
+              {d.notes && (
+                <details>
+                  <summary>Experiência contada pelo cliente</summary>
+                  <p className="ad-pre">{d.notes}</p>
+                </details>
+              )}
+              {d.sourceText && (
+                <details>
+                  <summary>Currículo antigo colado</summary>
+                  <p className="ad-pre">{d.sourceText}</p>
+                </details>
+              )}
+              {d.resume && (
+                <p className="ad-muted">Enviou um currículo do aparelho como base: “{d.resume.title}”.</p>
+              )}
+              {(st === "new" || st === "in_progress") && (
+                <div className="ad-fb-actions">
+                  <BuildInEditor id={String(r.id)} data={d} />
+                  {st === "new" && (
+                    <form action={setServiceStatus}>
+                      <input type="hidden" name="id" value={String(r.id)} />
+                      <input type="hidden" name="status" value="in_progress" />
+                      <button className="ad-btn ghost small" type="submit">
+                        Marcar em produção
+                      </button>
+                    </form>
+                  )}
+                  <form action={setServiceStatus}>
+                    <input type="hidden" name="id" value={String(r.id)} />
+                    <input type="hidden" name="status" value="cancelled" />
+                    <ConfirmButton className="ad-btn danger small" message="Cancelar este pedido?">
+                      Cancelar
+                    </ConfirmButton>
+                  </form>
+                </div>
+              )}
+              {(st === "new" || st === "in_progress") && (
+                <form action={deliverService} className="ad-deliver">
+                  <input type="hidden" name="id" value={String(r.id)} />
+                  <label>
+                    <span>Currículo pronto (da sua conta)</span>
+                    <select name="resumeId" required defaultValue="">
+                      <option value="" disabled>
+                        {mine.length ? "Escolha…" : "Nenhum currículo sincronizado na sua conta"}
+                      </option>
+                      {mine.map((m) => (
+                        <option key={String(m.id)} value={String(m.id)}>
+                          {String(m.title)} — {shortDate(m.updated_at)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="wide">
+                    <span>Recado para o cliente (opcional)</span>
+                    <input
+                      name="note"
+                      maxLength={500}
+                      placeholder="Ex.: Destacamos seu atendimento e os cursos do SENAC."
+                    />
+                  </label>
+                  <button className="ad-btn small" type="submit">
+                    Entregar
+                  </button>
+                </form>
+              )}
+              {st === "delivered" && <p className="ad-muted">Entregue em {dateTime(r.delivered_at)}.</p>}
+            </article>
+          );
+        })}
+      </div>
+    </>
   );
 }
