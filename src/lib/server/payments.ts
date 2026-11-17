@@ -6,7 +6,8 @@ import { afterPaymentGranted, afterPaymentRevoked } from "@/lib/server/after-pay
 
 export type PaymentRow = {
   id: string;
-  user_id: string;
+  /** Vazio em venda avulsa feita pelo painel (sem conta ligada). */
+  user_id: string | null;
   status: string;
   amount_cents: number;
   access_days: number;
@@ -21,9 +22,11 @@ export type PaymentRow = {
 
 const iso = (value: unknown) => (value ? new Date(String(value)).toISOString() : null);
 
+export const PANEL_REFERENCE = "painel";
+
 export async function insertPayment(row: {
   id: string;
-  userId: string;
+  userId: string | null;
   status: string;
   statusDetail: string | null;
   amountCents: number;
@@ -37,10 +40,11 @@ export async function insertPayment(row: {
   couponCode?: string | null;
   originalCents?: number;
   source?: SaleSource | null;
+  customer?: Record<string, string> | null;
 }) {
   const sql = db();
-  await sql`INSERT INTO payments(id,user_id,status,status_detail,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at,method,plan,coupon_code,original_cents,source)
-    VALUES(${row.id},${row.userId},${row.status},${row.statusDetail},${row.amountCents},${row.accessDays},${row.qrCode},${row.qrCodeBase64},${row.ticketUrl},${row.expiresAt ? row.expiresAt.toISOString() : null},${row.method || "pix"},${row.plan || "semana"},${row.couponCode || null},${row.originalCents ?? row.amountCents},${row.source ? JSON.stringify(row.source) : null}::jsonb)
+  await sql`INSERT INTO payments(id,user_id,status,status_detail,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at,method,plan,coupon_code,original_cents,source,customer)
+    VALUES(${row.id},${row.userId},${row.status},${row.statusDetail},${row.amountCents},${row.accessDays},${row.qrCode},${row.qrCodeBase64},${row.ticketUrl},${row.expiresAt ? row.expiresAt.toISOString() : null},${row.method || "pix"},${row.plan || "semana"},${row.couponCode || null},${row.originalCents ?? row.amountCents},${row.source ? JSON.stringify(row.source) : null}::jsonb,${row.customer ? JSON.stringify(row.customer) : null}::jsonb)
     ON CONFLICT (id) DO NOTHING`;
 }
 
@@ -173,7 +177,8 @@ export function clientStatus(status: string, expiresAt: string | null): ClientSt
  */
 export async function applyProviderPayment(payment: MercadoPagoPayment, row: PaymentRow) {
   const amountCents = Math.round(Number(payment.transaction_amount) * 100);
-  const sameOwner = String(payment.external_reference || "") === row.user_id;
+  // Venda avulsa do painel usa "painel" como referência; as demais, o id da conta.
+  const sameOwner = String(payment.external_reference || "") === (row.user_id ?? PANEL_REFERENCE);
   const sameAmount = amountCents === Number(row.amount_cents);
   if (!sameOwner || !sameAmount) {
     console.error("Pagamento divergente ignorado", { id: row.id, sameOwner, sameAmount });

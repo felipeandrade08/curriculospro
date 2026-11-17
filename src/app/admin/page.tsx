@@ -7,7 +7,7 @@ import { checkAdmin } from "@/lib/server/admin";
 import { db } from "@/lib/server/db";
 import { TeamFlag } from "@/components/team-flag";
 import Image from "next/image";
-import { CouponsTab, CustomersTab, FeedbackTab, OrdersTab, OverviewTab, SalesTab } from "./sections";
+import { ChargeTab, CouponsTab, CustomersTab, FeedbackTab, OrdersTab, OverviewTab, SalesTab } from "./sections";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -16,6 +16,7 @@ export const metadata: Metadata = { title: "Administração", robots: { index: f
 const TABS = [
   { id: "geral", label: "Visão geral" },
   { id: "vendas", label: "Vendas" },
+  { id: "cobrar", label: "Cobrar no Pix" },
   { id: "pedidos", label: "Pedidos" },
   { id: "avaliacoes", label: "Avaliações" },
   { id: "clientes", label: "Clientes" },
@@ -100,6 +101,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
           </Link>
           <span className="cpa-head-title">Painel da equipe</span>
           <nav className="cpa-quick" aria-label="Atalhos da equipe">
+            <Link href="/admin?aba=cobrar">Cobrar no Pix</Link>
             <Link href="/comecar">+ Novo currículo</Link>
             <Link href="/editor">Editor</Link>
             <Link href="/curriculos">Currículos da equipe</Link>
@@ -168,6 +170,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
           </div>
         )}
         {tab === "geral" && <OverviewTab days={days} href={href} />}
+        {tab === "cobrar" && <ChargeTab />}
         {tab === "vendas" && <SalesTab days={days} q={one("q")} status={one("status")} href={href} />}
         {tab === "pedidos" && (
           <OrdersTab
