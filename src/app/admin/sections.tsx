@@ -16,6 +16,7 @@ import {
 import { SITE_URL } from "@/lib/site";
 import { filesFor, type FileMeta } from "@/lib/server/service-files";
 import { deliveryUrl } from "@/lib/server/delivery";
+import { ResumePicker } from "./resume-picker";
 import { ConfirmButton } from "./confirm-button";
 import { BuildInEditor } from "./build-in-editor";
 
@@ -883,8 +884,8 @@ export async function OrdersTab({
             Clique em <b>Montar no editor</b>: o currículo abre já com os dados do cliente.
           </li>
           <li>
-            Ajuste o texto e o modelo. Depois vá em <b>Meus currículos → Sincronizar</b> para salvar na sua
-            conta.
+            Ajuste o texto e o modelo. Não precisa sincronizar: o currículo deste navegador aparece direto na
+            entrega.
           </li>
           <li>
             Ainda no editor, baixe o <b>PDF</b> (sai sem marca d&apos;água para a sua conta).
@@ -1025,19 +1026,14 @@ export async function OrdersTab({
               {(st === "new" || st === "in_progress") && (
                 <form action={deliverService} className="cpa-deliver">
                   <input type="hidden" name="id" value={String(r.id)} />
-                  <label>
-                    <span>Currículo pronto (da sua conta)</span>
-                    <select name="resumeId" required defaultValue="">
-                      <option value="" disabled>
-                        {mine.length ? "Escolha…" : "Nenhum currículo sincronizado na sua conta"}
-                      </option>
-                      {mine.map((m) => (
-                        <option key={String(m.id)} value={String(m.id)}>
-                          {String(m.title)} — {shortDate(m.updated_at)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <ResumePicker
+                    requestId={String(r.id)}
+                    cloud={mine.map((m) => ({
+                      id: String(m.id),
+                      title: String(m.title),
+                      updated: new Date(String(m.updated_at)).toISOString(),
+                    }))}
+                  />
                   <label className="wide">
                     <span>PDF do currículo (recomendado: baixe no editor e anexe aqui)</span>
                     <input name="pdf" type="file" accept="application/pdf,.pdf" />
