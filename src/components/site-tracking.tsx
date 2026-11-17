@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { captureCoupon, captureReferral } from "@/lib/referral";
 import { trackUsage } from "@/lib/analytics";
+import { captureOrigin } from "@/lib/origin";
 import { CONSENT_KEY, META_PIXEL_ID, consentGiven, loadMetaPixel, metaTrack } from "@/lib/meta-pixel";
 
 /** Indicação (?ref=), aviso de cookies e Meta Pixel. */
@@ -14,6 +15,7 @@ export function SiteTracking() {
   useEffect(() => {
     if (captureReferral()) trackUsage("referral_visit");
     captureCoupon();
+    captureOrigin();
     if (!META_PIXEL_ID) return;
     let stored: string | null = null;
     try {

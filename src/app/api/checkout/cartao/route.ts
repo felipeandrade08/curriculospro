@@ -15,6 +15,7 @@ import {
   canUpgrade,
 } from "@/lib/server/payments";
 import { isSameOrigin, publicBaseUrl } from "@/lib/server/request";
+import { readSaleSource } from "@/lib/server/sales-source";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,7 +33,12 @@ export async function POST(request: Request) {
         { error: "too_many_payments", message: "Muitas tentativas de pagamento hoje. Fale com o suporte." },
         { status: 429 },
       );
-    const body = (await request.json().catch(() => ({}))) as { plan?: unknown; coupon?: unknown };
+    const body = (await request.json().catch(() => ({}))) as {
+      plan?: unknown;
+      coupon?: unknown;
+      origin?: unknown;
+      consent?: unknown;
+    };
     const plan = ACCESS_PLANS[isAccessPlan(body.plan) ? body.plan : "semana"];
     if (plan.id === "upgrade" && !(await canUpgrade(session.userId)))
       return Response.json(
@@ -49,6 +55,7 @@ export async function POST(request: Request) {
       original_cents: price.originalCents,
       access_days: plan.days,
       coupon_code: price.couponCode,
+      source: await readSaleSource(request, body),
     });
     const base = publicBaseUrl(request) || "";
     const preference = await createCardPreference({

@@ -12,6 +12,7 @@ import {
   canUpgrade,
 } from "@/lib/server/payments";
 import { isSameOrigin, publicBaseUrl } from "@/lib/server/request";
+import { readSaleSource } from "@/lib/server/sales-source";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +30,12 @@ export async function POST(request: Request) {
     const session = await getServerSession();
     if (!session) return Response.json({ error: "unauthorized" }, { status: 401 });
 
-    const body = (await request.json().catch(() => ({}))) as { plan?: unknown; coupon?: unknown };
+    const body = (await request.json().catch(() => ({}))) as {
+      plan?: unknown;
+      coupon?: unknown;
+      origin?: unknown;
+      consent?: unknown;
+    };
     const plan = ACCESS_PLANS[isAccessPlan(body.plan) ? body.plan : "semana"];
     if (plan.id === "upgrade" && !(await canUpgrade(session.userId)))
       return Response.json(
@@ -97,6 +103,7 @@ export async function POST(request: Request) {
       plan: plan.id,
       couponCode: price.couponCode,
       originalCents: price.originalCents,
+      source: await readSaleSource(request, body),
     });
     return Response.json({ checkout: toCheckout(row) }, { status: 201 });
   } catch (error) {

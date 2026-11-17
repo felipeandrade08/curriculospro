@@ -1,4 +1,5 @@
 "use client";
+import { storedOrigin } from "@/lib/origin";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -13,7 +14,8 @@ import {
   type CouponQuote,
 } from "@/lib/billing";
 import { storedCoupon, storedReferral } from "@/lib/referral";
-import { metaTrack } from "@/lib/meta-pixel";
+import { consentGiven, metaTrack } from "@/lib/meta-pixel";
+import { isTeamBrowser } from "@/lib/team";
 import type { AccessInfo } from "@/lib/use-access";
 import { trackUsage } from "@/lib/analytics";
 
@@ -148,7 +150,12 @@ export function CheckoutModal({
   };
 
   const payload = () =>
-    JSON.stringify({ plan, coupon: quote && quote.plan === plan ? quote.code : "" });
+    JSON.stringify({
+      plan,
+      coupon: quote && quote.plan === plan ? quote.code : "",
+      origin: storedOrigin(),
+      consent: consentGiven() && !isTeamBrowser(),
+    });
 
   const payCard = async () => {
     setCardLoading(true);
