@@ -48,8 +48,8 @@ export function parseServiceInput(body: unknown): ServiceInput | string {
   if (input.whatsapp.replace(/\D/g, "").length < 10)
     return "Informe um WhatsApp com DDD para combinarmos os detalhes.";
   if (input.role.length < 2) return "Diga qual vaga ou cargo você procura.";
-  if (!input.resume && input.sourceText.length < 30 && input.notes.length < 30)
-    return "Conte um pouco da sua experiência ou cole seu currículo antigo para montarmos o novo.";
+  if (!b.hasFiles && !input.resume && input.sourceText.length < 30 && input.notes.length < 30)
+    return "Anexe seu currículo antigo, cole o texto dele ou conte um pouco da sua experiência.";
   return input;
 }
 
