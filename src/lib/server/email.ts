@@ -14,6 +14,7 @@ export async function sendEmail(message: {
   text: string;
   idempotencyKey?: string;
   unsubscribeUrl?: string;
+  attachments?: { filename: string; content: Uint8Array }[];
 }) {
   const key = process.env.RESEND_API_KEY;
   if (!key) return { sent: false as const, reason: "not_configured" };
@@ -33,6 +34,9 @@ export async function sendEmail(message: {
       subject: message.subject,
       html: message.html,
       text: message.text,
+      attachments: message.attachments?.length
+        ? message.attachments.map((a) => ({ filename: a.filename, content: Buffer.from(a.content).toString("base64") }))
+        : undefined,
       headers: message.unsubscribeUrl
         ? {
             "List-Unsubscribe": "<" + message.unsubscribeUrl + ">",
@@ -40,7 +44,7 @@ export async function sendEmail(message: {
           }
         : undefined,
     }),
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(message.attachments?.length ? 20_000 : 10_000),
   });
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
@@ -270,19 +274,29 @@ export function serviceAdminEmail(p: { name: string; role: string; whatsapp: str
   };
 }
 
-export function serviceDeliveredEmail(p: { name: string | null; note: string | null }) {
+export function serviceDeliveredEmail(p: {
+  name: string | null;
+  note: string | null;
+  link: string;
+  attached: string[];
+}) {
+  const hi = firstName(p.name) ? "Olá, " + firstName(p.name) + "! " : "";
+  const files = p.attached.length ? p.attached.join(" e ") : "";
   return {
     subject: "Seu currículo está pronto ✅",
-    text: `${firstName(p.name) ? "Olá, " + firstName(p.name) + "! " : ""}Seu currículo feito pela nossa equipe está pronto.${p.note ? "\n\nRecado da equipe: " + p.note : ""}\n\nAbra, revise e baixe em PDF ou Word: ${SITE_URL}/feito-para-voce`,
+    text: `${hi}Seu currículo feito pela nossa equipe está pronto.${files ? " Ele vai anexado neste e-mail (" + files + ")." : ""}${p.note ? "\n\nRecado da equipe: " + p.note : ""}\n\nBaixe também por este link, sem precisar entrar na conta (vale ${30} dias): ${p.link}\n\nEle também está salvo em Meus currículos, se quiser editar: ${SITE_URL}/curriculos`,
     html: layout({
-      preheader: "Abra, revise e baixe em PDF ou Word.",
+      preheader: files ? "Seu currículo vai anexado em " + files + "." : "Baixe em PDF ou Word.",
       title: "Seu currículo está pronto",
-      body: `<p>${firstName(p.name) ? "Olá, " + esc(firstName(p.name)) + "! " : ""}O currículo que nossa equipe montou para você está pronto e já está na sua conta.</p>${
+      body: `<p>${esc(hi)}O currículo que nossa equipe montou para você está pronto.${
+        files ? ` Ele vai <b>anexado neste e-mail</b> (${esc(files)}).` : ""
+      }</p>${
         p.note
           ? `<p style="background:#f4f7fb;border-radius:10px;padding:12px 14px"><b>Recado da equipe:</b> ${esc(p.note)}</p>`
           : ""
-      }<p>Você pode revisar, mudar o que quiser e baixar em PDF ou Word durante o seu acesso.</p>`,
-      cta: { label: "Abrir meu currículo", url: SITE_URL + "/feito-para-voce" },
+      }<p>Você também pode baixar pelo botão abaixo, sem precisar entrar na conta. O link vale 30 dias.</p>
+<p style="font-size:14px;color:#6b778c">Quer mudar alguma coisa? Ele está salvo em <a href="${SITE_URL}/curriculos" style="color:#1553d6">Meus currículos</a> para você editar e baixar de novo.</p>`,
+      cta: { label: "Baixar meu currículo", url: p.link },
     }),
   };
 }

@@ -37,7 +37,7 @@ export async function addFile(input: {
   const [req] = await sql`SELECT status FROM service_requests WHERE id = ${input.requestId} AND user_id = ${input.userId}`;
   if (!req) return "Pedido não encontrado.";
   if (req.status !== "new" && req.status !== "in_progress") return "Este pedido já foi encerrado.";
-  const [c] = await sql`SELECT count(*)::int AS n FROM service_files WHERE request_id = ${input.requestId}`;
+  const [c] = await sql`SELECT count(*)::int AS n FROM service_files WHERE request_id = ${input.requestId} AND kind = 'upload'`;
   if (Number(c?.n || 0) >= MAX_FILES_PER_REQUEST) return `Envie no máximo ${MAX_FILES_PER_REQUEST} arquivos por pedido.`;
   const hex = "\\x" + Buffer.from(input.bytes).toString("hex");
   await sql`INSERT INTO service_files (request_id, user_id, filename, content_type, size_bytes, data)
@@ -45,12 +45,19 @@ export async function addFile(input: {
   return null;
 }
 
-export type FileMeta = { id: string; requestId: string; filename: string; contentType: string; size: number };
+export type FileMeta = {
+  id: string;
+  requestId: string;
+  filename: string;
+  contentType: string;
+  size: number;
+  kind: "upload" | "delivery";
+};
 
 export async function filesFor(requestIds: string[]): Promise<FileMeta[]> {
   if (!requestIds.length) return [];
   try {
-    const rows = await db()`SELECT id, request_id, filename, content_type, size_bytes FROM service_files
+    const rows = await db()`SELECT id, request_id, filename, content_type, size_bytes, kind FROM service_files
       WHERE request_id = ANY(${requestIds.map(Number)}::bigint[]) ORDER BY id`;
     return rows.map((r) => ({
       id: String(r.id),
@@ -58,6 +65,7 @@ export async function filesFor(requestIds: string[]): Promise<FileMeta[]> {
       filename: String(r.filename),
       contentType: String(r.content_type),
       size: Number(r.size_bytes),
+      kind: r.kind === "delivery" ? "delivery" : "upload",
     }));
   } catch {
     return [];
@@ -68,6 +76,15 @@ export async function readFile(fileId: string) {
   const [r] = await db()`SELECT filename, content_type, encode(data, 'base64') AS b64 FROM service_files WHERE id = ${fileId}`;
   if (!r) return null;
   return { filename: String(r.filename), contentType: String(r.content_type), bytes: Buffer.from(String(r.b64), "base64") };
+}
+
+/** PDF entregue pela equipe: substitui o anterior do mesmo pedido. */
+export async function saveDeliveryPdf(requestId: string, userId: string, filename: string, bytes: Uint8Array) {
+  const sql = db();
+  const hex = "\\x" + Buffer.from(bytes).toString("hex");
+  await sql`DELETE FROM service_files WHERE request_id = ${requestId} AND kind = 'delivery'`;
+  await sql`INSERT INTO service_files (request_id, user_id, filename, content_type, size_bytes, data, kind)
+    VALUES (${requestId}, ${userId}, ${filename}, 'application/pdf', ${bytes.byteLength}, ${hex}::bytea, 'delivery')`;
 }
 
 /** Apaga anexos de pedidos encerrados há mais de 60 dias. */

@@ -2070,3 +2070,80 @@
   border: 0;
   border-radius: 0;
 }
+
+/* Entrega do "Fazemos para você" (/entrega) */
+.dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 560px;
+  gap: 40px;
+  align-items: start;
+  padding-top: 44px;
+  padding-bottom: 72px;
+}
+.dl-info {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+.dl-badge {
+  background: #e6f7f0;
+  color: #0b5c41;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+.lp .dl h1 {
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+.dl-note {
+  background: var(--pen-soft);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 0;
+  color: var(--ink);
+  max-width: 56ch;
+}
+.dl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.dl-small {
+  color: var(--ink-3);
+  font-size: 14px;
+  margin: 0;
+}
+.dl-next {
+  margin-top: 10px;
+  border-top: 1px solid var(--rule);
+  padding-top: 16px;
+  display: grid;
+  gap: 4px;
+  max-width: 56ch;
+}
+.dl-next p {
+  margin: 0 0 10px;
+  color: var(--ink-2);
+}
+.dl-next a {
+  color: var(--pen);
+  font-weight: 650;
+}
+.dl-paper {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 30px 70px rgba(14, 27, 46, 0.18);
+  overflow: hidden;
+}
+@media (max-width: 1000px) {
+  .dl {
+    grid-template-columns: 1fr;
+  }
+  .dl-paper {
+    max-width: 560px;
+  }
+}

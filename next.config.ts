@@ -11,6 +11,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // A entrega do "Fazemos para você" envia o PDF pronto (até 4 MB) por uma server action.
+  experimental: { serverActions: { bodySizeLimit: "5mb" } },
   async redirects() {
     return [{ source: "/apoie", destination: "/precos", permanent: true }];
   },

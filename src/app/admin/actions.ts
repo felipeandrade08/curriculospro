@@ -6,6 +6,10 @@ import { db } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/admin";
 import { deliverRequest } from "@/lib/server/service";
 import { emailConfigured, sendEmail, serviceDeliveredEmail } from "@/lib/server/email";
+import { MAX_FILE_BYTES, detectType, saveDeliveryPdf } from "@/lib/server/service-files";
+import { deliveryUrl, fileSlug, loadDelivery } from "@/lib/server/delivery";
+import { resumeToDocx } from "@/lib/server/docx";
+import { defaultOrder } from "@/lib/resume";
 
 const STATUSES = new Set(["new", "read", "published", "hidden"]);
 
@@ -119,20 +123,72 @@ export async function deliverService(formData: FormData) {
       .trim()
       .slice(0, 500) || null;
   if (!/^\d+$/.test(id) || !resumeId) back({ aba: "pedidos", msg: "Escolha o currículo que será entregue." });
-  let result: { email: string; name: string | null };
+
+  // PDF opcional, exportado pela equipe no editor.
+  let pdf: Uint8Array | null = null;
+  const file = formData.get("pdf");
+  if (file && typeof file === "object" && "arrayBuffer" in file && file.size > 0) {
+    if (file.size > MAX_FILE_BYTES) back({ aba: "pedidos", msg: "O PDF passa de 4 MB." });
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (detectType(bytes, "application/pdf") !== "application/pdf")
+      back({ aba: "pedidos", msg: "O arquivo anexado não é um PDF." });
+    pdf = bytes;
+  }
+
+  let result: Awaited<ReturnType<typeof deliverRequest>>;
   try {
     result = await deliverRequest(id, admin.userId, resumeId, note);
   } catch (error) {
     back({ aba: "pedidos", msg: error instanceof Error ? error.message : "Não foi possível entregar." });
   }
-  if (emailConfigured() && result.email)
-    await sendEmail({
+  const base = "Curriculo-" + fileSlug(result.name || "cliente");
+  if (pdf) await saveDeliveryPdf(id, result.userId, base + ".pdf", pdf).catch((e) => console.error("PDF da entrega", id, e));
+
+  let emailed = false;
+  if (emailConfigured() && result.email) {
+    const attachments: { filename: string; content: Uint8Array }[] = [];
+    if (pdf) attachments.push({ filename: base + ".pdf", content: pdf });
+    try {
+      const delivery = await loadDelivery(id);
+      if (delivery) {
+        const docx = await resumeToDocx(delivery.resume.cv, {
+          accent: delivery.resume.accent,
+          order: delivery.resume.sectionOrder.length ? delivery.resume.sectionOrder : defaultOrder,
+          hidden: delivery.resume.hidden,
+        });
+        attachments.push({ filename: base + ".docx", content: new Uint8Array(docx) });
+      }
+    } catch (error) {
+      console.error("Word da entrega falhou", id, error);
+    }
+    emailed = await sendEmail({
       to: result.email,
-      ...serviceDeliveredEmail({ name: result.name, note }),
+      ...serviceDeliveredEmail({
+        name: result.name,
+        note,
+        link: deliveryUrl(id, result.deliveredAt),
+        attached: attachments.map((a) => (a.filename.endsWith(".pdf") ? "PDF" : "Word")),
+      }),
+      attachments,
       idempotencyKey: "svc-delivered-" + id,
-    }).catch((error) => console.error("Aviso de entrega falhou", id, error));
+    })
+      .then((r) => r.sent)
+      .catch((error) => {
+        console.error("Aviso de entrega falhou", id, error);
+        return false;
+      });
+  }
   revalidatePath("/admin");
-  back({ aba: "pedidos", msg: "Pedido entregue. O cliente foi avisado por e-mail." });
+  back({
+    aba: "pedidos",
+    filtro: "entregues",
+    msg:
+      "Pedido #" +
+      id +
+      " entregue" +
+      (emailed ? " e enviado por e-mail com os anexos" : "") +
+      ". Se o cliente preferir WhatsApp, use o botão “Enviar no WhatsApp” no pedido.",
+  });
 }
 
 /* ── Cupons ── */
