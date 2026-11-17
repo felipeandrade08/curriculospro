@@ -44,10 +44,20 @@ export default function Privacy() {
         <section>
           <h2>Pagamentos</h2>
           <p>
-            Para liberar o download, o pagamento por Pix é processado pelo Mercado Pago. Compartilhamos com o
+            Para liberar o download, o pagamento por Pix ou cartão é processado pelo Mercado Pago. Compartilhamos com o
             Mercado Pago o e-mail da sua conta e o valor da compra. Guardamos o identificador do pagamento, o
             status, o valor e as datas, vinculados à sua conta, para liberar o acesso, prestar suporte e
             cumprir obrigações legais. Não recebemos nem armazenamos dados bancários.
+          </p>
+        </section>
+        <section>
+          <h2>Pedidos do “Fazemos para você”</h2>
+          <p>
+            Quando você pede que a nossa equipe faça o currículo, guardamos as informações do formulário e os
+            arquivos que você anexar (currículo antigo em PDF, Word ou foto) apenas para montar e entregar o
+            seu currículo. Somente você e a equipe responsável têm acesso a eles. Os arquivos anexados são
+            apagados automaticamente 60 dias depois que o pedido é entregue ou cancelado; para apagar antes,
+            fale conosco pelo WhatsApp.
           </p>
         </section>
         <section>

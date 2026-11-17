@@ -14,6 +14,7 @@ import {
   toggleCoupon,
 } from "./actions";
 import { SITE_URL } from "@/lib/site";
+import { filesFor, type FileMeta } from "@/lib/server/service-files";
 import { ConfirmButton } from "./confirm-button";
 import { BuildInEditor } from "./build-in-editor";
 
@@ -866,6 +867,9 @@ export async function OrdersTab({
   } catch {
     return <Failed what="os pedidos (rode a migração do banco)" />;
   }
+  const filesByRequest = new Map<string, FileMeta[]>();
+  for (const f of await filesFor(rows.map((r) => String(r.id))))
+    filesByRequest.set(f.requestId, [...(filesByRequest.get(f.requestId) || []), f]);
   const now = Date.now();
   return (
     <>
@@ -967,12 +971,22 @@ export async function OrdersTab({
               )}
               {d.sourceText && (
                 <details>
-                  <summary>Currículo antigo colado</summary>
+                  <summary>Texto do currículo antigo (colado ou lido do arquivo)</summary>
                   <p className="cpa-pre">{d.sourceText}</p>
                 </details>
               )}
               {d.resume && (
                 <p className="cpa-muted">Enviou um currículo do aparelho como base: “{d.resume.title}”.</p>
+              )}
+              {(filesByRequest.get(String(r.id)) || []).length > 0 && (
+                <div className="cpa-files">
+                  <b>Arquivos enviados:</b>
+                  {(filesByRequest.get(String(r.id)) || []).map((f) => (
+                    <a key={f.id} href={"/api/admin/servico-arquivo/" + f.id} target="_blank" rel="noopener noreferrer">
+                      {f.filename} <small>({Math.max(1, Math.round(f.size / 1024))} KB)</small>
+                    </a>
+                  ))}
+                </div>
               )}
               {(st === "new" || st === "in_progress") && (
                 <div className="cpa-fb-actions">

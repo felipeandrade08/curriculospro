@@ -9,7 +9,29 @@ import { trackUsage } from "@/lib/analytics";
 import { ACCESS_DAYS, ACCESS_PRICE_LABEL, formatAccessUntil } from "@/lib/billing";
 import { ACTIVE_RESUME_KEY, RESUME_LIBRARY_KEY, type ResumeDocument } from "@/lib/resume";
 import { readLibrary } from "@/lib/start";
+import { readResumeFile } from "@/lib/import/read-file";
 import { COMPANY, SUPPORT_WHATSAPP_URL } from "@/lib/site";
+
+const MAX_FILES = 3;
+const MAX_BYTES = 4 * 1024 * 1024;
+
+/** Reduz fotos do celular (que costumam ter 5 a 10 MB) para um JPEG legível de até ~2000 px. */
+async function shrinkImage(file: File): Promise<File> {
+  if (file.size < 1_200_000) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/jpeg", 0.85));
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.[a-z0-9]+$/i, "") + ".jpg", { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
 
 type Req = {
   id: string;
@@ -50,6 +72,10 @@ export default function DoneForYouPage() {
   });
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [extracted, setExtracted] = useState("");
+  const [fileMsg, setFileMsg] = useState("");
+  const [warning, setWarning] = useState("");
 
   const load = useCallback(async () => {
     const r = await fetch("/api/servico", { cache: "no-store" }).catch(() => null);
@@ -78,16 +104,65 @@ export default function DoneForYouPage() {
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [k]: e.target.value });
 
+  const pickFiles = async (list: FileList | null) => {
+    setFileMsg("");
+    if (!list?.length) return;
+    const next = [...files];
+    for (const raw of Array.from(list)) {
+      if (next.length >= MAX_FILES) {
+        setFileMsg(`Envie no máximo ${MAX_FILES} arquivos.`);
+        break;
+      }
+      const isImage = raw.type.startsWith("image/");
+      const isDoc = /\.(pdf|docx)$/i.test(raw.name);
+      if (!isImage && !isDoc) {
+        setFileMsg("Envie PDF, Word (.docx) ou foto do currículo.");
+        continue;
+      }
+      const file = isImage ? await shrinkImage(raw) : raw;
+      if (file.size > MAX_BYTES) {
+        setFileMsg(`“${raw.name}” passa de 4 MB. Tente exportar de novo ou mande por WhatsApp.`);
+        continue;
+      }
+      next.push(file);
+      // Lê o texto do PDF ou Word aqui mesmo, para a equipe já começar com os dados organizados.
+      if (isDoc && !extracted)
+        readResumeFile(raw)
+          .then((lines) => setExtracted(lines.map((l) => l.text).join("\n").slice(0, 12000)))
+          .catch(() => {});
+    }
+    setFiles(next);
+  };
+
+  const uploadFiles = async (requestId: string) => {
+    let failed = 0;
+    for (const f of files) {
+      const r = await fetch("/api/servico/" + requestId + "/arquivo", {
+        method: "POST",
+        headers: { "content-type": f.type || "application/octet-stream", "x-file-name": encodeURIComponent(f.name) },
+        body: f,
+      }).catch(() => null);
+      if (!r?.ok) failed++;
+    }
+    return failed;
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setWarning("");
     setState("sending");
     try {
       const resume = library.find((d) => d.id === form.resumeId) || null;
       const r = await fetch("/api/servico", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, resume }),
+        body: JSON.stringify({
+          ...form,
+          sourceText: form.sourceText.trim() || extracted,
+          resume,
+          hasFiles: files.length > 0,
+        }),
       });
       const data = await r.json().catch(() => ({}));
       if (r.status === 402) {
@@ -96,6 +171,16 @@ export default function DoneForYouPage() {
         return;
       }
       if (!r.ok) throw new Error(data.message || "Não foi possível enviar agora.");
+      if (files.length && data.request?.id) {
+        const failed = await uploadFiles(String(data.request.id));
+        if (failed)
+          setWarning(
+            "Seu pedido foi enviado, mas " +
+              (failed === 1 ? "um arquivo não foi" : failed + " arquivos não foram") +
+              " junto. Mande pelo WhatsApp que a gente anexa.",
+          );
+      }
+      setFiles([]);
       trackUsage("service_requested");
       setState("sent");
       await load();
@@ -158,6 +243,11 @@ export default function DoneForYouPage() {
             {state === "sent" && (
               <p className="fy-ok" role="status">
                 Pedido enviado! Prazo: até 24 horas. Se precisarmos de algo, chamamos no seu WhatsApp.
+              </p>
+            )}
+            {warning && (
+              <p className="fy-err" role="alert">
+                {warning}
               </p>
             )}
             <ul className="fy-reqs">
@@ -258,9 +348,40 @@ export default function DoneForYouPage() {
                 </select>
               </label>
             )}
+            <div className="fy-files">
+              <span className="fy-files-title">Anexe seu currículo antigo (opcional)</span>
+              <p className="fy-small">PDF, Word ou foto do currículo impresso. Até {MAX_FILES} arquivos de 4 MB.</p>
+              <label className="fy-drop">
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+                  onChange={(e) => {
+                    void pickFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+                <b>Escolher arquivo ou tirar foto</b>
+              </label>
+              {files.length > 0 && (
+                <ul>
+                  {files.map((f, i) => (
+                    <li key={f.name + i}>
+                      <span>
+                        {f.name} <small>({Math.max(1, Math.round(f.size / 1024))} KB)</small>
+                      </span>
+                      <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))}>
+                        Remover
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {fileMsg && <p className="fy-err">{fileMsg}</p>}
+            </div>
             <label>
-              <span>Cole seu currículo antigo (opcional)</span>
-              <textarea rows={6} value={form.sourceText} onChange={set("sourceText")} maxLength={12000} />
+              <span>Ou cole o texto do currículo antigo (opcional)</span>
+              <textarea rows={5} value={form.sourceText} onChange={set("sourceText")} maxLength={12000} />
             </label>
             <label>
               <span>Conte sua experiência e o que quer destacar</span>

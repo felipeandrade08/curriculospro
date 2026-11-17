@@ -722,3 +722,25 @@
 .cpa-grant.cpa-coupon-form label:first-child {
   grid-column: auto;
 }
+.cpa-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  font-size: 14px;
+}
+.cpa-files a {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid var(--rule, #dfe5ee);
+  border-radius: 8px;
+  color: #1553d6;
+  font-weight: 600;
+  text-decoration: none;
+}
+.cpa-files small {
+  color: #6b778c;
+  font-weight: 400;
+}
