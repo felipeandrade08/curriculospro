@@ -516,6 +516,8 @@
 .pf-related {
   padding-top: 24px;
   padding-bottom: 24px;
+}
+.pf-faq details {
   max-width: 820px;
 }
 .pf-faq details {
@@ -1132,7 +1134,7 @@
 }
 .jt-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 .jt-grid a {
@@ -1404,4 +1406,507 @@
   .jt-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+/* Kit Plataformas (/plataformas) */
+.cp-btn {
+  border: 1.5px solid var(--pen);
+  background: #fff;
+  color: var(--pen);
+  border-radius: 999px;
+  padding: 7px 13px;
+  font: 700 13px/1 var(--font-text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cp-btn:hover {
+  background: var(--pen);
+  color: #fff;
+}
+.pf-head .gd-intro {
+  max-width: 70ch;
+}
+.lp .pf-head h1 {
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  margin: 12px 0 14px;
+}
+.pf-twocol {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 28px;
+  align-items: start;
+  padding-top: 12px;
+  padding-bottom: 24px;
+}
+.lp .pf-guide h2:not(.cv *),
+.lp .pk h2:not(.cv *) {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+}
+.pf-guide ol,
+.pf-guide ul {
+  padding-left: 22px;
+  display: grid;
+  gap: 8px;
+  color: var(--ink-2);
+  line-height: 1.55;
+  margin: 0 0 26px;
+}
+.pf-disclaimer {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.pk {
+  display: grid;
+  gap: 14px;
+}
+.pk-card {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.pk-card > p {
+  margin: 0;
+  color: var(--ink-2);
+}
+.pk-search {
+  background: var(--pen-soft);
+  border-color: transparent;
+}
+.pk-searchrow {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+.pk-searchrow label,
+.ra-form label {
+  display: grid;
+  gap: 5px;
+  font-weight: 650;
+  font-size: 14px;
+}
+.pk-searchrow input,
+.ra-form :is(input, textarea),
+.ra-item textarea {
+  width: 100%;
+  border: 1.5px solid var(--rule);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: 400 15px/1.5 var(--font-text);
+  background: #fff;
+  color: var(--ink);
+}
+.pk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pk-field {
+  width: 100%;
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+  display: grid;
+  gap: 6px;
+}
+.pk-field header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+.pk-field p,
+.pk-field pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font: 400 14.5px/1.55 var(--font-text);
+  color: var(--ink-2);
+}
+.pk-field small {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.pk-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pk-chip {
+  border: 1px solid var(--rule);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 11px;
+  font: 500 13.5px/1 var(--font-text);
+  cursor: pointer;
+}
+.pk-chip:hover {
+  border-color: var(--pen);
+  color: var(--pen);
+}
+.pk-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  color: var(--ink-2);
+  font-size: 14.5px;
+}
+.pk-next {
+  background: var(--desk);
+  border-color: transparent;
+}
+.gd-list a.pf-hl {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.gd-list a.pf-hl span {
+  color: #b9c6db;
+}
+@media (max-width: 900px) {
+  .pf-twocol {
+    grid-template-columns: 1fr;
+  }
+  .pk-searchrow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Respostas da candidatura (/respostas-candidatura) */
+.ra-head {
+  padding-top: 44px;
+  padding-bottom: 24px;
+}
+.ra-head h1 {
+  font-size: clamp(30px, 4.2vw, 46px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0 0 12px;
+  max-width: 22ch;
+}
+.ra-head p {
+  color: var(--ink-2);
+  font-size: 18px;
+  max-width: 62ch;
+  margin: 0;
+}
+.ra-empty {
+  max-width: 640px;
+  margin-left: max(28px, (100% - 1180px) / 2 + 28px);
+  margin-bottom: 72px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 22px;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.ra-grid {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+  padding-bottom: 72px;
+}
+.ra-form {
+  position: sticky;
+  top: 90px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+.ra-note {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.ra-list {
+  display: grid;
+  gap: 14px;
+}
+.ra-item {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: grid;
+  gap: 8px;
+}
+.ra-item header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.ra .ra-item h2 {
+  font-size: 17px;
+  margin: 0;
+}
+.ra-hint {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13.5px;
+}
+.ra-item textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+.ra-item small {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+.ra-item small.ra-warn {
+  color: #8a5a00;
+}
+@media (max-width: 900px) {
+  .ra-grid {
+    grid-template-columns: 1fr;
+  }
+  .ra-form {
+    position: static;
+  }
+}
+
+/* Teste do robô (/teste-robo) */
+.rb-head {
+  padding-top: 44px;
+  padding-bottom: 24px;
+}
+.rb-head h1 {
+  font-size: clamp(30px, 4.2vw, 48px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0 0 12px;
+  max-width: 20ch;
+}
+.rb-head p {
+  color: var(--ink-2);
+  font-size: 18px;
+  max-width: 62ch;
+  margin: 0;
+}
+.rb-drop {
+  border: 2px dashed #b9c6db;
+  border-radius: 20px;
+  background: #fff;
+  padding: 36px 24px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 8px;
+}
+.rb-drop.on {
+  border-color: var(--pen);
+  background: var(--pen-soft);
+}
+.rb-drop b {
+  font-size: 19px;
+}
+.rb-drop p {
+  margin: 0 0 8px;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+.rb-error {
+  margin-top: 16px;
+  background: #fdebea;
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.rb-error p {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.rb-result {
+  padding-top: 28px;
+  padding-bottom: 72px;
+}
+.rb-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.rb .rb-checks h2,
+.rb .rb-seen h2 {
+  font-size: 19px;
+  margin: 0 0 10px;
+}
+.rb-checks,
+.rb-seen {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.rb-check {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+}
+.rb-check > span {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 14px;
+  flex: none;
+}
+.rb-check.ok > span {
+  background: #e6f7f0;
+  color: #0b7a55;
+}
+.rb-check.warn > span {
+  background: #fff1d6;
+  color: #8a5a00;
+}
+.rb-check.bad > span {
+  background: #fdebea;
+  color: #b42318;
+}
+.rb-check b {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.rb-check p {
+  margin: 2px 0 0;
+  color: var(--ink-3);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.rb-seen dl {
+  margin: 0 0 12px;
+  display: grid;
+  gap: 4px;
+}
+.rb-seen dt {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-top: 8px;
+}
+.rb-seen dd {
+  margin: 0;
+  font-size: 14.5px;
+  color: var(--ink);
+}
+.rb-seen ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.rb-seen .linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--pen);
+  font: 650 14px/1.3 var(--font-text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rb-raw {
+  margin: 10px 0 0;
+  max-height: 360px;
+  overflow: auto;
+  background: var(--desk);
+  border-radius: 10px;
+  padding: 12px;
+  font: 400 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+}
+.rb-cta {
+  margin-top: 22px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+.rb-cta b {
+  font-size: 19px;
+}
+.rb-cta p {
+  margin: 4px 0 0;
+  color: #b9c6db;
+  max-width: 60ch;
+}
+.rb-note {
+  color: var(--ink-3);
+  font-size: 13px;
+  margin-top: 12px;
+}
+@media (max-width: 860px) {
+  .rb-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Busca de vagas (JobSearch) */
+.js {
+  background: var(--pen-soft);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: grid;
+  gap: 10px;
+}
+.js b {
+  font-size: 18px;
+  font-family: var(--font-display);
+}
+.js label {
+  display: grid;
+  gap: 4px;
+  font-weight: 650;
+  font-size: 13.5px;
+  max-width: 320px;
+}
+.js input {
+  border: 1.5px solid var(--rule);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font: 400 15px/1.4 var(--font-text);
+  background: #fff;
+}
+.js-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.js-links a {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 8px 13px;
+  font-weight: 650;
+  font-size: 14px;
+  color: var(--pen);
+  text-decoration: none;
+}
+.js-links a:hover {
+  border-color: var(--pen);
+}
+.js small {
+  color: var(--ink-3);
+  font-size: 12.5px;
 }

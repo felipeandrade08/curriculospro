@@ -37,6 +37,8 @@ export function SiteFooter() {
         <nav aria-label="Carreira">
           <h2>Carreira</h2>
           <Link href="/guias">Guias</Link>
+          <Link href="/plataformas">Sites de vagas</Link>
+          <Link href="/teste-robo">Teste do robô</Link>
           <Link href="/entrevista">Treino de entrevista</Link>
           <Link href="/enviar-curriculo">Mensagem para enviar</Link>
           <Link href="/candidaturas">Minhas candidaturas</Link>

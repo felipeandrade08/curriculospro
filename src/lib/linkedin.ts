@@ -40,7 +40,9 @@ export function aboutText(cv: ResumeData, style: "texto" | "topicos"): string {
   if (style === "texto") {
     parts.push(cv.summary.trim() || (role ? `Sou ${role.toLowerCase()} e gosto de fazer um trabalho bem feito, com organização e atenção aos detalhes.` : ""));
     if (companies.length && acts.length)
-      parts.push(`Na minha trajetória, passei por ${listPt(companies)}, onde atuei com ${listPt(acts.slice(0, 3).map(lowerFirst))}.`);
+      parts.push(
+        `Na minha trajetória, passei por ${listPt(companies)}, onde atuei com ${lowerFirst(acts[0])}${acts[1] ? ", além de " + lowerFirst(acts[1]) : ""}.`,
+      );
     else if (acts.length) parts.push(`No dia a dia, já trabalhei com ${listPt(acts.slice(0, 3).map(lowerFirst))}.`);
     if (skills.length) parts.push(`Principais competências: ${listPt(skills)}.`);
     const study = [edu ? `Formação em ${clean(edu.title)}${edu.subtitle ? " (" + clean(edu.subtitle) + ")" : ""}` : "", courses.length ? `cursos de ${listPt(courses)}` : ""].filter(Boolean);

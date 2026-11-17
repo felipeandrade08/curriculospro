@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -50,6 +50,18 @@ export default function ImportResumePage() {
     setStage("review");
     window.scrollTo({ top: 0 });
   };
+
+  // Vindo do "Teste do robô": o arquivo já foi lido lá, então abre direto a revisão.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("curriculospro.importLines");
+      if (!raw) return;
+      sessionStorage.removeItem("curriculospro.importLines");
+      const saved = JSON.parse(raw) as { lines: ImportLine[]; name: string };
+      if (Array.isArray(saved.lines) && saved.lines.length) load(saved.lines, saved.name || "currículo");
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onFile = async (file?: File | null) => {
     if (!file) return;
