@@ -9,6 +9,8 @@ import { A4_HEIGHT, A4_WIDTH, ResumeThumb, ResumeView } from "@/components/resum
 import { ACCENT_COLORS, TEMPLATES, templateMeta, type TemplateId } from "@/lib/templates";
 import { EXAMPLE_CATEGORIES, RESUME_EXAMPLES, exampleById } from "@/lib/examples";
 import { activityIdeas, matchExamples, skillIdeas } from "@/lib/profession-ideas";
+import { isTeamBrowser } from "@/lib/team";
+import { TeamBar } from "@/components/team-bar";
 import {
   ACTIVE_RESUME_KEY,
   JOB_SELECTION_KEY,
@@ -448,7 +450,7 @@ export default function Editor() {
     trackUsage("pdf_print_requested");
     setPdfHint(true);
     try {
-      setAskReview(!localStorage.getItem("curriculospro.reviewAsked.v1"));
+      setAskReview(!isTeamBrowser() && !localStorage.getItem("curriculospro.reviewAsked.v1"));
     } catch {}
     const previous = document.title;
     document.title = safeFilename(documentTitle || cv.name || "curriculo") + "-CurriculosPRO";
@@ -922,6 +924,24 @@ export default function Editor() {
   const formatCity = (value: string) => value.replace(/\s*\/\s*/g, " / ").replace(/\s{2,}/g, " ");
   return (
     <main className={"editor " + (access.active ? "unlocked" : "locked")}>
+      <TeamBar
+        title={documentTitle}
+        getDoc={() => {
+          const now = new Date().toISOString();
+          return {
+            id: activeId.current || "export",
+            title: documentTitle || cv.name || "Meu currículo",
+            createdAt: now,
+            updatedAt: now,
+            cv,
+            template,
+            accent,
+            density,
+            sectionOrder,
+            hidden,
+          };
+        }}
+      />
       <CheckoutModal
         open={checkoutOpen}
         access={access}
@@ -1759,6 +1779,8 @@ export default function Editor() {
               <span className="accessBadge active">
                 ✓ Download liberado até {formatAccessUntil(access.accessUntil)}
               </span>
+            ) : access.active ? (
+              <span className="accessBadge active">✓ Download liberado (conta da equipe)</span>
             ) : access.loading ? (
               <span>● Prévia em tempo real</span>
             ) : (

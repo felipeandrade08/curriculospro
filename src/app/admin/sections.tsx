@@ -17,6 +17,7 @@ import { SITE_URL } from "@/lib/site";
 import { filesFor, type FileMeta } from "@/lib/server/service-files";
 import { deliveryUrl } from "@/lib/server/delivery";
 import { ResumePicker } from "./resume-picker";
+import { whatsappDeliveryUrl } from "@/lib/delivery-message";
 import { ConfirmButton } from "./confirm-button";
 import { BuildInEditor } from "./build-in-editor";
 
@@ -1065,18 +1066,7 @@ export async function OrdersTab({
                       className={"cpa-btn small" + (d.delivery === "whatsapp" ? "" : " ghost")}
                       target="_blank"
                       rel="noopener noreferrer"
-                      href={
-                        "https://wa.me/55" +
-                        d.whatsapp.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "") +
-                        "?text=" +
-                        encodeURIComponent(
-                          "Olá, " +
-                            d.name.split(" ")[0] +
-                            "! Seu currículo feito pela equipe CurriculosPRO está pronto ✅\n\nBaixe em PDF ou Word por este link (vale 30 dias):\n" +
-                            deliveryUrl(String(r.id), String(r.delivered_at)) +
-                            "\n\nEle também fica salvo em Meus currículos, se quiser editar. Qualquer ajuste, é só responder aqui!",
-                        )
-                      }
+                      href={whatsappDeliveryUrl(d.whatsapp, d.name, deliveryUrl(String(r.id), String(r.delivered_at)))}
                     >
                       Enviar no WhatsApp
                     </a>

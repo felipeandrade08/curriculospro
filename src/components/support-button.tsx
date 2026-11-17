@@ -1,13 +1,15 @@
 "use client";
 import { usePathname } from "next/navigation";
 import { SUPPORT_WHATSAPP_URL } from "@/lib/site";
+import { useTeam } from "@/components/team-flag";
 
 const HIDDEN = ["/editor", "/carta", "/admin", "/auth"];
 
 /** Atendimento humano sempre à mão (fora das telas de edição, que já têm barras próprias). */
 export function SupportButton() {
   const pathname = usePathname() || "";
-  if (HIDDEN.some((p) => pathname.startsWith(p))) return null;
+  const team = useTeam();
+  if (team || HIDDEN.some((p) => pathname.startsWith(p))) return null;
   return (
     <a
       className="wa-float"

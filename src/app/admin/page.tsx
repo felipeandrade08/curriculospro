@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { checkAdmin } from "@/lib/server/admin";
 import { db } from "@/lib/server/db";
+import { TeamFlag } from "@/components/team-flag";
+import Image from "next/image";
 import { CouponsTab, CustomersTab, FeedbackTab, OrdersTab, OverviewTab, SalesTab } from "./sections";
 
 export const dynamic = "force-dynamic";
@@ -77,13 +79,38 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     return "/admin" + (qs ? "?" + qs : "");
   };
 
+  let pixPending = 0;
+  let oldestHours = 0;
+  try {
+    const [p] = await db()`SELECT count(*)::int AS n FROM payments WHERE status IN ('pending', 'in_process') AND expires_at > now()`;
+    pixPending = Number(p?.n || 0);
+    const [o] = await db()`SELECT EXTRACT(EPOCH FROM (now() - min(created_at))) / 3600 AS h
+      FROM service_requests WHERE status IN ('new', 'in_progress')`;
+    oldestHours = Math.floor(Number(o?.h || 0));
+  } catch {}
+
   return (
     <main className="cpa">
-      <SiteHeader />
+      <TeamFlag />
+      <header className="cpa-head">
+        <div className="wrap cpa-head-inner">
+          <Link href="/" className="cpa-logo" aria-label="Ver o site">
+            <Image src="/brand/logo-transparent.png" alt="CurriculosPRO" width={120} height={46} priority />
+          </Link>
+          <span className="cpa-head-title">Painel da equipe</span>
+          <nav className="cpa-quick" aria-label="Atalhos da equipe">
+            <Link href="/comecar">+ Novo currículo</Link>
+            <Link href="/editor">Editor</Link>
+            <Link href="/curriculos">Currículos da equipe</Link>
+            <Link href="/">Ver o site</Link>
+          </nav>
+          <span className="cpa-who">{check.session.email}</span>
+        </div>
+      </header>
       <div className="cpa-top">
         <div className="wrap cpa-top-inner">
           <div>
-            <h1>Administração</h1>
+            <h1>{TABS.find((t) => t.id === tab)?.label}</h1>
             <p>
               Atualizado agora ·{" "}
               {new Date().toLocaleString("pt-BR", {
@@ -111,6 +138,27 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
           ))}
         </nav>
       </div>
+      {(openOrders > 0 || newFeedback > 0 || pixPending > 0) && (
+        <div className="wrap cpa-todo" role="status">
+          <b>Pendências:</b>
+          {openOrders > 0 && (
+            <Link href={href({ aba: "pedidos" })} className={oldestHours >= 20 ? "late" : ""}>
+              {openOrders} pedido{openOrders > 1 ? "s" : ""} para fazer
+              {oldestHours > 0 ? ` (o mais antigo há ${oldestHours}h)` : ""}
+            </Link>
+          )}
+          {newFeedback > 0 && (
+            <Link href={href({ aba: "avaliacoes" })}>
+              {newFeedback} avaliaç{newFeedback > 1 ? "ões" : "ão"} para moderar
+            </Link>
+          )}
+          {pixPending > 0 && (
+            <Link href={href({ aba: "vendas", status: "pending" })}>
+              {pixPending} Pix aguardando pagamento
+            </Link>
+          )}
+        </div>
+      )}
       <div className="wrap cpa-body">
         {dbError && (
           <div className="cpa-alert">

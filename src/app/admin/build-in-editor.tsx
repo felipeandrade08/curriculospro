@@ -31,7 +31,8 @@ export function BuildInEditor({ id, data }: { id: string; data: Data }) {
       template: data.resume?.template,
       accent: data.resume?.accent,
     });
-    window.open("/editor", "_blank");
+    // Abre no mesmo separador: a barra da equipe no editor tem a entrega e o botão de voltar ao painel.
+    location.href = "/editor";
   };
   return (
     <button type="button" className="cpa-btn ghost small" onClick={open}>
