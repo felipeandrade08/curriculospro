@@ -2065,3 +2065,8 @@
   padding: 12px 16px;
   font-size: 14.5px;
 }
+.iv-list .iv-feedback li {
+  background: none;
+  border: 0;
+  border-radius: 0;
+}

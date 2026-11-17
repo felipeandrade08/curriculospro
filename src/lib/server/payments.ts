@@ -135,11 +135,18 @@ export async function revokeAccess(paymentId: string, status: string, statusDeta
       UPDATE payments
       SET status=${status}, status_detail=${statusDetail}, revoked_at=now(), updated_at=now()
       WHERE id=${paymentId} AND granted_at IS NOT NULL AND revoked_at IS NULL
-      RETURNING user_id, access_days, plan
+      RETURNING id, user_id, access_days, plan
     )
     UPDATE app_users
     SET access_until = app_users.access_until - make_interval(days => p.access_days),
-        kit_until = CASE WHEN p.plan IN ('mes', 'upgrade') THEN app_users.kit_until - make_interval(days => p.access_days)
+        -- Estorno do Kit: sem outra compra do Kit válida, o Kit acaba; com outra, perde só os dias deste pagamento.
+        kit_until = CASE
+          WHEN p.plan IN ('mes', 'upgrade') THEN CASE
+            WHEN EXISTS (SELECT 1 FROM payments q WHERE q.user_id = p.user_id AND q.id <> p.id AND q.plan IN ('mes', 'upgrade')
+                         AND q.granted_at IS NOT NULL AND q.revoked_at IS NULL)
+            THEN app_users.kit_until - make_interval(days => p.access_days)
+            ELSE NULL END
+          WHEN app_users.kit_until IS NULL THEN NULL
           ELSE LEAST(app_users.kit_until, app_users.access_until - make_interval(days => p.access_days)) END,
         updated_at = now()
     FROM p WHERE app_users.id = p.user_id
