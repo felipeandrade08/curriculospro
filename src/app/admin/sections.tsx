@@ -15,6 +15,7 @@ import {
 } from "./actions";
 import { SITE_URL } from "@/lib/site";
 import { filesFor, type FileMeta } from "@/lib/server/service-files";
+import { deliveryUrl } from "@/lib/server/delivery";
 import { ConfirmButton } from "./confirm-button";
 import { BuildInEditor } from "./build-in-editor";
 
@@ -886,8 +887,15 @@ export async function OrdersTab({
             conta.
           </li>
           <li>
-            Volte aqui, escolha o currículo em <b>Entregar</b> e confirme. O cliente recebe na conta dele e
-            por e-mail.
+            Ainda no editor, baixe o <b>PDF</b> (sai sem marca d&apos;água para a sua conta).
+          </li>
+          <li>
+            Volte aqui, escolha o currículo, anexe o PDF e clique em <b>Entregar</b>. O cliente recebe por
+            e-mail com o PDF e o Word anexados, e o currículo fica salvo na conta dele.
+          </li>
+          <li>
+            Se o pedido diz <b>Receber por WhatsApp</b>, clique em <b>Enviar no WhatsApp</b> depois de entregar:
+            a conversa abre com a mensagem e o link de download prontos.
           </li>
         </ol>
         {msg && (
@@ -922,6 +930,7 @@ export async function OrdersTab({
             notes: string;
             sourceText: string;
             resume: import("@/lib/resume").ResumeDocument | null;
+            delivery?: "email" | "whatsapp";
           };
           const st = String(r.status);
           const hours = (now - new Date(String(r.created_at)).getTime()) / 3_600_000;
@@ -957,6 +966,9 @@ export async function OrdersTab({
                 </time>
               </div>
               <p>
+                <span className={"cpa-pill " + (d.delivery === "whatsapp" ? "approved" : "pending")}>
+                  Receber por {d.delivery === "whatsapp" ? "WhatsApp" : "e-mail"}
+                </span>{" "}
                 <b>Vaga:</b> {d.role}
                 {d.city ? " · " + d.city : ""} · <b>Conta:</b> {String(r.email)} · <b>WhatsApp:</b>{" "}
                 <a href={wa} target="_blank" rel="noopener noreferrer">
@@ -980,9 +992,10 @@ export async function OrdersTab({
               )}
               {(filesByRequest.get(String(r.id)) || []).length > 0 && (
                 <div className="cpa-files">
-                  <b>Arquivos enviados:</b>
+                  <b>Arquivos:</b>
                   {(filesByRequest.get(String(r.id)) || []).map((f) => (
                     <a key={f.id} href={"/api/admin/servico-arquivo/" + f.id} target="_blank" rel="noopener noreferrer">
+                      {f.kind === "delivery" ? "Entregue: " : ""}
                       {f.filename} <small>({Math.max(1, Math.round(f.size / 1024))} KB)</small>
                     </a>
                   ))}
@@ -1026,6 +1039,10 @@ export async function OrdersTab({
                     </select>
                   </label>
                   <label className="wide">
+                    <span>PDF do currículo (recomendado: baixe no editor e anexe aqui)</span>
+                    <input name="pdf" type="file" accept="application/pdf,.pdf" />
+                  </label>
+                  <label className="wide">
                     <span>Recado para o cliente (opcional)</span>
                     <input
                       name="note"
@@ -1038,7 +1055,46 @@ export async function OrdersTab({
                   </button>
                 </form>
               )}
-              {st === "delivered" && <p className="cpa-muted">Entregue em {dateTime(r.delivered_at)}.</p>}
+              {st === "delivered" && r.delivered_at ? (
+                <div className="cpa-delivered">
+                  <p className="cpa-muted">
+                    Entregue em {dateTime(r.delivered_at)}
+                    {(filesByRequest.get(String(r.id)) || []).some((f) => f.kind === "delivery")
+                      ? " · com PDF"
+                      : " · só Word (sem PDF anexado)"}
+                    .
+                  </p>
+                  <div className="cpa-fb-actions">
+                    <a
+                      className={"cpa-btn small" + (d.delivery === "whatsapp" ? "" : " ghost")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      href={
+                        "https://wa.me/55" +
+                        d.whatsapp.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "") +
+                        "?text=" +
+                        encodeURIComponent(
+                          "Olá, " +
+                            d.name.split(" ")[0] +
+                            "! Seu currículo feito pela equipe CurriculosPRO está pronto ✅\n\nBaixe em PDF ou Word por este link (vale 30 dias):\n" +
+                            deliveryUrl(String(r.id), String(r.delivered_at)) +
+                            "\n\nEle também fica salvo em Meus currículos, se quiser editar. Qualquer ajuste, é só responder aqui!",
+                        )
+                      }
+                    >
+                      Enviar no WhatsApp
+                    </a>
+                    <a
+                      className="cpa-btn ghost small"
+                      href={deliveryUrl(String(r.id), String(r.delivered_at))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Ver página de entrega
+                    </a>
+                  </div>
+                </div>
+              ) : null}
             </article>
           );
         })}

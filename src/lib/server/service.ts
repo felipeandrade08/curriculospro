@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@/lib/server/db";
 import { isResumeDocument, type ResumeDocument } from "@/lib/resume";
+import { deliveryUrl } from "@/lib/server/delivery";
 
 export const SERVICE_HOURS = 24;
 
@@ -13,6 +14,8 @@ export type ServiceInput = {
   notes: string;
   sourceText: string;
   resume: ResumeDocument | null;
+  /** Como o cliente prefere receber: e-mail (com anexos) ou WhatsApp (com link). */
+  delivery: "email" | "whatsapp";
 };
 
 export type ServiceRequestRow = {
@@ -23,6 +26,8 @@ export type ServiceRequestRow = {
   deliveredAt: string | null;
   deliveredResumeId: string | null;
   adminNote: string | null;
+  /** Link de download sem login (só para pedidos entregues). */
+  downloadUrl: string | null;
 };
 
 const text = (v: unknown, max: number) =>
@@ -43,6 +48,7 @@ export function parseServiceInput(body: unknown): ServiceInput | string {
     notes: text(b.notes, 4000),
     sourceText: text(b.sourceText, 12000),
     resume: isResumeDocument(b.resume) ? (b.resume as ResumeDocument) : null,
+    delivery: b.delivery === "whatsapp" ? "whatsapp" : "email",
   };
   if (input.name.length < 3) return "Informe seu nome completo.";
   if (input.whatsapp.replace(/\D/g, "").length < 10)
@@ -61,6 +67,8 @@ const toRow = (r: Record<string, unknown>): ServiceRequestRow => ({
   deliveredAt: r.delivered_at ? new Date(String(r.delivered_at)).toISOString() : null,
   deliveredResumeId: r.delivered_resume_id ? String(r.delivered_resume_id) : null,
   adminNote: r.admin_note ? String(r.admin_note) : null,
+  downloadUrl:
+    r.status === "delivered" && r.delivered_at ? deliveryUrl(String(r.id), String(r.delivered_at)) : null,
 });
 
 export async function listMyRequests(userId: string) {
@@ -135,7 +143,14 @@ export async function deliverRequest(
   const [done] =
     await sql`UPDATE service_requests SET status = 'delivered', delivered_resume_id = ${newId}, delivered_at = now(),
       admin_note = COALESCE(${note}, admin_note), updated_at = now()
-    WHERE id = ${requestId} RETURNING user_id`;
+    WHERE id = ${requestId} RETURNING user_id, delivered_at, data`;
   const [u] = await sql`SELECT email, display_name FROM app_users WHERE id = ${String(done.user_id)}`;
-  return { email: String(u?.email || ""), name: u?.display_name ? String(u.display_name) : null };
+  const data = (done.data || {}) as Partial<ServiceInput>;
+  return {
+    email: String(u?.email || ""),
+    name: data.name || (u?.display_name ? String(u.display_name) : null),
+    userId: String(done.user_id),
+    deliveredAt: new Date(String(done.delivered_at)).toISOString(),
+    resumeId: newId,
+  };
 }

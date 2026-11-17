@@ -40,6 +40,7 @@ type Req = {
   createdAt: string;
   deliveredAt: string | null;
   adminNote: string | null;
+  downloadUrl: string | null;
 };
 
 const STATUS: Record<Req["status"], string> = {
@@ -69,6 +70,7 @@ export default function DoneForYouPage() {
     notes: "",
     sourceText: "",
     resumeId: "",
+    delivery: "email" as "email" | "whatsapp",
   });
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState("");
@@ -261,9 +263,16 @@ export default function DoneForYouPage() {
                     {r.adminNote && <small>Recado da equipe: {r.adminNote}</small>}
                   </div>
                   {r.status === "delivered" && (
-                    <button type="button" className="btn btn-primary" onClick={() => openDelivered(r.id)}>
-                      Abrir meu currículo
-                    </button>
+                    <div className="fy-reqactions">
+                      {r.downloadUrl && (
+                        <a className="btn btn-primary" href={r.downloadUrl}>
+                          Baixar PDF ou Word
+                        </a>
+                      )}
+                      <button type="button" className="btn btn-ghost" onClick={() => openDelivered(r.id)}>
+                        Abrir no editor
+                      </button>
+                    </div>
                   )}
                 </li>
               ))}
@@ -395,6 +404,36 @@ export default function DoneForYouPage() {
                 }
               />
             </label>
+            <fieldset className="fy-delivery">
+              <legend>Como você quer receber o currículo pronto?</legend>
+              <label className={form.delivery === "email" ? "on" : ""}>
+                <input
+                  type="radio"
+                  name="delivery"
+                  value="email"
+                  checked={form.delivery === "email"}
+                  onChange={() => setForm({ ...form, delivery: "email" })}
+                />
+                <span>
+                  <b>Por e-mail</b>
+                  <small>PDF e Word anexados{access.email ? ", em " + access.email : ""}</small>
+                </span>
+              </label>
+              <label className={form.delivery === "whatsapp" ? "on" : ""}>
+                <input
+                  type="radio"
+                  name="delivery"
+                  value="whatsapp"
+                  checked={form.delivery === "whatsapp"}
+                  onChange={() => setForm({ ...form, delivery: "whatsapp" })}
+                />
+                <span>
+                  <b>Pelo WhatsApp</b>
+                  <small>Link para baixar, no número informado acima</small>
+                </span>
+              </label>
+              <p className="fy-small">Nos dois casos ele também fica salvo em Meus currículos, para você editar.</p>
+            </fieldset>
             {error && (
               <p className="fy-err" role="alert">
                 {error}
