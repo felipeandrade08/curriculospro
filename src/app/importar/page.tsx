@@ -33,6 +33,7 @@ export default function ImportResumePage() {
   const [stage, setStage] = useState<Stage>("upload");
   const [cv, setCv] = useState<ResumeData>(emptyResumeData);
   const [unmatched, setUnmatched] = useState<string[]>([]);
+  const [personal, setPersonal] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
   const [pasted, setPasted] = useState("");
   const [error, setError] = useState("");
@@ -46,6 +47,7 @@ export default function ImportResumePage() {
     const result = parseResume(lines);
     setCv({ ...result.cv, photo: "" });
     setUnmatched(result.unmatched.filter((x) => x.length > 2));
+    setPersonal(result.personal || []);
     setFileName(source);
     setStage("review");
     window.scrollTo({ top: 0 });
@@ -268,6 +270,13 @@ export default function ImportResumePage() {
             />
           </Card>
 
+          {personal.length > 0 && (
+            <p className="im-personal">
+              <b>Deixamos de fora dados pessoais e endereço</b> ({personal.length}{" "}
+              {personal.length > 1 ? "linhas" : "linha"}): CPF, estado civil, idade e rua não são pedidos no
+              currículo. A cidade e o contato continuam.
+            </p>
+          )}
           {unmatched.length > 0 && (
             <Card icon={<WarningCircle size={20} />} title="Trechos que não soubemos encaixar" tone="warn">
               <p className="im-hint">Escolha onde cada trecho deve ir, ou descarte.</p>
