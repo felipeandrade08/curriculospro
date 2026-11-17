@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { TeamHeaderLink } from "@/components/team-flag";
+import { HeaderSignIn } from "@/components/header-sign-in";
 
 type Active = "modelos" | "exemplos" | "curriculos" | "precos" | "feito";
 
@@ -32,6 +33,7 @@ export function SiteHeader({ active }: { active?: Active }) {
           ))}
         </nav>
         <TeamHeaderLink />
+        <HeaderSignIn />
         <Link href="/comecar" className="btn btn-primary sh-cta">
           Criar currículo
         </Link>

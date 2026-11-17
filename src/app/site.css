@@ -137,6 +137,16 @@ body {
 .sh-cta {
   flex: none;
 }
+.sh-signin {
+  flex: none;
+  margin-right: -16px;
+  background: var(--marker);
+  color: var(--ink) !important;
+  border-color: #f2cf3c;
+}
+.sh-signin:hover {
+  background: #ffd43b;
+}
 .sh-menu {
   display: none;
   position: relative;
@@ -201,7 +211,14 @@ body {
   }
   .sh-menu {
     display: block;
-    margin-left: auto;
+  }
+  .sh-logo {
+    margin-right: auto;
+  }
+  .sh-signin {
+    margin-right: -16px;
+    min-height: 40px;
+    padding: 0 14px;
   }
   .sh-inner {
     height: 62px;
