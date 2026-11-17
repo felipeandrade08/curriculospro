@@ -23,7 +23,7 @@ function pitch(cv: ResumeData | null) {
       : edu
         ? `Estou estudando ${edu.title}${edu.subtitle ? " na " + edu.subtitle : ""}.`
         : "",
-    skills.length ? `Tenho facilidade com ${skills.join(", ").replace(/, ([^,]*)$/, " e $1").toLowerCase()}.` : "",
+    skills.length ? `Tenho facilidade com ${skills.join(", ").replace(/, ([^,]*)$/, " e $1")}.` : "",
     "Me interessei por esta vaga porque [diga o que te atraiu na empresa ou na função] e acredito que posso contribuir com [o que você faz de melhor].",
   ];
   return parts.filter(Boolean).join(" ");

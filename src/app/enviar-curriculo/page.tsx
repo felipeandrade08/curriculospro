@@ -44,9 +44,9 @@ export default function SendPage() {
     const exp = cv?.experiences.find((x) => x.title);
     const pitch = exp
       ? `Tenho experiência como ${plainRole(exp.title).toLowerCase()}` +
-        (skills.length ? ` e facilidade com ${skills.join(" e ").toLowerCase()}.` : ".")
+        (skills.length ? ` e facilidade com ${skills.join(" e ")}.` : ".")
       : skills.length
-        ? `Tenho facilidade com ${skills.join(" e ").toLowerCase()} e muita vontade de aprender.`
+        ? `Tenho facilidade com ${skills.join(" e ")} e muita vontade de aprender.`
         : "";
     setInput({ name: cv?.name || "", role: role || plainRole(cv?.role || ""), company, recruiter: "", pitch });
   }, []);

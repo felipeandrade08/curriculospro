@@ -716,3 +716,9 @@
   width: 18px;
   height: 18px;
 }
+.ad-grant.ad-coupon-form {
+  grid-template-columns: 1fr 1fr;
+}
+.ad-grant.ad-coupon-form label:first-child {
+  grid-column: auto;
+}

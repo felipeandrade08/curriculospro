@@ -1037,7 +1037,7 @@ export async function CouponsTab({ msg }: { msg: string }) {
             {msg}
           </p>
         )}
-        <form action={createCoupon} className="ad-grant">
+        <form action={createCoupon} className="ad-grant ad-coupon-form">
           <label>
             <span>Código</span>
             <input name="code" required maxLength={20} placeholder="Ex.: INSTA20" style={{ textTransform: "uppercase" }} />
