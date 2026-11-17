@@ -9,6 +9,7 @@ import { PROFESSIONS, professionBySlug } from "@/lib/professions";
 import { defaultOrder, type ResumeData } from "@/lib/resume";
 import { ACCESS_PRICE_LABEL } from "@/lib/billing";
 import { StartProfession } from "../start-button";
+import { JobSearch } from "@/components/job-search";
 
 export const dynamicParams = false;
 export function generateStaticParams() {
@@ -145,6 +146,9 @@ export default async function ProfessionPage({ params }: { params: Promise<{ slu
                 <li key={t}>{t}</li>
               ))}
             </ul>
+          </div>
+          <div className="pf-block">
+            <JobSearch role={p.name} />
           </div>
           <div className="pf-block pf-cta">
             <b>Achou uma vaga?</b>
