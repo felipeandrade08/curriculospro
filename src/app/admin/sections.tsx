@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { channelOf, type SaleSource } from "@/lib/server/sales-source";
+import { PixCharge } from "./pix-charge";
 import { db } from "@/lib/server/db";
 import { formatBRL } from "@/lib/billing";
 import {
@@ -64,6 +65,88 @@ const PAY_STATUS: Record<string, string> = {
   charged_back: "Contestado",
 };
 
+/* ───────────── Cobrar no Pix ───────────── */
+
+export async function ChargeTab() {
+  let rows: Record<string, unknown>[] = [];
+  try {
+    rows = await db()`SELECT p.id, p.amount_cents, p.status, p.granted_at, p.revoked_at, p.created_at, p.expires_at,
+        p.plan, p.customer, u.email AS account
+      FROM payments p LEFT JOIN app_users u ON u.id = p.user_id
+      WHERE p.customer IS NOT NULL ORDER BY p.created_at DESC LIMIT 30`;
+  } catch {
+    return <Failed what="as cobranças" />;
+  }
+  const paid = rows.filter((r) => r.granted_at && !r.revoked_at);
+  return (
+    <>
+      <section className="cpa-panel">
+        <header>
+          <h2>Gerar Pix para o cliente</h2>
+        </header>
+        <PixCharge />
+      </section>
+      <section className="cpa-panel">
+        <header>
+          <h2>Últimas cobranças pelo painel</h2>
+          <span className="cpa-muted">
+            {paid.length} paga(s) · {formatBRL(paid.reduce((t, r) => t + n(r.amount_cents), 0))}
+          </span>
+        </header>
+        {rows.length ? (
+          <div className="cpa-table-wrap">
+            <table className="cpa-table">
+              <thead>
+                <tr>
+                  <th>Criado em</th>
+                  <th>Cliente</th>
+                  <th>O quê</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const c = (r.customer || {}) as Record<string, string>;
+                  const expired = !r.granted_at && r.expires_at && new Date(String(r.expires_at)) < new Date();
+                  const st = r.revoked_at
+                    ? "refunded"
+                    : r.granted_at
+                      ? "approved"
+                      : expired && ["pending", "in_process"].includes(String(r.status))
+                        ? "cancelled"
+                        : String(r.status);
+                  return (
+                    <tr key={String(r.id)}>
+                      <td>{dateTime(r.created_at)}</td>
+                      <td>
+                        {c.name || c.email || "—"}
+                        {c.phone ? <small className="cpa-muted"> · {c.phone}</small> : null}
+                        {r.account ? <small className="cpa-muted"> · conta {String(r.account)}</small> : null}
+                      </td>
+                      <td>{c.description || String(r.plan)}</td>
+                      <td>{formatBRL(n(r.amount_cents))}</td>
+                      <td>
+                        <span className={"cpa-pill " + st}>{PAY_STATUS[st] || st}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="cpa-empty">Nenhuma cobrança gerada pelo painel ainda.</p>
+        )}
+        <p className="cpa-muted">
+          As cobranças pagas também entram em Vendas. Pacote Currículo e Kit liberam o acesso na conta do cliente
+          sozinhos quando o Pix é pago.
+        </p>
+      </section>
+    </>
+  );
+}
+
 /* ───────────── Visão geral ───────────── */
 
 export async function OverviewTab({ days, href }: { days: number; href: Href }) {
@@ -93,7 +176,8 @@ export async function OverviewTab({ days, href }: { days: number; href: Href }) 
       await sql`SELECT to_char((approved_at AT TIME ZONE 'America/Sao_Paulo')::date, 'YYYY-MM-DD') AS day, count(*)::int AS total
       FROM payments WHERE granted_at IS NOT NULL AND revoked_at IS NULL AND approved_at >= now() - make_interval(days => ${days}) GROUP BY 1`;
     const recentSales =
-      await sql`SELECT u.email, p.amount_cents, p.approved_at FROM payments p JOIN app_users u ON u.id = p.user_id
+      await sql`SELECT COALESCE(u.email, p.customer->>'name', p.customer->>'email', 'Venda pelo painel') AS email, p.amount_cents, p.approved_at
+      FROM payments p LEFT JOIN app_users u ON u.id = p.user_id
       WHERE p.granted_at IS NOT NULL AND p.revoked_at IS NULL ORDER BY p.approved_at DESC LIMIT 6`;
     let rating = { avg: 0, total: 0 };
     let latestFeedback: Record<string, unknown>[] = [];
@@ -363,10 +447,10 @@ export async function SalesTab({
         count(*)::int AS total
       FROM payments WHERE created_at >= now() - make_interval(days => ${days})`;
     rows =
-      await sql`SELECT p.id, u.email, p.amount_cents, p.status, p.created_at, p.approved_at, p.revoked_at, u.access_until, p.method, p.plan, p.coupon_code, p.source
-      FROM payments p JOIN app_users u ON u.id = p.user_id
+      await sql`SELECT p.id, COALESCE(u.email, p.customer->>'name', p.customer->>'email', 'Venda pelo painel') AS email, p.amount_cents, p.status, p.created_at, p.approved_at, p.revoked_at, u.access_until, p.method, p.plan, p.coupon_code, p.source
+      FROM payments p LEFT JOIN app_users u ON u.id = p.user_id
       WHERE p.created_at >= now() - make_interval(days => ${days})
-        AND (${q.trim()} = '' OR lower(u.email) LIKE ${like} OR p.id = ${q.trim()})
+        AND (${q.trim()} = '' OR lower(COALESCE(u.email, p.customer->>'email', p.customer->>'name', '')) LIKE ${like} OR p.id = ${q.trim()})
         AND (${status} = '' OR (${status} = 'refunded' AND p.revoked_at IS NOT NULL)
              OR (${status} <> 'refunded' AND p.status = ${status} AND p.revoked_at IS NULL))
       ORDER BY p.created_at DESC LIMIT 200`;
@@ -405,6 +489,7 @@ export async function SalesTab({
             ["semana", "Currículo (R$ 9,90)"],
             ["mes", "Kit Emprego (R$ 19,90)"],
             ["upgrade", "Upgrades para o Kit"],
+            ["servico", "Fazemos para você (painel)"],
           ] as const
         ).map(([id, label]) => {
           const r = byPlan.find((x) => String(x.plan) === id);
@@ -479,7 +564,15 @@ export async function SalesTab({
                         <small className="cpa-muted">
                           {" "}
                           {p.method === "card" ? "cartão" : "Pix"}
-                          {p.plan === "mes" ? " · Kit" : p.plan === "upgrade" ? " · Upgrade" : " · Currículo"}
+                          {p.plan === "mes"
+                            ? " · Kit"
+                            : p.plan === "upgrade"
+                              ? " · Upgrade"
+                              : p.plan === "servico"
+                                ? " · Fazemos para você"
+                                : p.plan === "avulso"
+                                  ? " · Avulso"
+                                  : " · Currículo"}
                           {p.coupon_code ? " · " + String(p.coupon_code) : ""}
                         </small>
                       </td>

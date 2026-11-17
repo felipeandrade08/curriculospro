@@ -852,3 +852,134 @@
   border-radius: 4px;
   background: linear-gradient(90deg, #1553d6, #4b8cf5);
 }
+
+/* Cobrar no Pix */
+.cpa-pix-form {
+  display: grid;
+  gap: 16px;
+}
+.cpa-pix-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.cpa-pix-form legend {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.cpa-pix-kinds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+.cpa-pix-kinds label {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #dfe4ec;
+  border-radius: 12px;
+  cursor: pointer;
+  background: #fff;
+}
+.cpa-pix-kinds label.on {
+  border-color: #1553d6;
+  background: #f2f6ff;
+  box-shadow: 0 0 0 1px #1553d6 inset;
+}
+.cpa-pix-kinds input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.cpa-pix-kinds small {
+  color: #5b6b7d;
+  font-size: 12px;
+}
+.cpa-pix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.cpa-pix-grid label {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3a4a5f;
+}
+.cpa-pix-grid .wide {
+  grid-column: 1 / -1;
+}
+.cpa-pix-grid input {
+  border: 1px solid #d5e1ec;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 500;
+}
+.cpa-pix-form > .cpa-btn {
+  justify-self: start;
+}
+.cpa-pix-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 14px;
+}
+.cpa-pix-result {
+  display: grid;
+  gap: 14px;
+}
+.cpa-pix-status {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  background: #fff7e6;
+  color: #8a5300;
+}
+.cpa-pix-status.approved {
+  background: #e7f8ef;
+  color: #0f7a4f;
+}
+.cpa-pix-status.expired,
+.cpa-pix-status.cancelled,
+.cpa-pix-status.rejected {
+  background: #fdecec;
+  color: #b42318;
+}
+.cpa-pix-body {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.cpa-pix-body img {
+  border: 1px solid #dfe4ec;
+  border-radius: 12px;
+  padding: 6px;
+  background: #fff;
+}
+.cpa-pix-body > div {
+  flex: 1;
+  min-width: 260px;
+  display: grid;
+  gap: 8px;
+}
+.cpa-pix-body textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d5e1ec;
+  border-radius: 10px;
+  padding: 10px;
+  font: 12px/1.4 ui-monospace, monospace;
+  resize: none;
+}
+.cpa-pix-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cpa-btn.wa {
+  background: #1fa855;
+  border-color: #1fa855;
+  color: #fff;
+}
