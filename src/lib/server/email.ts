@@ -154,6 +154,27 @@ export function expiryReminderEmail(p: { name: string | null; accessUntil: strin
   };
 }
 
+/** Alguns dias depois da compra: pede uma avaliação (que pode virar depoimento no site). */
+export function reviewRequestEmail(p: { name: string | null; userId: string }) {
+  const unsub = unsubscribeUrl(p.userId);
+  const url = SITE_URL + "/feedback?origem=email";
+  const hi = firstName(p.name) ? "Oi, " + firstName(p.name) + "!" : "Oi!";
+  return {
+    unsubscribeUrl: unsub,
+    subject: "Como foi com o seu currículo? (leva 1 minuto)",
+    text: `${hi} Faz alguns dias que você liberou os downloads no CurriculosPRO. Conta pra gente como foi: o currículo ficou do jeito que você queria? Já chamaram para entrevista?\n\nSua avaliação leva 1 minuto e ajuda outras pessoas a decidirem: ${url}\n\nDica: antes de enviar para uma vaga, use ${SITE_URL}/adaptar-vaga para ver o que ela pede e ${SITE_URL}/linkedin para deixar seu LinkedIn igual ao currículo.\n\nNão quer mais e-mails? ${unsub}`,
+    html: layout({
+      preheader: "Sua opinião ajuda outras pessoas a conseguirem emprego.",
+      title: "Como foi com o seu currículo?",
+      body: `<p>${esc(hi)} Faz alguns dias que você liberou os downloads no CurriculosPRO. O currículo ficou do jeito que você queria? Já chamaram para entrevista?</p>
+<p>Sua avaliação leva <b>1 minuto</b> e ajuda outras pessoas que estão procurando emprego a confiarem no site.</p>
+<p style="font-size:14px;color:#6b778c">Enquanto isso, duas ferramentas grátis: <a href="${SITE_URL}/adaptar-vaga" style="color:#1553d6">compare seu currículo com a vaga</a> antes de enviar e <a href="${SITE_URL}/linkedin" style="color:#1553d6">monte seu perfil do LinkedIn</a> a partir do currículo.</p>`,
+      cta: { label: "Avaliar em 1 minuto", url },
+      footer: `<a href="${unsub}" style="color:#6b778c">Não quero receber e-mails</a>`,
+    }),
+  };
+}
+
 export function pixRecoveryEmail(p: { name: string | null; userId: string }) {
   const unsub = unsubscribeUrl(p.userId);
   const url = SITE_URL + "/editor?checkout=1";

@@ -6,7 +6,7 @@ import { SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = SITE_URL;
-  const pages = ["", "/comecar", "/importar", "/depoimentos", "/feito-para-voce", "/adaptar-vaga", "/curriculo", "/guias", "/entrevista", "/enviar-curriculo", "/modelos", "/exemplos", "/precos", "/privacidade", "/termos"];
+  const pages = ["", "/comecar", "/importar", "/depoimentos", "/feito-para-voce", "/adaptar-vaga", "/curriculo", "/guias", "/entrevista", "/enviar-curriculo", "/linkedin", "/modelos", "/exemplos", "/precos", "/privacidade", "/termos"];
   return [
     ...pages.map((path) => ({
       url: base + path,

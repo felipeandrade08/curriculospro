@@ -40,6 +40,7 @@ export function SiteFooter() {
           <Link href="/entrevista">Treino de entrevista</Link>
           <Link href="/enviar-curriculo">Mensagem para enviar</Link>
           <Link href="/candidaturas">Minhas candidaturas</Link>
+          <Link href="/linkedin">Perfil do LinkedIn</Link>
         </nav>
         <nav aria-label="Ajuda">
           <h2>Ajuda</h2>

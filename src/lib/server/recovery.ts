@@ -1,6 +1,12 @@
 // Recuperação de vendas: avisa quem gerou o Pix e não pagou e quem criou conta e não comprou.
 import { db } from "@/lib/server/db";
-import { emailConfigured, pixRecoveryEmail, sendEmail, signupNudgeEmail } from "@/lib/server/email";
+import {
+  emailConfigured,
+  pixRecoveryEmail,
+  reviewRequestEmail,
+  sendEmail,
+  signupNudgeEmail,
+} from "@/lib/server/email";
 import { quoteCoupon } from "@/lib/server/coupons";
 import { formatBRL } from "@/lib/billing";
 
@@ -83,6 +89,39 @@ export async function sendSignupNudges(limit = 100) {
       failed++;
       console.error("Lembrete de cadastro falhou", u.id, error);
       await sql`UPDATE app_users SET nudge_sent_at = NULL WHERE id = ${String(u.id)}`;
+    }
+  }
+  return { sent, failed };
+}
+
+/**
+ * Pedido de avaliação, uma vez por pessoa: compra aprovada há 3 a 14 dias,
+ * sem estorno e sem avaliação enviada pela conta.
+ */
+export async function sendReviewRequests(limit = 100) {
+  if (!emailConfigured()) return { sent: 0, failed: 0, note: "email_not_configured" };
+  const sql = db();
+  const rows = await sql`UPDATE app_users SET review_email_at = now()
+    WHERE id IN (
+      SELECT u.id FROM app_users u
+      WHERE u.review_email_at IS NULL AND NOT u.email_opt_out AND u.email NOT LIKE '%#%'
+        AND EXISTS (SELECT 1 FROM payments p WHERE p.user_id = u.id AND p.granted_at IS NOT NULL AND p.revoked_at IS NULL
+                    AND p.granted_at < now() - interval '3 days' AND p.granted_at > now() - interval '14 days')
+        AND NOT EXISTS (SELECT 1 FROM user_feedback f WHERE f.user_id = u.id)
+      LIMIT ${limit}
+    )
+    RETURNING id, email, display_name`;
+  let sent = 0,
+    failed = 0;
+  for (const u of rows) {
+    try {
+      const mail = reviewRequestEmail({ name: u.display_name ? String(u.display_name) : null, userId: String(u.id) });
+      await sendEmail({ to: String(u.email), ...mail, idempotencyKey: "review-" + String(u.id) });
+      sent++;
+    } catch (error) {
+      failed++;
+      console.error("Pedido de avaliação falhou", u.id, error);
+      await sql`UPDATE app_users SET review_email_at = NULL WHERE id = ${String(u.id)}`;
     }
   }
   return { sent, failed };
