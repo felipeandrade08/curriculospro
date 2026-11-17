@@ -9,6 +9,11 @@ export type ServerSession = {
   accessUntil: string | null;
 };
 
+const isTeamEmail = (email: string) => {
+  const admin = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  return !!admin && email.trim().toLowerCase() === admin;
+};
+
 export async function getServerSession(): Promise<ServerSession | null> {
   const result = await auth.getSession();
   const user = result.data?.user;
@@ -32,7 +37,8 @@ export async function getServerSession(): Promise<ServerSession | null> {
     userId: user.id,
     email: user.email,
     displayName: user.name || null,
-    plan: rows[0]?.plan === "pro" ? "pro" : "free",
+    // A conta da equipe (ADMIN_EMAIL) tem tudo liberado para montar os currículos dos clientes.
+    plan: rows[0]?.plan === "pro" || isTeamEmail(user.email) ? "pro" : "free",
     accessUntil,
   };
 }

@@ -59,6 +59,7 @@ export function useAccess() {
           active: boolean;
           referralBonus?: boolean;
           kitUntil?: string | null;
+          kit?: boolean;
         };
       };
       if (storedReferral()) {
@@ -74,7 +75,7 @@ export function useAccess() {
         active: data.account.active || hasActiveAccess(data.account.accessUntil),
         referralBonus: !!data.account.referralBonus,
         kitUntil: data.account.kitUntil ?? null,
-        kit: hasKit(data.account.kitUntil),
+        kit: data.account.kit ?? hasKit(data.account.kitUntil),
       });
     } catch {
       setAccess({ ...initial, loading: false });

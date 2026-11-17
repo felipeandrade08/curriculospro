@@ -22,7 +22,7 @@ export async function GET() {
         active: session.plan === "pro" || hasActiveAccess(session.accessUntil),
         referralBonus,
         kitUntil,
-        kit: hasKit(kitUntil),
+        kit: session.plan === "pro" || hasKit(kitUntil),
       },
     });
   } catch {
