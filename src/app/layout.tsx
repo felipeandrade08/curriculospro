@@ -9,6 +9,7 @@ import "./resume.css";
 import "./site.css";
 import "./start.css";
 import "./community.css";
+import "./job.css";
 import { SITE_URL } from "@/lib/site";
 import { Providers } from "./providers";
 import { SiteTracking } from "@/components/site-tracking";

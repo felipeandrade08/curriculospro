@@ -17,6 +17,33 @@ export const formatBRL = (cents: number) =>
 
 export const ACCESS_PRICE_LABEL = formatBRL(ACCESS_PRICE_CENTS);
 
+/** Planos de acesso. "semana" é o padrão anunciado em todo o site. */
+export type AccessPlanId = "semana" | "mes";
+export type AccessPlan = { id: AccessPlanId; days: number; cents: number; name: string; product: string };
+export const ACCESS_PLANS: Record<AccessPlanId, AccessPlan> = {
+  semana: { id: "semana", days: ACCESS_DAYS, cents: ACCESS_PRICE_CENTS, name: "7 dias", product: ACCESS_PRODUCT_NAME },
+  mes: { id: "mes", days: 30, cents: 1990, name: "30 dias", product: "CurriculosPRO — Acesso de 30 dias" },
+};
+export const MONTH_PRICE_LABEL = formatBRL(ACCESS_PLANS.mes.cents);
+export const isAccessPlan = (x: unknown): x is AccessPlanId => x === "semana" || x === "mes";
+
+/** Valor mínimo cobrado depois de qualquer desconto. */
+export const MIN_CHARGE_CENTS = 100;
+export const discounted = (cents: number, c: { percentOff?: number | null; amountOffCents?: number | null }) =>
+  Math.max(
+    MIN_CHARGE_CENTS,
+    c.percentOff ? Math.round((cents * (100 - c.percentOff)) / 100) : cents - (c.amountOffCents || 0),
+  );
+
+export type CouponQuote = {
+  code: string;
+  plan: AccessPlanId;
+  originalCents: number;
+  finalCents: number;
+  /** Ex.: "R$ 2,00 de desconto" ou "20% de desconto". */
+  label: string;
+};
+
 export type AccessState = {
   signedIn: boolean;
   email?: string;
@@ -46,4 +73,6 @@ export type CheckoutPix = {
   expiresAt: string | null;
   amountCents: number;
   accessUntil?: string | null;
+  plan?: AccessPlanId;
+  couponCode?: string | null;
 };

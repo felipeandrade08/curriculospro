@@ -30,3 +30,28 @@ export function clearReferral() {
     localStorage.removeItem(KEY);
   } catch {}
 }
+
+/* Cupom vindo de link (?cupom=CODIGO), guardado por 14 dias e sugerido no pagamento. */
+const COUPON_KEY = "curriculospro.coupon.v1";
+
+export function captureCoupon() {
+  try {
+    const raw = new URLSearchParams(location.search).get("cupom");
+    const code = raw?.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!code || code.length < 3 || code.length > 20) return false;
+    localStorage.setItem(COUPON_KEY, JSON.stringify({ code, at: Date.now() }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function storedCoupon(): string {
+  try {
+    const v = JSON.parse(localStorage.getItem(COUPON_KEY) || "null") as { code?: string; at?: number } | null;
+    if (!v?.code || !v.at || Date.now() - v.at > 14 * 86_400_000) return "";
+    return v.code;
+  } catch {
+    return "";
+  }
+}

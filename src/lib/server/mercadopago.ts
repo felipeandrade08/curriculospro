@@ -21,6 +21,8 @@ export type MercadoPagoPayment = {
   external_reference?: string | null;
   date_approved?: string | null;
   date_of_expiration?: string | null;
+  payment_type_id?: string;
+  metadata?: { intent_id?: string } | null;
   point_of_interaction?: {
     transaction_data?: { qr_code?: string; qr_code_base64?: string; ticket_url?: string };
   };
@@ -84,6 +86,50 @@ export async function createPixPayment(input: {
     throw new MercadoPagoError("Falha ao criar pagamento Pix", response.status, detail);
   }
   return (await response.json()) as MercadoPagoPayment;
+}
+
+/** Checkout Pro: página do Mercado Pago para pagar com cartão de crédito ou débito. */
+export async function createCardPreference(input: {
+  intentId: string;
+  amountCents: number;
+  title: string;
+  planId: string;
+  payerEmail: string;
+  externalReference: string;
+  returnUrl: string;
+  notificationUrl?: string;
+}): Promise<{ id: string; init_point: string }> {
+  const back = input.returnUrl;
+  const response = await fetch(API + "/checkout/preferences", {
+    method: "POST",
+    headers: {
+      authorization: "Bearer " + token(),
+      "content-type": "application/json",
+      "x-idempotency-key": input.intentId,
+    },
+    body: JSON.stringify({
+      items: [
+        { id: input.planId, title: input.title, quantity: 1, unit_price: input.amountCents / 100, currency_id: "BRL" },
+      ],
+      payer: { email: input.payerEmail },
+      external_reference: input.externalReference,
+      metadata: { intent_id: input.intentId },
+      back_urls: { success: back, pending: back, failure: back },
+      ...(back.startsWith("https://") ? { auto_return: "approved" } : {}),
+      payment_methods: {
+        excluded_payment_types: [{ id: "ticket" }, { id: "atm" }],
+        installments: 1,
+      },
+      statement_descriptor: "CURRICULOSPRO",
+      ...(input.notificationUrl ? { notification_url: input.notificationUrl } : {}),
+    }),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 800);
+    throw new MercadoPagoError("Falha ao criar checkout de cartão", response.status, detail);
+  }
+  return (await response.json()) as { id: string; init_point: string };
 }
 
 export async function getPayment(id: string): Promise<MercadoPagoPayment> {

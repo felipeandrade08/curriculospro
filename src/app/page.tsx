@@ -6,7 +6,8 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ResumeThumb } from "@/components/resume-view";
-import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
+import { ACCESS_DAYS, ACCESS_PRICE_LABEL, MONTH_PRICE_LABEL } from "@/lib/billing";
+import { JobTools } from "@/components/job-tools";
 import { EXAMPLE_CATEGORIES, RESUME_EXAMPLES, exampleById, type ResumeExample } from "@/lib/examples";
 import { TEMPLATES } from "@/lib/templates";
 import { defaultOrder, type ResumeData } from "@/lib/resume";
@@ -293,6 +294,10 @@ export default async function Home() {
         </div>
       </section>
 
+      <div className="wrap">
+        <JobTools title="Ferramentas grátis para a sua busca de emprego" />
+      </div>
+
       {testimonials.length > 0 && (
         <section className="wrap tm-home" aria-labelledby="tm-title">
           <div className="tm-home-head">
@@ -324,9 +329,9 @@ export default async function Home() {
           <div>
             <h2 id="price-title">Grátis para criar. {ACCESS_PRICE_LABEL} para baixar.</h2>
             <p>
-              Sem assinatura e sem renovação automática. Um Pix libera {ACCESS_DAYS} dias de downloads
+              Sem assinatura e sem renovação automática. Um pagamento libera {ACCESS_DAYS} dias de downloads
               ilimitados de todos os seus currículos: ajuste para cada vaga e baixe de novo sem pagar outra
-              vez.
+              vez. Precisa de mais tempo? Há também o acesso de 30 dias por {MONTH_PRICE_LABEL}.
             </p>
             <Link href="/precos" className="price-link">
               Como funciona o pagamento
@@ -335,7 +340,7 @@ export default async function Home() {
           <div className="price-card">
             <div className="price-amount">
               <strong>{ACCESS_PRICE_LABEL}</strong>
-              <span>pagamento único via Pix</span>
+              <span>pagamento único via Pix ou cartão</span>
             </div>
             <ul>
               <li>PDF sem marca d&apos;água</li>

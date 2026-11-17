@@ -22,6 +22,10 @@ const allowed = new Set([
   "cover_letter_printed",
   "docx_downloaded",
   "service_requested",
+  "job_match_used",
+  "interview_view",
+  "applications_used",
+  "send_message_copied",
 ]);
 const recent = new Map<string, number>();
 const WINDOW_MS = 60_000;

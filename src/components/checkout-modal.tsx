@@ -2,13 +2,15 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ACCESS_DAYS,
-  ACCESS_PRICE_LABEL,
+  ACCESS_PLANS,
   REFERRED_BONUS_DAYS,
   formatAccessUntil,
+  formatBRL,
+  type AccessPlanId,
   type CheckoutPix,
+  type CouponQuote,
 } from "@/lib/billing";
-import { storedReferral } from "@/lib/referral";
+import { storedCoupon, storedReferral } from "@/lib/referral";
 import { metaTrack } from "@/lib/meta-pixel";
 import type { AccessInfo } from "@/lib/use-access";
 import { trackUsage } from "@/lib/analytics";
@@ -41,6 +43,13 @@ export function CheckoutModal({
   const dialog = useRef<HTMLElement>(null);
   const unlockedRef = useRef(false);
   const [hasRef, setHasRef] = useState(false);
+  const [plan, setPlan] = useState<AccessPlanId>("semana");
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [quote, setQuote] = useState<CouponQuote | null>(null);
+  const [couponMsg, setCouponMsg] = useState("");
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
+  const [cardLoading, setCardLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -48,6 +57,12 @@ export function CheckoutModal({
     setStage(access.active ? "approved" : "offer");
     setHasRef(!!storedReferral());
     setError("");
+    const saved = storedCoupon();
+    if (saved) {
+      setCouponOpen(true);
+      setCouponCode(saved);
+      void checkCoupon(saved, "semana");
+    }
     trackUsage("paywall_view");
     dialog.current?.focus();
     const onKey = (event: KeyboardEvent) => {
@@ -83,12 +98,68 @@ export function CheckoutModal({
     [onUnlocked],
   );
 
+  async function checkCoupon(code: string, forPlan: AccessPlanId) {
+    const clean = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    setQuote(null);
+    setCouponMsg("");
+    if (clean.length < 3) return;
+    setCheckingCoupon(true);
+    try {
+      const response = await fetch(
+        "/api/checkout/cupom?plan=" + forPlan + "&code=" + encodeURIComponent(clean),
+        { cache: "no-store" },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.quote) setQuote(data.quote as CouponQuote);
+      else setCouponMsg(data.message || "Cupom inválido.");
+    } catch {
+      setCouponMsg("Não foi possível conferir o cupom agora.");
+    } finally {
+      setCheckingCoupon(false);
+    }
+  }
+
+  const choosePlan = (next: AccessPlanId) => {
+    setPlan(next);
+    if (couponCode.trim()) void checkCoupon(couponCode, next);
+  };
+
+  const payload = () =>
+    JSON.stringify({ plan, coupon: quote && quote.plan === plan ? quote.code : "" });
+
+  const payCard = async () => {
+    setCardLoading(true);
+    setError("");
+    trackUsage("checkout_started");
+    try {
+      const response = await fetch("/api/checkout/cartao", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: payload(),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 401) throw new Error("Sua sessão expirou. Entre novamente para continuar.");
+      if (!response.ok || !data.url) throw new Error(data.message || "Não foi possível abrir o pagamento com cartão.");
+      try {
+        sessionStorage.setItem("curriculospro.returnTo", returnTo);
+      } catch {}
+      location.href = data.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível abrir o pagamento com cartão.");
+      setCardLoading(false);
+    }
+  };
+
   const createPix = async () => {
     setStage("creating");
     setError("");
     trackUsage("checkout_started");
     try {
-      const response = await fetch("/api/checkout/pix", { method: "POST" });
+      const response = await fetch("/api/checkout/pix", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: payload(),
+      });
       const data = await response.json().catch(() => ({}));
       if (response.status === 401) {
         setStage("offer");
@@ -157,6 +228,9 @@ export function CheckoutModal({
   const minutes = Math.floor(remaining / 60000),
     seconds = Math.floor((remaining % 60000) / 1000);
   const accessUntil = checkout?.accessUntil || access.accessUntil;
+  const chosen = ACCESS_PLANS[plan];
+  const finalCents = quote && quote.plan === plan ? quote.finalCents : chosen.cents;
+  const priceLabel = formatBRL(finalCents);
 
   return (
     <div
@@ -182,20 +256,70 @@ export function CheckoutModal({
             <span className="checkoutEyebrow">DOWNLOAD EM PDF</span>
             <h2 id="checkoutTitle">Seu currículo está pronto para sair do papel.</h2>
             <p className="checkoutLead">
-              Libere o download sem marca d&apos;água e baixe quantas vezes precisar durante {ACCESS_DAYS}{" "}
-              dias.
+              Libere o download sem marca d&apos;água e baixe quantas vezes precisar durante o período
+              escolhido.
             </p>
-            <div className="checkoutPrice">
-              <div>
-                <strong>{ACCESS_PRICE_LABEL}</strong>
-                <span>pagamento único · {ACCESS_DAYS} dias de acesso</span>
-              </div>
-              <em>Pix</em>
+            <div className="checkoutPlans" role="radiogroup" aria-label="Escolha o período de acesso">
+              {(["semana", "mes"] as const).map((id) => {
+                const p = ACCESS_PLANS[id];
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="radio"
+                    aria-checked={plan === id}
+                    className={"checkoutPlan" + (plan === id ? " on" : "")}
+                    onClick={() => choosePlan(id)}
+                  >
+                    <span className="cpName">{p.name}</span>
+                    <strong>{formatBRL(p.cents)}</strong>
+                    <small>{id === "mes" ? "Para quem vai enviar para muitas vagas" : "Pagamento único"}</small>
+                    {id === "mes" && <em>Mais tempo</em>}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="checkoutCoupon">
+              {!couponOpen ? (
+                <button type="button" className="linkish" onClick={() => setCouponOpen(true)}>
+                  Tenho um cupom de desconto
+                </button>
+              ) : (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void checkCoupon(couponCode, plan);
+                  }}
+                >
+                  <input
+                    aria-label="Cupom de desconto"
+                    placeholder="Cupom"
+                    value={couponCode}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      setQuote(null);
+                      setCouponMsg("");
+                    }}
+                    autoCapitalize="characters"
+                    maxLength={20}
+                  />
+                  <button type="submit" disabled={checkingCoupon || couponCode.trim().length < 3}>
+                    {checkingCoupon ? "Conferindo…" : "Aplicar"}
+                  </button>
+                </form>
+              )}
+              {quote && quote.plan === plan && (
+                <p className="couponOk">
+                  Cupom {quote.code}: {quote.label}. De <s>{formatBRL(quote.originalCents)}</s> por{" "}
+                  <b>{formatBRL(quote.finalCents)}</b>.
+                </p>
+              )}
+              {couponMsg && <p className="couponBad">{couponMsg}</p>}
             </div>
             {(access.referralBonus || (!access.signedIn && !access.loading && hasRef)) && (
               <p className="checkoutBonus">
                 🎁 Você chegou por indicação: ganha <b>+{REFERRED_BONUS_DAYS} dias</b> extras nesta compra (
-                {ACCESS_DAYS + REFERRED_BONUS_DAYS} dias no total).
+                {chosen.days + REFERRED_BONUS_DAYS} dias no total).
               </p>
             )}
             <ul className="checkoutBenefits">
@@ -220,9 +344,17 @@ export function CheckoutModal({
                   className="checkoutPrimary"
                   type="button"
                   onClick={createPix}
-                  disabled={stage === "creating"}
+                  disabled={stage === "creating" || cardLoading}
                 >
-                  {stage === "creating" ? "Gerando seu Pix…" : "Pagar " + ACCESS_PRICE_LABEL + " com Pix"}
+                  {stage === "creating" ? "Gerando seu Pix…" : "Pagar " + priceLabel + " com Pix"}
+                </button>
+                <button
+                  className="checkoutSecondary"
+                  type="button"
+                  onClick={payCard}
+                  disabled={stage === "creating" || cardLoading}
+                >
+                  {cardLoading ? "Abrindo pagamento…" : "Pagar com cartão de crédito ou débito"}
                 </button>
                 <small className="checkoutAccount">Acesso vinculado a {access.email}</small>
               </>
@@ -266,7 +398,7 @@ export function CheckoutModal({
               <div className="pixSide">
                 <div className="pixAmount">
                   <span>Valor</span>
-                  <strong>{ACCESS_PRICE_LABEL}</strong>
+                  <strong>{formatBRL(checkout.amountCents)}</strong>
                 </div>
                 <div className="pixTimer" aria-live="off">
                   <span>Expira em</span>

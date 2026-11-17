@@ -1,5 +1,5 @@
-import { getPayment, verifyWebhookSignature } from "@/lib/server/mercadopago";
-import { applyProviderPayment, findPayment } from "@/lib/server/payments";
+import { getPayment, MercadoPagoError, verifyWebhookSignature, type MercadoPagoPayment } from "@/lib/server/mercadopago";
+import { adoptCheckoutProPayment, applyProviderPayment, findPayment, type PaymentRow } from "@/lib/server/payments";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,9 +33,18 @@ export async function POST(request: Request) {
   if (type !== "payment" || !dataId || !/^\d{1,20}$/.test(dataId)) return Response.json({ ok: true });
 
   try {
-    const row = await findPayment(dataId);
+    let row: PaymentRow | null = await findPayment(dataId);
+    let payment: MercadoPagoPayment;
+    try {
+      payment = await getPayment(dataId);
+    } catch (error) {
+      if (!row && error instanceof MercadoPagoError && error.status === 404)
+        return Response.json({ ok: true, ignored: true });
+      throw error;
+    }
+    // Pagamento com cartão (Checkout Pro): ainda não existe no banco até chegar aqui.
+    if (!row) row = await adoptCheckoutProPayment(payment);
     if (!row) return Response.json({ ok: true, ignored: true });
-    const payment = await getPayment(dataId);
     const result = await applyProviderPayment(payment, row);
     return Response.json({ ok: true, status: result.status });
   } catch (error) {

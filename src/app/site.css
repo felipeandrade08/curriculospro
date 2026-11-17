@@ -220,8 +220,8 @@ body {
 }
 .sf-grid {
   display: grid;
-  grid-template-columns: 1.4fr repeat(3, 1fr);
-  gap: 40px;
+  grid-template-columns: 1.4fr repeat(4, 1fr);
+  gap: 32px;
 }
 .sf-logo {
   display: inline-flex;

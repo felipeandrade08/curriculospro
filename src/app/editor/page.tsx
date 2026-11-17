@@ -1249,7 +1249,7 @@ export default function Editor() {
                         </button>
                       )}
                       <a href="/importar">Importar outro currículo</a>
-                      <a href="/adaptar-vaga">Adaptar para uma vaga</a>
+                      <a href="/adaptar-vaga">Comparar com uma vaga</a>
                       {hasJobSelection && (
                         <button type="button" onClick={applyJobSelection}>
                           Aplicar seleção da vaga

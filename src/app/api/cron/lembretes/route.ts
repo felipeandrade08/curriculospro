@@ -1,7 +1,7 @@
 import { cronAuthorized as authorized } from "@/lib/server/cron";
 import { db } from "@/lib/server/db";
 import { emailConfigured, expiryReminderEmail, sendEmail } from "@/lib/server/email";
-import { sendPixRecoveries } from "@/lib/server/recovery";
+import { sendPixRecoveries, sendSignupNudges } from "@/lib/server/recovery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,5 +45,9 @@ export async function GET(request: Request) {
     console.error("Recuperação de Pix falhou", error);
     return { sent: 0, failed: -1 };
   });
-  return Response.json({ ok: true, sent, failed: failed.length, recovery });
+  const nudges = await sendSignupNudges().catch((error) => {
+    console.error("Lembrete de cadastro falhou", error);
+    return { sent: 0, failed: -1 };
+  });
+  return Response.json({ ok: true, sent, failed: failed.length, recovery, nudges });
 }

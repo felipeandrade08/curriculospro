@@ -173,6 +173,38 @@ export function pixRecoveryEmail(p: { name: string | null; userId: string }) {
   };
 }
 
+/** Para quem criou conta e ainda não comprou. Mostra o cupom se houver um ativo. */
+export function signupNudgeEmail(p: {
+  name: string | null;
+  userId: string;
+  coupon: { code: string; finalLabel: string } | null;
+}) {
+  const unsub = unsubscribeUrl(p.userId);
+  const url = SITE_URL + "/curriculos";
+  const hi = firstName(p.name) ? "Oi, " + firstName(p.name) + "! " : "Oi! ";
+  const couponText = p.coupon
+    ? `Use o cupom ${p.coupon.code} na hora de pagar e libere 7 dias de downloads por ${p.coupon.finalLabel}.`
+    : `Com um Pix de ${ACCESS_PRICE_LABEL} você libera 7 dias de downloads, em PDF e Word.`;
+  return {
+    unsubscribeUrl: unsub,
+    subject: p.coupon ? `Seu currículo por ${p.coupon.finalLabel} com o cupom ${p.coupon.code}` : "Seu currículo está te esperando",
+    text: `${hi}Você criou sua conta no CurriculosPRO, mas ainda não baixou seu currículo.\n\n${couponText}\n\nContinue de onde parou: ${url}\n\nSem tempo? Nossa equipe monta o currículo para você em até 24h: ${SITE_URL}/feito-para-voce\n\nDúvidas? Chame no WhatsApp: ${SUPPORT_WHATSAPP_URL}\n\nNão quer mais lembretes? ${unsub}`,
+    html: layout({
+      preheader: p.coupon ? `Cupom ${p.coupon.code}: seu currículo por ${p.coupon.finalLabel}.` : "Seu currículo continua salvo.",
+      title: "Falta pouco para seu currículo ficar pronto",
+      body: `<p>${esc(hi)}Você criou sua conta no CurriculosPRO, mas ainda não baixou seu currículo. Ele continua salvo, do jeito que você deixou.</p>
+${
+  p.coupon
+    ? `<p style="background:#fff6d6;border-radius:10px;padding:14px 16px;font-size:16px">Use o cupom <b style="letter-spacing:.04em">${esc(p.coupon.code)}</b> na hora de pagar e libere 7 dias de downloads por <b>${esc(p.coupon.finalLabel)}</b>.</p>`
+    : `<p>Com um Pix de ${ACCESS_PRICE_LABEL} você libera 7 dias de downloads, em PDF e Word, com carta de apresentação.</p>`
+}
+<p style="font-size:14px;color:#6b778c">Sem tempo para montar? <a href="${SITE_URL}/feito-para-voce" style="color:#1553d6">Nossa equipe faz o currículo para você em até 24h</a>, já incluído no acesso.</p>`,
+      cta: { label: "Continuar meu currículo", url },
+      footer: `<a href="${unsub}" style="color:#6b778c">Não quero receber lembretes</a>`,
+    }),
+  };
+}
+
 export function serviceReceivedEmail(p: { name: string; role: string }) {
   return {
     subject: "Recebemos seu pedido — seu currículo fica pronto em até 24 horas",

@@ -134,3 +134,45 @@ export async function deliverService(formData: FormData) {
   revalidatePath("/admin");
   back({ aba: "pedidos", msg: "Pedido entregue. O cliente foi avisado por e-mail." });
 }
+
+/* ── Cupons ── */
+
+export async function createCoupon(formData: FormData) {
+  await requireAdmin();
+  const code = String(formData.get("code") || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+  const kind = String(formData.get("kind") || "percent");
+  const value = Number(String(formData.get("value") || "").replace(",", "."));
+  const plan = String(formData.get("plan") || "");
+  const maxUses = Number(formData.get("max_uses") || 0);
+  const days = Number(formData.get("days") || 0);
+  const first = formData.get("first") === "on";
+  const description = String(formData.get("description") || "").trim().slice(0, 200) || null;
+  if (!/^[A-Z0-9]{3,20}$/.test(code)) back({ aba: "cupons", msg: "Código inválido: use de 3 a 20 letras ou números." });
+  if (!(value > 0)) back({ aba: "cupons", msg: "Informe o valor do desconto." });
+  const percent = kind === "percent" ? Math.round(value) : null;
+  const amount = kind === "amount" ? Math.round(value * 100) : null;
+  if (percent !== null && (percent < 1 || percent > 90)) back({ aba: "cupons", msg: "Percentual entre 1% e 90%." });
+  const expires = days > 0 ? new Date(Date.now() + days * 86_400_000).toISOString() : null;
+  const sql = db();
+  try {
+    await sql`INSERT INTO coupons(code, description, percent_off, amount_off_cents, plan, max_uses, first_purchase_only, expires_at)
+      VALUES(${code}, ${description}, ${percent}, ${amount}, ${plan === "semana" || plan === "mes" ? plan : null},
+        ${maxUses > 0 ? Math.round(maxUses) : null}, ${first}, ${expires})`;
+  } catch (error) {
+    if ((error as { code?: string }).code === "23505") back({ aba: "cupons", msg: "Já existe um cupom com o código " + code + "." });
+    throw error;
+  }
+  revalidatePath("/admin");
+  back({ aba: "cupons", msg: "Cupom " + code + " criado." });
+}
+
+export async function toggleCoupon(formData: FormData) {
+  await requireAdmin();
+  const code = String(formData.get("code") || "").toUpperCase();
+  if (!/^[A-Z0-9]{3,20}$/.test(code)) return;
+  await db()`UPDATE coupons SET active = NOT active WHERE code = ${code}`;
+  revalidatePath("/admin");
+}

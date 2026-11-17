@@ -1,7 +1,14 @@
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import type { Metadata } from "next";
-import { ACCESS_DAYS, ACCESS_PRICE_LABEL, REFERRED_BONUS_DAYS, REFERRER_BONUS_DAYS } from "@/lib/billing";
+import {
+  ACCESS_DAYS,
+  ACCESS_PLANS,
+  ACCESS_PRICE_LABEL,
+  MONTH_PRICE_LABEL,
+  REFERRED_BONUS_DAYS,
+  REFERRER_BONUS_DAYS,
+} from "@/lib/billing";
 import { COMPANY, SUPPORT_WHATSAPP_URL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Termos de uso", alternates: { canonical: "/termos" } };
@@ -40,14 +47,15 @@ export default function Terms() {
         <section>
           <h2>Acesso pago para download</h2>
           <p>
-            O download do currículo em PDF sem marca d&apos;água requer um acesso pago de {ACCESS_DAYS} dias,
-            no valor de {ACCESS_PRICE_LABEL}, cobrado uma única vez. O período começa no momento em que o
+            O download do currículo em PDF sem marca d&apos;água requer um acesso pago, cobrado uma única vez:
+            {ACCESS_DAYS} dias por {ACCESS_PRICE_LABEL} ou {ACCESS_PLANS.mes.days} dias por {MONTH_PRICE_LABEL}. Cupons
+            de desconto valem conforme as condições informadas em cada um e são aplicados antes do pagamento. O período começa no momento em que o
             pagamento é confirmado e, durante ele, você pode baixar quantas vezes quiser todos os currículos
             da sua conta. Se você comprar um novo período antes do fim do atual, os dias são somados.
           </p>
           <p>
             Não há assinatura nem renovação automática. O acesso é pessoal, vinculado à sua conta e não pode
-            ser transferido. O pagamento é feito por Pix e processado pelo Mercado Pago; o CurriculosPRO não
+            ser transferido. O pagamento é feito por Pix ou cartão e processado pelo Mercado Pago; o CurriculosPRO não
             recebe dados bancários.
           </p>
         </section>
