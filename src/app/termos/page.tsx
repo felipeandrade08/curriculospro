@@ -65,6 +65,16 @@ export default function Terms() {
           </p>
         </section>
         <section>
+          <h2>Currículo feito pela equipe</h2>
+          <p>
+            Cada acesso pago de {ACCESS_DAYS} dias inclui um pedido de currículo montado pela nossa equipe,
+            com entrega em até 24 horas após o envio das informações. O currículo é feito com o que você
+            informar; não criamos experiências, cursos ou qualificações que você não tenha. A entrega aparece
+            na sua conta e pode ser editada e baixada em PDF ou Word durante o acesso. Se faltar alguma
+            informação, falamos com você pelo WhatsApp informado e o prazo conta a partir da resposta.
+          </p>
+        </section>
+        <section>
           <h2>Programa de indicação</h2>
           <p>
             Cada conta tem um link de indicação. Quando uma pessoa cria a conta por esse link e faz a primeira

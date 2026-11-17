@@ -20,6 +20,8 @@ const allowed = new Set([
   "referral_visit",
   "cover_letter_started",
   "cover_letter_printed",
+  "docx_downloaded",
+  "service_requested",
 ]);
 const recent = new Map<string, number>();
 const WINDOW_MS = 60_000;

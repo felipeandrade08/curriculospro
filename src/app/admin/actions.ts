@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/server/db";
 import { requireAdmin } from "@/lib/server/admin";
+import { deliverRequest } from "@/lib/server/service";
+import { emailConfigured, sendEmail, serviceDeliveredEmail } from "@/lib/server/email";
 
 const STATUSES = new Set(["new", "read", "published", "hidden"]);
 
@@ -95,4 +97,40 @@ export async function revokeAccess(formData: FormData) {
   await db()`UPDATE app_users SET access_until = now(), updated_at = now() WHERE id = ${id}`;
   revalidatePath("/admin");
   back({ aba: "clientes", q, msg: "Acesso encerrado." });
+}
+
+const SERVICE_STATUSES = new Set(["new", "in_progress", "cancelled"]);
+
+export async function setServiceStatus(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") || "");
+  const status = String(formData.get("status") || "");
+  if (!/^\d+$/.test(id) || !SERVICE_STATUSES.has(status)) return;
+  await db()`UPDATE service_requests SET status = ${status}, updated_at = now() WHERE id = ${id} AND status <> 'delivered'`;
+  revalidatePath("/admin");
+}
+
+export async function deliverService(formData: FormData) {
+  const admin = await requireAdmin();
+  const id = String(formData.get("id") || "");
+  const resumeId = String(formData.get("resumeId") || "");
+  const note =
+    String(formData.get("note") || "")
+      .trim()
+      .slice(0, 500) || null;
+  if (!/^\d+$/.test(id) || !resumeId) back({ aba: "pedidos", msg: "Escolha o currículo que será entregue." });
+  let result: { email: string; name: string | null };
+  try {
+    result = await deliverRequest(id, admin.userId, resumeId, note);
+  } catch (error) {
+    back({ aba: "pedidos", msg: error instanceof Error ? error.message : "Não foi possível entregar." });
+  }
+  if (emailConfigured() && result.email)
+    await sendEmail({
+      to: result.email,
+      ...serviceDeliveredEmail({ name: result.name, note }),
+      idempotencyKey: "svc-delivered-" + id,
+    }).catch((error) => console.error("Aviso de entrega falhou", id, error));
+  revalidatePath("/admin");
+  back({ aba: "pedidos", msg: "Pedido entregue. O cliente foi avisado por e-mail." });
 }

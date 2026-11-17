@@ -395,6 +395,51 @@ export default function Editor() {
       alert("Não foi possível aplicar a seleção desta vaga.");
     }
   };
+  const [wordBusy, setWordBusy] = useState(false);
+  const downloadWord = async () => {
+    if (!access.active) {
+      setCheckoutOpen(true);
+      return;
+    }
+    setWordBusy(true);
+    try {
+      const now = new Date().toISOString();
+      const response = await fetch("/api/export/docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: activeId.current || "export",
+          title: documentTitle || cv.name || "Meu currículo",
+          createdAt: now,
+          updatedAt: now,
+          cv,
+          template,
+          accent,
+          density,
+          sectionOrder,
+          hidden,
+        }),
+      });
+      if (response.status === 402 || response.status === 401) {
+        setCheckoutOpen(true);
+        return;
+      }
+      if (!response.ok) throw new Error("docx");
+      const blob = await response.blob();
+      const name =
+        /filename="([^"]+)"/.exec(response.headers.get("Content-Disposition") || "")?.[1] || "curriculo.docx";
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      trackUsage("docx_downloaded");
+    } catch {
+      alert("Não foi possível gerar o arquivo do Word agora. Tente de novo em instantes.");
+    } finally {
+      setWordBusy(false);
+    }
+  };
   const printResume = () => {
     if (!access.active) {
       setCheckoutOpen(true);
@@ -926,6 +971,14 @@ export default function Editor() {
         </div>
         <button className="mobileView" onClick={() => setMobilePreview(!mobilePreview)}>
           {mobilePreview ? "Editar" : "Visualizar"}
+        </button>
+        <button
+          onClick={downloadWord}
+          className="downloadWord"
+          disabled={wordBusy}
+          title="Baixar em Word (.docx)"
+        >
+          {wordBusy ? "Gerando…" : "Word"}
         </button>
         <button onClick={printResume} className="download">
           {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
@@ -1548,6 +1601,14 @@ export default function Editor() {
                       <button type="button" className="download" onClick={printResume}>
                         {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
                       </button>
+                      <button
+                        type="button"
+                        className="downloadWord"
+                        onClick={downloadWord}
+                        disabled={wordBusy}
+                      >
+                        {wordBusy ? "Gerando…" : "Baixar em Word"}
+                      </button>
                       <span>
                         {access.active
                           ? "Na janela de impressão, escolha “Salvar como PDF”. Confira o documento antes de enviar."
@@ -1689,6 +1750,9 @@ export default function Editor() {
             <button type="button" className="download" onClick={printResume}>
               {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
             </button>
+            <button type="button" className="downloadWord" onClick={downloadWord} disabled={wordBusy}>
+              {wordBusy ? "Gerando…" : "Word"}
+            </button>
           </div>
           <div className="previewBar">
             {access.active && access.accessUntil ? (
@@ -1774,6 +1838,9 @@ export default function Editor() {
       <div className={"mobileDownloadBar " + (mobilePreview ? "inPreview" : "")}>
         <button type="button" className="download" onClick={printResume}>
           {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
+        </button>
+        <button type="button" className="downloadWord" onClick={downloadWord} disabled={wordBusy}>
+          {wordBusy ? "…" : "Word"}
         </button>
       </div>
       <div className="devCredit">

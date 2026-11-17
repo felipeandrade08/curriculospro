@@ -199,9 +199,10 @@ export function CheckoutModal({
               </p>
             )}
             <ul className="checkoutBenefits">
-              <li>PDF sem marca d&apos;água, pronto para enviar</li>
+              <li>PDF sem marca d&apos;água e versão em Word, prontos para enviar</li>
               <li>Downloads ilimitados de todos os seus currículos e cartas de apresentação</li>
               <li>Ajuste para cada vaga e baixe de novo sem pagar outra vez</li>
+              <li>Ou peça para nossa equipe montar o currículo em até 24h</li>
               <li>Sem assinatura e sem renovação automática</li>
             </ul>
             {error && (

@@ -21,6 +21,8 @@ const rows: [string, boolean, boolean][] = [
   ["Download em PDF sem marca d'água", false, true],
   [`Downloads ilimitados por ${ACCESS_DAYS} dias`, false, true],
   ["Carta de apresentação em PDF", false, true],
+  ["Currículo em Word (.docx)", false, true],
+  ["Currículo feito pela nossa equipe em até 24h", false, true],
 ];
 
 const faq = [
@@ -101,6 +103,12 @@ export default function PricingPage() {
             <li>Ajuste para cada vaga e baixe de novo sem pagar outra vez</li>
             <li>
               <b>Carta de apresentação</b> em PDF, montada a partir do currículo
+            </li>
+            <li>
+              Versão em <b>Word (.docx)</b> para sites de vagas que pedem esse formato
+            </li>
+            <li>
+              Se preferir, <b>nossa equipe faz o currículo</b> para você em até 24 horas
             </li>
             <li>Seus currículos salvos na nuvem</li>
             <li>Sem assinatura e sem renovação automática</li>

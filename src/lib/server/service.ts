@@ -1,0 +1,141 @@
+// Serviço "Fazemos para você": pedidos de quem tem acesso ativo, montados pela equipe.
+import { randomUUID } from "node:crypto";
+import { db } from "@/lib/server/db";
+import { isResumeDocument, type ResumeDocument } from "@/lib/resume";
+
+export const SERVICE_HOURS = 24;
+
+export type ServiceInput = {
+  name: string;
+  whatsapp: string;
+  role: string;
+  city: string;
+  notes: string;
+  sourceText: string;
+  resume: ResumeDocument | null;
+};
+
+export type ServiceRequestRow = {
+  id: string;
+  status: "new" | "in_progress" | "delivered" | "cancelled";
+  data: ServiceInput;
+  createdAt: string;
+  deliveredAt: string | null;
+  deliveredResumeId: string | null;
+  adminNote: string | null;
+};
+
+const text = (v: unknown, max: number) =>
+  typeof v === "string"
+    ? v
+        .replace(/\u0000/g, "")
+        .trim()
+        .slice(0, max)
+    : "";
+
+export function parseServiceInput(body: unknown): ServiceInput | string {
+  const b = (body || {}) as Record<string, unknown>;
+  const input: ServiceInput = {
+    name: text(b.name, 80),
+    whatsapp: text(b.whatsapp, 30).replace(/[^\d()+\s-]/g, ""),
+    role: text(b.role, 80),
+    city: text(b.city, 80),
+    notes: text(b.notes, 4000),
+    sourceText: text(b.sourceText, 12000),
+    resume: isResumeDocument(b.resume) ? (b.resume as ResumeDocument) : null,
+  };
+  if (input.name.length < 3) return "Informe seu nome completo.";
+  if (input.whatsapp.replace(/\D/g, "").length < 10)
+    return "Informe um WhatsApp com DDD para combinarmos os detalhes.";
+  if (input.role.length < 2) return "Diga qual vaga ou cargo você procura.";
+  if (!input.resume && input.sourceText.length < 30 && input.notes.length < 30)
+    return "Conte um pouco da sua experiência ou cole seu currículo antigo para montarmos o novo.";
+  return input;
+}
+
+const toRow = (r: Record<string, unknown>): ServiceRequestRow => ({
+  id: String(r.id),
+  status: r.status as ServiceRequestRow["status"],
+  data: r.data as ServiceInput,
+  createdAt: new Date(String(r.created_at)).toISOString(),
+  deliveredAt: r.delivered_at ? new Date(String(r.delivered_at)).toISOString() : null,
+  deliveredResumeId: r.delivered_resume_id ? String(r.delivered_resume_id) : null,
+  adminNote: r.admin_note ? String(r.admin_note) : null,
+});
+
+export async function listMyRequests(userId: string) {
+  const rows = await db()`SELECT id, status, data, created_at, delivered_at, delivered_resume_id, admin_note
+    FROM service_requests WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 20`;
+  return rows.map(toRow);
+}
+
+/** Um pedido em aberto por vez e no máximo um por semana. */
+export async function canRequest(userId: string) {
+  const [r] = await db()`SELECT
+      count(*) FILTER (WHERE status IN ('new', 'in_progress'))::int AS open,
+      count(*) FILTER (WHERE status <> 'cancelled' AND created_at > now() - interval '7 days')::int AS week
+    FROM service_requests WHERE user_id = ${userId}`;
+  if (Number(r?.open || 0) > 0)
+    return "Você já tem um pedido em andamento. Assim que entregarmos, você pode pedir outro.";
+  if (Number(r?.week || 0) > 0)
+    return "Cada acesso de 7 dias inclui um currículo feito pela equipe. Você já usou o desta semana.";
+  return null;
+}
+
+export async function createRequest(userId: string, input: ServiceInput) {
+  const [row] =
+    await db()`INSERT INTO service_requests (user_id, data) VALUES (${userId}, ${JSON.stringify(input)}::jsonb)
+    RETURNING id, status, data, created_at, delivered_at, delivered_resume_id, admin_note`;
+  return toRow(row);
+}
+
+export async function deliveredResume(userId: string, requestId: string) {
+  const [r] =
+    await db()`SELECT r.id, r.title, r.template, r.accent, r.density, r.payload, r.section_order, r.hidden_sections, r.created_at, r.updated_at
+    FROM service_requests s JOIN resumes r ON r.id = s.delivered_resume_id AND r.user_id = s.user_id
+    WHERE s.id = ${requestId} AND s.user_id = ${userId} AND s.status = 'delivered' AND r.deleted_at IS NULL`;
+  if (!r) return null;
+  return {
+    id: String(r.id),
+    title: String(r.title),
+    template: r.template,
+    accent: String(r.accent),
+    density: r.density,
+    cv: r.payload,
+    sectionOrder: r.section_order,
+    hidden: r.hidden_sections,
+    createdAt: new Date(String(r.created_at)).toISOString(),
+    updatedAt: new Date(String(r.updated_at)).toISOString(),
+  } as ResumeDocument;
+}
+
+/**
+ * Entrega: copia um currículo da conta do administrador para a conta do cliente
+ * (aparece em Meus currículos dele e no link do pedido) e marca o pedido como entregue.
+ */
+export async function deliverRequest(
+  requestId: string,
+  adminUserId: string,
+  adminResumeId: string,
+  note: string | null,
+) {
+  const sql = db();
+  const [req] = await sql`SELECT id, user_id, status FROM service_requests WHERE id = ${requestId}`;
+  if (!req) throw new Error("Pedido não encontrado.");
+  if (req.status === "delivered" || req.status === "cancelled")
+    throw new Error("Este pedido já foi encerrado.");
+  const [src] =
+    await sql`SELECT * FROM resumes WHERE id = ${adminResumeId} AND user_id = ${adminUserId} AND deleted_at IS NULL`;
+  if (!src)
+    throw new Error("Currículo não encontrado na sua conta. Sincronize em Meus currículos e tente de novo.");
+  const newId = randomUUID();
+  await sql`INSERT INTO resumes (id, user_id, title, template, accent, density, payload, section_order, hidden_sections, revision, created_at, updated_at)
+    VALUES (${newId}, ${String(req.user_id)}, ${String(src.title).slice(0, 140) + " — feito pela equipe"}, ${src.template}, ${src.accent}, ${src.density},
+      ${JSON.stringify(src.payload)}::jsonb, ${JSON.stringify(src.section_order)}::jsonb, ${JSON.stringify(src.hidden_sections)}::jsonb, 1, now(), now())`;
+  const [done] =
+    await sql`UPDATE service_requests SET status = 'delivered', delivered_resume_id = ${newId}, delivered_at = now(),
+      admin_note = COALESCE(${note}, admin_note), updated_at = now()
+    WHERE id = ${requestId} RETURNING user_id`;
+  const [u] = await sql`SELECT email, display_name FROM app_users WHERE id = ${String(done.user_id)}`;
+  return { email: String(u?.email || ""), name: u?.display_name ? String(u.display_name) : null };
+}
