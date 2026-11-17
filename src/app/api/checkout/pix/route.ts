@@ -9,6 +9,7 @@ import {
   insertPayment,
   toCheckout,
   type PaymentRow,
+  canUpgrade,
 } from "@/lib/server/payments";
 import { isSameOrigin, publicBaseUrl } from "@/lib/server/request";
 
@@ -30,6 +31,11 @@ export async function POST(request: Request) {
 
     const body = (await request.json().catch(() => ({}))) as { plan?: unknown; coupon?: unknown };
     const plan = ACCESS_PLANS[isAccessPlan(body.plan) ? body.plan : "semana"];
+    if (plan.id === "upgrade" && !(await canUpgrade(session.userId)))
+      return Response.json(
+        { error: "upgrade_unavailable", message: "O upgrade é para quem está com o pacote Currículo ativo." },
+        { status: 400 },
+      );
     const price = await priceFor(plan.id, body.coupon, session.userId);
     if (!price.ok) return Response.json({ error: "invalid_coupon", message: price.message }, { status: 400 });
 

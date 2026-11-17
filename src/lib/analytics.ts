@@ -21,7 +21,9 @@ export type UsageEvent =
   | "interview_view"
   | "applications_used"
   | "send_message_copied"
-  | "linkedin_used";
+  | "linkedin_used"
+  | "kit_gate_view"
+  | "robot_test_used";
 
 const repeatable = new Set<UsageEvent>([
   "pdf_print_requested",

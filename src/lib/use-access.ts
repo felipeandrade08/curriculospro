@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { hasActiveAccess } from "@/lib/billing";
+import { hasActiveAccess, hasKit } from "@/lib/billing";
 import { clearReferral, storedReferral } from "@/lib/referral";
 
 export type AccessInfo = {
@@ -11,6 +11,9 @@ export type AccessInfo = {
   active: boolean;
   /** Foi indicado e ganha dias extras na primeira compra. */
   referralBonus: boolean;
+  /** Tem o Kit Emprego ativo (ferramentas de busca de emprego). */
+  kit: boolean;
+  kitUntil: string | null;
 };
 
 const initial: AccessInfo = {
@@ -20,6 +23,8 @@ const initial: AccessInfo = {
   accessUntil: null,
   active: false,
   referralBonus: false,
+  kit: false,
+  kitUntil: null,
 };
 
 /** Vincula a indicação guardada no navegador assim que a pessoa entra na conta. */
@@ -48,7 +53,13 @@ export function useAccess() {
       }
       if (!response.ok) throw new Error("account");
       let data = (await response.json()) as {
-        account: { email: string; accessUntil: string | null; active: boolean; referralBonus?: boolean };
+        account: {
+          email: string;
+          accessUntil: string | null;
+          active: boolean;
+          referralBonus?: boolean;
+          kitUntil?: string | null;
+        };
       };
       if (storedReferral()) {
         await linkStoredReferral();
@@ -62,6 +73,8 @@ export function useAccess() {
         accessUntil: data.account.accessUntil,
         active: data.account.active || hasActiveAccess(data.account.accessUntil),
         referralBonus: !!data.account.referralBonus,
+        kitUntil: data.account.kitUntil ?? null,
+        kit: hasKit(data.account.kitUntil),
       });
     } catch {
       setAccess({ ...initial, loading: false });
@@ -88,9 +101,12 @@ export function useAccess() {
     return () => window.clearTimeout(timer);
   }, [access.active, access.accessUntil, refresh]);
   const unlock = useCallback(
-    (accessUntil: string | null) =>
-      setAccess((current) => ({ ...current, accessUntil, active: hasActiveAccess(accessUntil) })),
-    [],
+    (accessUntil: string | null) => {
+      setAccess((current) => ({ ...current, accessUntil, active: hasActiveAccess(accessUntil) }));
+      // Busca de novo para saber se o pagamento também liberou o Kit Emprego.
+      void refresh();
+    },
+    [refresh],
   );
   return { access, refresh, unlock };
 }

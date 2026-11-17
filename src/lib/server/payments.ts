@@ -74,6 +74,27 @@ export async function countRecentPayments(userId: string) {
   return Number(rows[0]?.total || 0);
 }
 
+/** Upgrade para o Kit: só para quem tem acesso ativo e ainda não tem o Kit. */
+export async function canUpgrade(userId: string) {
+  try {
+    const rows = await db()`SELECT 1 FROM app_users WHERE id=${userId} AND access_until > now()
+      AND (kit_until IS NULL OR kit_until <= now())`;
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** Até quando a pessoa tem o Kit Emprego (null se nunca teve ou se o banco ainda não foi migrado). */
+export async function getKitUntil(userId: string) {
+  try {
+    const rows = await db()`SELECT kit_until FROM app_users WHERE id=${userId}`;
+    return iso(rows[0]?.kit_until);
+  } catch {
+    return null;
+  }
+}
+
 export async function getAccessUntil(userId: string) {
   const sql = db();
   const rows = await sql`SELECT access_until FROM app_users WHERE id=${userId}`;
@@ -91,10 +112,13 @@ export async function grantAccess(paymentId: string, statusDetail: string | null
       SET status='approved', status_detail=${statusDetail}, approved_at=COALESCE(${approvedAt}::timestamptz, now()),
           granted_at=now(), updated_at=now()
       WHERE id=${paymentId} AND granted_at IS NULL
-      RETURNING user_id, access_days
+      RETURNING user_id, access_days, plan
     )
     UPDATE app_users
     SET access_until = GREATEST(COALESCE(app_users.access_until, now()), now()) + make_interval(days => p.access_days),
+        kit_until = CASE WHEN p.plan IN ('mes', 'upgrade')
+          THEN GREATEST(COALESCE(app_users.access_until, now()), now()) + make_interval(days => p.access_days)
+          ELSE app_users.kit_until END,
         updated_at = now()
     FROM p WHERE app_users.id = p.user_id
     RETURNING app_users.access_until`;
@@ -111,10 +135,20 @@ export async function revokeAccess(paymentId: string, status: string, statusDeta
       UPDATE payments
       SET status=${status}, status_detail=${statusDetail}, revoked_at=now(), updated_at=now()
       WHERE id=${paymentId} AND granted_at IS NOT NULL AND revoked_at IS NULL
-      RETURNING user_id, access_days
+      RETURNING id, user_id, access_days, plan
     )
     UPDATE app_users
-    SET access_until = app_users.access_until - make_interval(days => p.access_days), updated_at = now()
+    SET access_until = app_users.access_until - make_interval(days => p.access_days),
+        -- Estorno do Kit: sem outra compra do Kit válida, o Kit acaba; com outra, perde só os dias deste pagamento.
+        kit_until = CASE
+          WHEN p.plan IN ('mes', 'upgrade') THEN CASE
+            WHEN EXISTS (SELECT 1 FROM payments q WHERE q.user_id = p.user_id AND q.id <> p.id AND q.plan IN ('mes', 'upgrade')
+                         AND q.granted_at IS NOT NULL AND q.revoked_at IS NULL)
+            THEN app_users.kit_until - make_interval(days => p.access_days)
+            ELSE NULL END
+          WHEN app_users.kit_until IS NULL THEN NULL
+          ELSE LEAST(app_users.kit_until, app_users.access_until - make_interval(days => p.access_days)) END,
+        updated_at = now()
     FROM p WHERE app_users.id = p.user_id
     RETURNING app_users.access_until`;
   return rows.length > 0;
@@ -175,7 +209,7 @@ export function toCheckout(row: PaymentRow, accessUntil?: string | null): Checko
     expiresAt: iso(row.expires_at),
     amountCents: Number(row.amount_cents),
     accessUntil: accessUntil ?? null,
-    plan: row.plan === "mes" ? "mes" : "semana",
+    plan: row.plan === "mes" || row.plan === "upgrade" ? row.plan : "semana",
     couponCode: row.coupon_code ?? null,
   };
 }

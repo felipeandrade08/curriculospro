@@ -7,6 +7,8 @@ import { AREA_QUESTIONS, GENERAL_QUESTIONS, guessArea, type InterviewQuestion } 
 import { plainRole, readActiveResume } from "@/lib/active-resume";
 import type { ResumeData } from "@/lib/resume";
 import { trackUsage } from "@/lib/analytics";
+import { reviewAnswer } from "@/lib/interview-feedback";
+import { KitBlur, KitTag, useKitGate } from "@/components/kit-gate";
 
 const ANSWERS_KEY = "curriculospro.interview.v1";
 
@@ -40,6 +42,7 @@ function speak(text: string) {
 }
 
 export default function InterviewPage() {
+  const gate = useKitGate("/entrevista");
   const [cv, setCv] = useState<ResumeData | null>(null);
   const [area, setArea] = useState("administrativo");
   const [open, setOpen] = useState<string | null>(null);
@@ -98,6 +101,15 @@ export default function InterviewPage() {
           <div className="iv-pitch">
             <h2>Sua apresentação em 30 segundos</h2>
             <p>Montada a partir do seu currículo. Complete os trechos entre colchetes e treine em voz alta.</p>
+            <KitBlur
+              kit={gate.kit}
+              loading={gate.loading}
+              onUnlock={gate.ask}
+              cta={gate.cta}
+              title="Sua apresentação pronta"
+              text="O texto para “Fale sobre você”, montado com a sua experiência, para treinar em voz alta."
+              height={90}
+            >
             <blockquote>{myPitch}</blockquote>
             <div className="iv-actions">
               <button type="button" onClick={() => save(GENERAL_QUESTIONS[0].q, myPitch)}>
@@ -109,6 +121,7 @@ export default function InterviewPage() {
                 </button>
               )}
             </div>
+            </KitBlur>
           </div>
         )}
 
@@ -123,8 +136,10 @@ export default function InterviewPage() {
         </div>
 
         <ol className="iv-list">
-          {list.map((item) => {
+          {list.map((item, index) => {
             const isOpen = open === item.q;
+            const free = gate.kit || index < 3;
+            const feedback = gate.kit ? reviewAnswer(item.q, answers[item.q] || "") : [];
             const answered = (answers[item.q] || "").trim().length > 20;
             return (
               <li key={item.q} className={isOpen ? "open" : ""}>
@@ -134,13 +149,31 @@ export default function InterviewPage() {
                 </button>
                 {isOpen && (
                   <div className="iv-a">
-                    <p className="iv-tip">
-                      <b>Como responder:</b> {item.tip}
-                    </p>
-                    {item.avoid && (
-                      <p className="iv-avoid">
-                        <b>Evite:</b> {item.avoid}
-                      </p>
+                    {free ? (
+                      <>
+                        <p className="iv-tip">
+                          <b>Como responder:</b> {item.tip}
+                        </p>
+                        {item.avoid && (
+                          <p className="iv-avoid">
+                            <b>Evite:</b> {item.avoid}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <KitBlur
+                        kit={false}
+                        loading={gate.loading}
+                        onUnlock={gate.ask}
+                        cta={gate.cta}
+                        title="Dica de como responder"
+                        text="As dicas de todas as perguntas e a correção automática das suas respostas estão no Kit Emprego."
+                        height={60}
+                      >
+                        <p className="iv-tip">
+                          <b>Como responder:</b> {item.tip}
+                        </p>
+                      </KitBlur>
                     )}
                     <label>
                       <span>Sua resposta</span>
@@ -151,6 +184,21 @@ export default function InterviewPage() {
                         placeholder="Escreva como você falaria. Fica salvo só neste aparelho."
                       />
                     </label>
+                    {feedback.length > 0 && (
+                      <ul className="iv-feedback" aria-live="polite">
+                        {feedback.map((f) => (
+                          <li key={f.text} className={f.ok ? "ok" : "fix"}>
+                            <span aria-hidden>{f.ok ? "✓" : "!"}</span>
+                            {f.text}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {!gate.kit && (answers[item.q] || "").trim().length > 20 && (
+                      <button type="button" className="iv-fbcta" onClick={gate.ask}>
+                        Corrigir minha resposta <KitTag />
+                      </button>
+                    )}
                     {canSpeak && (
                       <div className="iv-actions">
                         <button type="button" className="ghost" onClick={() => speak(item.q)}>
@@ -183,6 +231,7 @@ export default function InterviewPage() {
           <Link href="/candidaturas">Anotar esta entrevista nas candidaturas</Link>
         </aside>
       </section>
+      {gate.modal}
       <SiteFooter />
     </main>
   );

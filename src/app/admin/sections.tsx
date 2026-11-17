@@ -339,7 +339,12 @@ export async function SalesTab({
   const sql = db();
   const like = "%" + q.trim().toLowerCase() + "%";
   let rows: Record<string, unknown>[], sum: Record<string, unknown> | undefined;
+  let byPlan: Record<string, unknown>[] = [];
   try {
+    byPlan = await sql`SELECT plan, count(*)::int AS paid, COALESCE(sum(amount_cents), 0)::int AS revenue
+      FROM payments WHERE created_at >= now() - make_interval(days => ${days})
+        AND granted_at IS NOT NULL AND revoked_at IS NULL
+      GROUP BY plan`.catch(() => []);
     [sum] = await sql`SELECT
         count(*) FILTER (WHERE granted_at IS NOT NULL AND revoked_at IS NULL)::int AS paid,
         COALESCE(sum(amount_cents) FILTER (WHERE granted_at IS NOT NULL AND revoked_at IS NULL), 0)::int AS revenue,
@@ -368,7 +373,7 @@ export async function SalesTab({
           <small className="ad-delta">{n(sum?.paid)} pagamento(s) aprovado(s)</small>
         </article>
         <article className="ad-kpi">
-          <span>Pix gerados</span>
+          <span>Cobranças geradas</span>
           <strong>{n(sum?.total)}</strong>
           <small className="ad-delta">
             {pct(n(sum?.paid), n(sum?.total)).toLocaleString("pt-BR")}% foram pagos
@@ -384,6 +389,26 @@ export async function SalesTab({
           <strong>{n(sum?.refunded)}</strong>
           <small className="ad-delta">acesso removido automaticamente</small>
         </article>
+      </div>
+      <div className="ad-kpis">
+        {(
+          [
+            ["semana", "Currículo (R$ 9,90)"],
+            ["mes", "Kit Emprego (R$ 19,90)"],
+            ["upgrade", "Upgrades para o Kit"],
+          ] as const
+        ).map(([id, label]) => {
+          const r = byPlan.find((x) => String(x.plan) === id);
+          return (
+            <article key={id} className="ad-kpi">
+              <span>{label}</span>
+              <strong>{n(r?.paid)}</strong>
+              <small className="ad-delta">
+                {formatBRL(n(r?.revenue))} · {pct(n(r?.paid), n(sum?.paid)).toLocaleString("pt-BR")}% das vendas
+              </small>
+            </article>
+          );
+        })}
       </div>
       <section className="ad-panel">
         <header>
@@ -443,7 +468,7 @@ export async function SalesTab({
                         <small className="ad-muted">
                           {" "}
                           {p.method === "card" ? "cartão" : "Pix"}
-                          {p.plan === "mes" ? " · 30 dias" : ""}
+                          {p.plan === "mes" ? " · Kit" : p.plan === "upgrade" ? " · Upgrade" : " · Currículo"}
                           {p.coupon_code ? " · " + String(p.coupon_code) : ""}
                         </small>
                       </td>
@@ -1057,8 +1082,8 @@ export async function CouponsTab({ msg }: { msg: string }) {
             <span>Plano</span>
             <select name="plan" defaultValue="">
               <option value="">Todos</option>
-              <option value="semana">Só 7 dias</option>
-              <option value="mes">Só 30 dias</option>
+              <option value="semana">Só Currículo</option>
+              <option value="mes">Só Kit Emprego</option>
             </select>
           </label>
           <label>
@@ -1118,7 +1143,7 @@ export async function CouponsTab({ msg }: { msg: string }) {
                       </td>
                       <td>
                         {c.percent_off ? n(c.percent_off) + "%" : formatBRL(n(c.amount_off_cents))}
-                        {c.plan ? <small className="ad-muted"> · {c.plan === "mes" ? "30 dias" : "7 dias"}</small> : null}
+                        {c.plan ? <small className="ad-muted"> · {c.plan === "mes" ? "Kit Emprego" : "Currículo"}</small> : null}
                         {c.first_purchase_only ? <small className="ad-muted"> · 1ª compra</small> : null}
                       </td>
                       <td>

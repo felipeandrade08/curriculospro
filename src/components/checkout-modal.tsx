@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ACCESS_PLANS,
+  KIT_NAME,
+  PLAN_FEATURES,
   REFERRED_BONUS_DAYS,
   formatAccessUntil,
   formatBRL,
@@ -26,6 +28,7 @@ export function CheckoutModal({
   onClose,
   onUnlocked,
   onDownload,
+  mode = "download",
 }: {
   open: boolean;
   access: AccessInfo;
@@ -34,6 +37,8 @@ export function CheckoutModal({
   onClose: () => void;
   onUnlocked: (accessUntil: string | null) => void;
   onDownload?: () => void;
+  /** "kit": aberto por uma ferramenta do Kit Emprego (oferece o Kit ou o upgrade). */
+  mode?: "download" | "kit";
 }) {
   const [stage, setStage] = useState<Stage>("offer");
   const [checkout, setCheckout] = useState<CheckoutPix | null>(null);
@@ -54,14 +59,18 @@ export function CheckoutModal({
   useEffect(() => {
     if (!open) return;
     unlockedRef.current = false;
-    setStage(access.active ? "approved" : "offer");
+    const upgrade = mode === "kit" && access.active && !access.kit;
+    setStage(access.active && !upgrade && !(mode === "kit" && !access.kit) ? "approved" : "offer");
+    setPlan(upgrade ? "upgrade" : mode === "kit" ? "mes" : "semana");
+    setQuote(null);
+    setCouponMsg("");
     setHasRef(!!storedReferral());
     setError("");
     const saved = storedCoupon();
     if (saved) {
       setCouponOpen(true);
       setCouponCode(saved);
-      void checkCoupon(saved, "semana");
+      if (!(mode === "kit" && access.active)) void checkCoupon(saved, mode === "kit" ? "mes" : "semana");
     }
     trackUsage("paywall_view");
     dialog.current?.focus();
@@ -228,6 +237,7 @@ export function CheckoutModal({
   const minutes = Math.floor(remaining / 60000),
     seconds = Math.floor((remaining % 60000) / 1000);
   const accessUntil = checkout?.accessUntil || access.accessUntil;
+  const upgradeMode = plan === "upgrade";
   const chosen = ACCESS_PLANS[plan];
   const finalCents = quote && quote.plan === plan ? quote.finalCents : chosen.cents;
   const priceLabel = formatBRL(finalCents);
@@ -253,32 +263,50 @@ export function CheckoutModal({
 
         {(stage === "offer" || stage === "creating") && (
           <>
-            <span className="checkoutEyebrow">DOWNLOAD EM PDF</span>
-            <h2 id="checkoutTitle">Seu currículo está pronto para sair do papel.</h2>
-            <p className="checkoutLead">
-              Libere o download sem marca d&apos;água e baixe quantas vezes precisar durante o período
-              escolhido.
-            </p>
-            <div className="checkoutPlans" role="radiogroup" aria-label="Escolha o período de acesso">
-              {(["semana", "mes"] as const).map((id) => {
-                const p = ACCESS_PLANS[id];
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="radio"
-                    aria-checked={plan === id}
-                    className={"checkoutPlan" + (plan === id ? " on" : "")}
-                    onClick={() => choosePlan(id)}
-                  >
-                    <span className="cpName">{p.name}</span>
-                    <strong>{formatBRL(p.cents)}</strong>
-                    <small>{id === "mes" ? "Para quem vai enviar para muitas vagas" : "Pagamento único"}</small>
-                    {id === "mes" && <em>Mais tempo</em>}
-                  </button>
-                );
-              })}
-            </div>
+            {upgradeMode ? (
+              <>
+                <span className="checkoutEyebrow">{KIT_NAME.toUpperCase()}</span>
+                <h2 id="checkoutTitle">Complete seu acesso com o {KIT_NAME}.</h2>
+                <p className="checkoutLead">
+                  Você já tem o pacote Currículo. Pague só a diferença e libere todas as ferramentas para
+                  conseguir a vaga, com acesso completando 30 dias.
+                </p>
+                <div className="checkoutUpgrade">
+                  <div>
+                    <strong>{formatBRL(ACCESS_PLANS.upgrade.cents)}</strong>
+                    <span>a diferença para o {KIT_NAME} · +23 dias de acesso</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="checkoutEyebrow">{mode === "kit" ? KIT_NAME.toUpperCase() : "ESCOLHA SEU PACOTE"}</span>
+                <h2 id="checkoutTitle">
+                  {mode === "kit" ? "Tudo o que você precisa para conseguir a vaga." : "Seu currículo está pronto para sair do papel."}
+                </h2>
+                <div className="checkoutPlans" role="radiogroup" aria-label="Escolha o pacote">
+                  {(["semana", "mes"] as const).map((id) => {
+                    const p = ACCESS_PLANS[id];
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        role="radio"
+                        aria-checked={plan === id}
+                        className={"checkoutPlan" + (plan === id ? " on" : "")}
+                        onClick={() => choosePlan(id)}
+                      >
+                        <span className="cpName">{p.title}</span>
+                        <strong>{formatBRL(p.cents)}</strong>
+                        <small>{p.name} de acesso · pagamento único</small>
+                        {id === "mes" && <em>Mais completo</em>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            {!upgradeMode && (
             <div className="checkoutCoupon">
               {!couponOpen ? (
                 <button type="button" className="linkish" onClick={() => setCouponOpen(true)}>
@@ -316,6 +344,7 @@ export function CheckoutModal({
               )}
               {couponMsg && <p className="couponBad">{couponMsg}</p>}
             </div>
+            )}
             {(access.referralBonus || (!access.signedIn && !access.loading && hasRef)) && (
               <p className="checkoutBonus">
                 🎁 Você chegou por indicação: ganha <b>+{REFERRED_BONUS_DAYS} dias</b> extras nesta compra (
@@ -323,10 +352,9 @@ export function CheckoutModal({
               </p>
             )}
             <ul className="checkoutBenefits">
-              <li>PDF sem marca d&apos;água e versão em Word, prontos para enviar</li>
-              <li>Downloads ilimitados de todos os seus currículos e cartas de apresentação</li>
-              <li>Ajuste para cada vaga e baixe de novo sem pagar outra vez</li>
-              <li>Ou peça para nossa equipe montar o currículo em até 24h</li>
+              {(plan === "semana" ? PLAN_FEATURES.semana : PLAN_FEATURES.mes.slice(plan === "upgrade" ? 1 : 0)).map((f) => (
+                <li key={f}>{f}</li>
+              ))}
               <li>Sem assinatura e sem renovação automática</li>
             </ul>
             {error && (
@@ -444,7 +472,7 @@ export function CheckoutModal({
             <div className="checkoutCheck" aria-hidden="true">
               ✓
             </div>
-            <h2 id="checkoutTitle">Download liberado!</h2>
+            <h2 id="checkoutTitle">{mode === "kit" ? KIT_NAME + " liberado!" : "Download liberado!"}</h2>
             <p>
               {accessUntil ? (
                 <>

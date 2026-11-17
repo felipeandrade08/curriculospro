@@ -28,6 +28,7 @@ type QuoteResult = { ok: true; quote: CouponQuote } | { ok: false; message: stri
 export async function quoteCoupon(rawCode: unknown, plan: AccessPlanId, userId: string | null): Promise<QuoteResult> {
   const code = normalizeCode(rawCode);
   if (code.length < 3) return { ok: false, message: "Digite o código do cupom." };
+  if (plan === "upgrade") return { ok: false, message: "Cupons não valem para o upgrade, que já sai pela diferença." };
   const sql = db();
   const rows = (await sql`SELECT c.*, (
       SELECT count(*)::int FROM payments p WHERE p.coupon_code=c.code AND p.granted_at IS NOT NULL AND p.revoked_at IS NULL
@@ -38,7 +39,10 @@ export async function quoteCoupon(rawCode: unknown, plan: AccessPlanId, userId: 
   if (c.expires_at && new Date(c.expires_at).getTime() < Date.now())
     return { ok: false, message: "Este cupom expirou." };
   if (c.plan && c.plan !== plan)
-    return { ok: false, message: `Este cupom vale só para o acesso de ${ACCESS_PLANS[c.plan].name}.` };
+    return {
+      ok: false,
+      message: `Este cupom vale só para o pacote ${ACCESS_PLANS[c.plan].title} (${ACCESS_PLANS[c.plan].name}).`,
+    };
   if (c.max_uses && Number(c.uses || 0) >= c.max_uses)
     return { ok: false, message: "Este cupom já atingiu o limite de usos." };
   if (userId) {
