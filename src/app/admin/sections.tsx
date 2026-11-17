@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { channelOf, type SaleSource } from "@/lib/server/sales-source";
 import { db } from "@/lib/server/db";
 import { formatBRL } from "@/lib/billing";
 import {
@@ -344,7 +345,11 @@ export async function SalesTab({
   const like = "%" + q.trim().toLowerCase() + "%";
   let rows: Record<string, unknown>[], sum: Record<string, unknown> | undefined;
   let byPlan: Record<string, unknown>[] = [];
+  let paidSources: Record<string, unknown>[] = [];
   try {
+    paidSources = await sql`SELECT source, amount_cents FROM payments
+      WHERE created_at >= now() - make_interval(days => ${days})
+        AND granted_at IS NOT NULL AND revoked_at IS NULL`.catch(() => []);
     byPlan = await sql`SELECT plan, count(*)::int AS paid, COALESCE(sum(amount_cents), 0)::int AS revenue
       FROM payments WHERE created_at >= now() - make_interval(days => ${days})
         AND granted_at IS NOT NULL AND revoked_at IS NULL
@@ -358,7 +363,7 @@ export async function SalesTab({
         count(*)::int AS total
       FROM payments WHERE created_at >= now() - make_interval(days => ${days})`;
     rows =
-      await sql`SELECT p.id, u.email, p.amount_cents, p.status, p.created_at, p.approved_at, p.revoked_at, u.access_until, p.method, p.plan, p.coupon_code
+      await sql`SELECT p.id, u.email, p.amount_cents, p.status, p.created_at, p.approved_at, p.revoked_at, u.access_until, p.method, p.plan, p.coupon_code, p.source
       FROM payments p JOIN app_users u ON u.id = p.user_id
       WHERE p.created_at >= now() - make_interval(days => ${days})
         AND (${q.trim()} = '' OR lower(u.email) LIKE ${like} OR p.id = ${q.trim()})
@@ -414,6 +419,7 @@ export async function SalesTab({
           );
         })}
       </div>
+      <ChannelBreakdown rows={paidSources} />
       <section className="cpa-panel">
         <header>
           <h2>Pagamentos dos últimos {days} dias</h2>
@@ -452,6 +458,7 @@ export async function SalesTab({
                   <th>Conta</th>
                   <th>Valor</th>
                   <th>Status</th>
+                  <th>Origem</th>
                   <th>Acesso até</th>
                   <th>ID Mercado Pago</th>
                 </tr>
@@ -479,6 +486,12 @@ export async function SalesTab({
                       <td>
                         <span className={"cpa-pill " + st}>{PAY_STATUS[st] || st}</span>
                       </td>
+                      <td>
+                        {channelOf(p.source as SaleSource | null)}
+                        {(p.source as SaleSource | null)?.campaign ? (
+                          <small className="cpa-muted"> · {String((p.source as SaleSource).campaign)}</small>
+                        ) : null}
+                      </td>
                       <td>{st === "approved" ? dateTime(p.access_until) : "—"}</td>
                       <td>
                         <code>{String(p.id)}</code>
@@ -498,6 +511,61 @@ export async function SalesTab({
         </p>
       </section>
     </>
+  );
+}
+
+/** De onde vieram as vendas aprovadas do período (primeira visita da pessoa). */
+function ChannelBreakdown({ rows }: { rows: Record<string, unknown>[] }) {
+  const map = new Map<string, { paid: number; revenue: number; campaigns: Map<string, number> }>();
+  for (const r of rows) {
+    const src = r.source as SaleSource | null;
+    const ch = channelOf(src);
+    const e = map.get(ch) || { paid: 0, revenue: 0, campaigns: new Map() };
+    e.paid += 1;
+    e.revenue += n(r.amount_cents);
+    if (src?.campaign) e.campaigns.set(src.campaign, (e.campaigns.get(src.campaign) || 0) + 1);
+    map.set(ch, e);
+  }
+  const list = [...map.entries()].sort((a, b) => b[1].revenue - a[1].revenue);
+  const total = rows.length;
+  return (
+    <section className="cpa-panel">
+      <header>
+        <h2>De onde vieram as vendas</h2>
+      </header>
+      {list.length ? (
+        <ul className="cpa-channels">
+          {list.map(([ch, e]) => (
+            <li key={ch}>
+              <div>
+                <b>{ch}</b>
+                <span>
+                  {e.paid} venda(s) · {formatBRL(e.revenue)}
+                </span>
+              </div>
+              <i style={{ width: Math.max(4, pct(e.paid, total)) + "%" }} />
+              {e.campaigns.size ? (
+                <small className="cpa-muted">
+                  Campanhas:{" "}
+                  {[...e.campaigns.entries()]
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 4)
+                    .map(([c, k]) => c + " (" + k + ")")
+                    .join(", ")}
+                </small>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="cpa-empty">Nenhuma venda aprovada no período.</p>
+      )}
+      <p className="cpa-muted">
+        A origem é a primeira visita da pessoa (link com utm, anúncio ou site que trouxe). Vendas antes desta
+        versão aparecem como Direto. Use links com <code>?utm_source=instagram&amp;utm_campaign=nome</code> nos seus
+        posts para separar cada campanha.
+      </p>
+    </section>
   );
 }
 

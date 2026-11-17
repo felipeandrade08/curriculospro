@@ -11041,3 +11041,33 @@ footer.adminFoot {
 .cvMeasure .cv {
   min-height: 0 !important;
 }
+
+/* Entrar com Google */
+.cpAuthForm .cpGoogleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff;
+  color: #1f2a37;
+  border: 1px solid #d5e1ec;
+  box-shadow: none;
+}
+.cpAuthForm .cpGoogleBtn:hover:not(:disabled) {
+  background: #f5f9fd;
+  border-color: #b9cde0;
+}
+.cpAuthOr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b7a8c;
+  font-size: 13px;
+}
+.cpAuthOr::before,
+.cpAuthOr::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e2eaf2;
+}

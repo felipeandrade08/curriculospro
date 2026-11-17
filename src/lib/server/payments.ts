@@ -1,6 +1,7 @@
 import { db } from "@/lib/server/db";
 import type { CheckoutPix } from "@/lib/billing";
 import type { MercadoPagoPayment } from "@/lib/server/mercadopago";
+import type { SaleSource } from "@/lib/server/sales-source";
 import { afterPaymentGranted, afterPaymentRevoked } from "@/lib/server/after-payment";
 
 export type PaymentRow = {
@@ -35,10 +36,11 @@ export async function insertPayment(row: {
   plan?: string;
   couponCode?: string | null;
   originalCents?: number;
+  source?: SaleSource | null;
 }) {
   const sql = db();
-  await sql`INSERT INTO payments(id,user_id,status,status_detail,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at,method,plan,coupon_code,original_cents)
-    VALUES(${row.id},${row.userId},${row.status},${row.statusDetail},${row.amountCents},${row.accessDays},${row.qrCode},${row.qrCodeBase64},${row.ticketUrl},${row.expiresAt ? row.expiresAt.toISOString() : null},${row.method || "pix"},${row.plan || "semana"},${row.couponCode || null},${row.originalCents ?? row.amountCents})
+  await sql`INSERT INTO payments(id,user_id,status,status_detail,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at,method,plan,coupon_code,original_cents,source)
+    VALUES(${row.id},${row.userId},${row.status},${row.statusDetail},${row.amountCents},${row.accessDays},${row.qrCode},${row.qrCodeBase64},${row.ticketUrl},${row.expiresAt ? row.expiresAt.toISOString() : null},${row.method || "pix"},${row.plan || "semana"},${row.couponCode || null},${row.originalCents ?? row.amountCents},${row.source ? JSON.stringify(row.source) : null}::jsonb)
     ON CONFLICT (id) DO NOTHING`;
 }
 
@@ -222,13 +224,14 @@ type IntentRow = {
   original_cents: number;
   access_days: number;
   coupon_code: string | null;
+  source?: SaleSource | null;
 };
 
 export async function createCheckoutIntent(i: Omit<IntentRow, "id">) {
   const sql = db();
   const id = crypto.randomUUID();
-  await sql`INSERT INTO checkout_intents(id,user_id,plan,amount_cents,original_cents,access_days,coupon_code)
-    VALUES(${id},${i.user_id},${i.plan},${i.amount_cents},${i.original_cents},${i.access_days},${i.coupon_code})`;
+  await sql`INSERT INTO checkout_intents(id,user_id,plan,amount_cents,original_cents,access_days,coupon_code,source)
+    VALUES(${id},${i.user_id},${i.plan},${i.amount_cents},${i.original_cents},${i.access_days},${i.coupon_code},${i.source ? JSON.stringify(i.source) : null}::jsonb)`;
   return id;
 }
 
@@ -245,7 +248,7 @@ export async function adoptCheckoutProPayment(payment: MercadoPagoPayment): Prom
   const intentId = payment.metadata?.intent_id;
   if (!intentId || typeof intentId !== "string") return null;
   const sql = db();
-  const intent = ((await sql`SELECT id,user_id,plan,amount_cents,original_cents,access_days,coupon_code
+  const intent = ((await sql`SELECT id,user_id,plan,amount_cents,original_cents,access_days,coupon_code,source
     FROM checkout_intents WHERE id=${intentId}`) as IntentRow[])[0];
   if (!intent || String(payment.external_reference || "") !== intent.user_id) return null;
   await insertPayment({
@@ -263,6 +266,7 @@ export async function adoptCheckoutProPayment(payment: MercadoPagoPayment): Prom
     plan: intent.plan,
     couponCode: intent.coupon_code,
     originalCents: Number(intent.original_cents),
+    source: intent.source || null,
   });
   await sql`UPDATE checkout_intents SET payment_id=${String(payment.id)} WHERE id=${intent.id}`;
   return findPayment(String(payment.id));

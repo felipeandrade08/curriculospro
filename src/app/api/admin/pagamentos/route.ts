@@ -1,5 +1,6 @@
 import { checkAdmin } from "@/lib/server/admin";
 import { db } from "@/lib/server/db";
+import { channelOf, type SaleSource } from "@/lib/server/sales-source";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,14 +16,14 @@ export async function GET(request: Request) {
   if (!check.ok) return new Response("Acesso restrito.", { status: 403 });
   const days = Math.min(365, Math.max(1, Number(new URL(request.url).searchParams.get("dias")) || 30));
   const rows =
-    await db()`SELECT p.id, u.email, p.amount_cents, p.status, p.revoked_at IS NOT NULL AS estornado,
+    await db()`SELECT p.id, u.email, p.amount_cents, p.status, p.revoked_at IS NOT NULL AS estornado, p.plan, p.source,
       to_char(p.created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS criado,
       to_char(p.approved_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS aprovado
     FROM payments p JOIN app_users u ON u.id = p.user_id
     WHERE p.created_at >= now() - make_interval(days => ${days})
     ORDER BY p.created_at DESC`;
   const lines = [
-    ["ID Mercado Pago", "E-mail", "Valor", "Status", "Estornado", "Criado em", "Aprovado em"].join(";"),
+    ["ID Mercado Pago", "E-mail", "Valor", "Status", "Estornado", "Criado em", "Aprovado em", "Pacote", "Origem", "Campanha"].join(";"),
     ...rows.map((r) =>
       [
         r.id,
@@ -32,6 +33,9 @@ export async function GET(request: Request) {
         r.estornado ? "sim" : "não",
         r.criado,
         r.aprovado,
+        r.plan === "mes" ? "Kit Emprego" : r.plan === "upgrade" ? "Upgrade" : "Currículo",
+        channelOf(r.source as SaleSource | null),
+        (r.source as SaleSource | null)?.campaign || "",
       ]
         .map(cell)
         .join(";"),

@@ -824,3 +824,31 @@
 .cpa-todo a.late {
   color: #b42318;
 }
+
+/* Origem das vendas */
+.cpa-channels {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.cpa-channels li {
+  display: grid;
+  gap: 5px;
+}
+.cpa-channels li > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+}
+.cpa-channels li > div span {
+  color: #5b6b7d;
+}
+.cpa-channels i {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #1553d6, #4b8cf5);
+}

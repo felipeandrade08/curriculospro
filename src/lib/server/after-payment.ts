@@ -4,6 +4,7 @@ import { db } from "@/lib/server/db";
 import { REFERRED_BONUS_DAYS, REFERRER_BONUS_DAYS } from "@/lib/billing";
 import { purchaseEmail, referralRewardEmail, sendEmail, emailConfigured } from "@/lib/server/email";
 import { revokeReferralReward, rewardReferral } from "@/lib/server/referrals";
+import { sendMetaPurchase } from "@/lib/server/meta-capi";
 
 export async function afterPaymentGranted(paymentId: string) {
   let reward: Awaited<ReturnType<typeof rewardReferral>> = null;
@@ -11,6 +12,11 @@ export async function afterPaymentGranted(paymentId: string) {
     reward = await rewardReferral(paymentId);
   } catch (error) {
     console.error("Recompensa de indicação falhou", paymentId, error);
+  }
+  try {
+    await sendMetaPurchase(paymentId);
+  } catch (error) {
+    console.error("Conversão da Meta falhou", paymentId, error);
   }
   if (!emailConfigured()) return;
   try {
