@@ -72,6 +72,31 @@ export default function Privacy() {
           </p>
         </section>
         <section>
+          <h2>Cookies de medição de anúncios</h2>
+          <p>
+            Com a sua autorização no aviso de cookies, usamos o Meta Pixel (Facebook e Instagram) para saber
+            quais anúncios trazem visitas, inícios de currículo e compras. Ele não recebe o conteúdo do seu
+            currículo. Se você recusar, o Pixel não é carregado. Para mudar a escolha, limpe os dados do site
+            no navegador e escolha de novo no aviso.
+          </p>
+        </section>
+        <section>
+          <h2>E-mails</h2>
+          <p>
+            Usamos o e-mail da sua conta para enviar a confirmação de pagamento, o aviso de dias ganhos por
+            indicação e um lembrete quando o acesso estiver perto de terminar. Os lembretes podem ser
+            cancelados pelo link no próprio e-mail. Os envios são feitos pelo provedor Resend.
+          </p>
+        </section>
+        <section>
+          <h2>Indicações</h2>
+          <p>
+            Quando alguém cria a conta pelo seu link de indicação, registramos essa ligação para conceder os
+            dias extras. Você vê apenas a quantidade de indicações, nunca o nome ou o e-mail de quem foi
+            indicado.
+          </p>
+        </section>
+        <section>
           <h2>Currículos e informações profissionais</h2>
           <p>
             Você decide quais informações inserir, importar para um currículo e destacar para uma vaga. O
@@ -82,8 +107,9 @@ export default function Privacy() {
           <h2>Serviços externos</h2>
           <p>
             O site utiliza provedores necessários para operar a aplicação: hospedagem, banco de dados,
-            autenticação e o Mercado Pago para pagamentos. A geração de texto por inteligência artificial está
-            desativada no produto atual.
+            autenticação, o Mercado Pago para pagamentos, o Resend para e-mails e, se você autorizar, o Meta
+            Pixel para medição de anúncios. A geração de texto por inteligência artificial está desativada no
+            produto atual.
           </p>
         </section>
         <section>

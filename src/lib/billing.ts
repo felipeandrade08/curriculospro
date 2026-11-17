@@ -5,6 +5,10 @@ export const ACCESS_PRICE_CENTS = 990;
 export const ACCESS_DAYS = 7;
 export const ACCESS_PRODUCT_NAME = "CurriculosPRO — Acesso de 7 dias";
 
+/** Indicação: dias extras para quem indicou e para o amigo na primeira compra. */
+export const REFERRER_BONUS_DAYS = 3;
+export const REFERRED_BONUS_DAYS = 2;
+
 /** Tempo para pagar o Pix antes de o QR Code expirar. */
 export const PIX_EXPIRATION_MINUTES = 30;
 

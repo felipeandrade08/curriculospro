@@ -4,6 +4,8 @@ import { CloudSync, LAST_CLOUD_USER, PENDING_DELETIONS } from "./cloud-sync";
 import { ProfessionalProfileCard } from "./professional-profile-card";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { ReferralCard } from "@/components/referral-card";
+import { templateMeta } from "@/lib/templates";
 import {
   ACTIVE_RESUME_KEY,
   LEGACY_RESUME_KEY,
@@ -175,6 +177,9 @@ export default function ResumesPage() {
           </label>
         </div>
       </section>
+      <div className="shell">
+        <ReferralCard />
+      </div>
       <section className="profileSection shell">
         <div className="sectionEyebrow">SUA BASE PROFISSIONAL</div>
         <ProfessionalProfileCard resumes={items} />
@@ -227,13 +232,7 @@ export default function ResumesPage() {
                 <span />
               </div>
               <div className="resumeCardBody">
-                <small>
-                  {doc.template === "essential"
-                    ? "ESSENCIAL"
-                    : doc.template === "modern"
-                      ? "MODERNO"
-                      : "EXECUTIVO"}
-                </small>
+                <small>{templateMeta(doc.template).name.toUpperCase()}</small>
                 <h2>{doc.title}</h2>
                 <p>
                   {doc.cv.role || "Sem título profissional"} · atualizado{" "}
@@ -242,6 +241,14 @@ export default function ResumesPage() {
                 <div>
                   <button className="cardPrimary" onClick={() => open(doc.id)}>
                     Continuar editando
+                  </button>
+                  <button
+                    onClick={() => {
+                      localStorage.setItem(ACTIVE_RESUME_KEY, doc.id);
+                      location.href = "/carta";
+                    }}
+                  >
+                    Carta de apresentação
                   </button>
                   <button onClick={() => rename(doc)}>Renomear</button>
                   <button onClick={() => duplicate(doc)}>Duplicar</button>

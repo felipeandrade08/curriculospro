@@ -1,6 +1,7 @@
 import { db } from "@/lib/server/db";
 import type { CheckoutPix } from "@/lib/billing";
 import type { MercadoPagoPayment } from "@/lib/server/mercadopago";
+import { afterPaymentGranted, afterPaymentRevoked } from "@/lib/server/after-payment";
 
 export type PaymentRow = {
   id: string;
@@ -132,6 +133,7 @@ export async function applyProviderPayment(payment: MercadoPagoPayment, row: Pay
   }
   if (payment.status === "refunded" || payment.status === "charged_back") {
     const revoked = await revokeAccess(row.id, payment.status, payment.status_detail || null);
+    if (revoked) await afterPaymentRevoked(row.id);
     if (!revoked) {
       // Estornado antes de o acesso ser liberado: só registra o status.
       const sql = db();
@@ -142,6 +144,7 @@ export async function applyProviderPayment(payment: MercadoPagoPayment, row: Pay
   }
   if (payment.status === "approved") {
     const granted = await grantAccess(row.id, payment.status_detail || null, payment.date_approved || null);
+    if (granted) await afterPaymentGranted(row.id);
     return { status: "approved" as const, granted };
   }
   const sql = db();

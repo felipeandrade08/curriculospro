@@ -20,6 +20,7 @@ const rows: [string, boolean, boolean][] = [
   ["Perfil Profissional e adaptação para vagas", true, true],
   ["Download em PDF sem marca d'água", false, true],
   [`Downloads ilimitados por ${ACCESS_DAYS} dias`, false, true],
+  ["Carta de apresentação em PDF", false, true],
 ];
 
 const faq = [
@@ -98,6 +99,9 @@ export default function PricingPage() {
               <b>Downloads ilimitados</b> por {ACCESS_DAYS} dias
             </li>
             <li>Ajuste para cada vaga e baixe de novo sem pagar outra vez</li>
+            <li>
+              <b>Carta de apresentação</b> em PDF, montada a partir do currículo
+            </li>
             <li>Seus currículos salvos na nuvem</li>
             <li>Sem assinatura e sem renovação automática</li>
           </ul>
