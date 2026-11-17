@@ -124,7 +124,7 @@ export async function deliveredResume(userId: string, requestId: string) {
 export async function deliverRequest(
   requestId: string,
   adminUserId: string,
-  adminResumeId: string,
+  source: { resumeId: string } | { doc: ResumeDocument },
   note: string | null,
 ) {
   const sql = db();
@@ -132,10 +132,25 @@ export async function deliverRequest(
   if (!req) throw new Error("Pedido não encontrado.");
   if (req.status === "delivered" || req.status === "cancelled")
     throw new Error("Este pedido já foi encerrado.");
-  const [src] =
-    await sql`SELECT * FROM resumes WHERE id = ${adminResumeId} AND user_id = ${adminUserId} AND deleted_at IS NULL`;
-  if (!src)
-    throw new Error("Currículo não encontrado na sua conta. Sincronize em Meus currículos e tente de novo.");
+  let src: Record<string, unknown> | undefined;
+  if ("doc" in source) {
+    // Currículo montado no navegador da equipe: não precisa estar sincronizado.
+    const d = source.doc;
+    src = {
+      // "Pedido #12 — Ana" é o nome interno da equipe; o cliente vê "Currículo de Ana Souza".
+      title: !d.title || d.title.startsWith("Pedido #") ? "Currículo de " + (d.cv.name || "você") : d.title,
+      template: d.template,
+      accent: d.accent,
+      density: d.density,
+      payload: d.cv,
+      section_order: d.sectionOrder,
+      hidden_sections: d.hidden,
+    };
+  } else {
+    [src] =
+      await sql`SELECT * FROM resumes WHERE id = ${source.resumeId} AND user_id = ${adminUserId} AND deleted_at IS NULL`;
+  }
+  if (!src) throw new Error("Currículo não encontrado. Escolha de novo na lista.");
   const newId = randomUUID();
   await sql`INSERT INTO resumes (id, user_id, title, template, accent, density, payload, section_order, hidden_sections, revision, created_at, updated_at)
     VALUES (${newId}, ${String(req.user_id)}, ${String(src.title).slice(0, 140) + " — feito pela equipe"}, ${src.template}, ${src.accent}, ${src.density},

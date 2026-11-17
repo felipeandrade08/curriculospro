@@ -9,7 +9,7 @@ import { emailConfigured, sendEmail, serviceDeliveredEmail } from "@/lib/server/
 import { MAX_FILE_BYTES, detectType, saveDeliveryPdf } from "@/lib/server/service-files";
 import { deliveryUrl, fileSlug, loadDelivery } from "@/lib/server/delivery";
 import { resumeToDocx } from "@/lib/server/docx";
-import { defaultOrder } from "@/lib/resume";
+import { defaultOrder, isResumeDocument, type ResumeDocument } from "@/lib/resume";
 
 const STATUSES = new Set(["new", "read", "published", "hidden"]);
 
@@ -118,11 +118,19 @@ export async function deliverService(formData: FormData) {
   const admin = await requireAdmin();
   const id = String(formData.get("id") || "");
   const resumeId = String(formData.get("resumeId") || "");
+  let doc: ResumeDocument | null = null;
+  try {
+    const raw = String(formData.get("resumeJson") || "");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (isResumeDocument(parsed)) doc = parsed;
+    }
+  } catch {}
   const note =
     String(formData.get("note") || "")
       .trim()
       .slice(0, 500) || null;
-  if (!/^\d+$/.test(id) || !resumeId) back({ aba: "pedidos", msg: "Escolha o currículo que será entregue." });
+  if (!/^\d+$/.test(id) || (!resumeId && !doc)) back({ aba: "pedidos", msg: "Escolha o currículo que será entregue." });
 
   // PDF opcional, exportado pela equipe no editor.
   let pdf: Uint8Array | null = null;
@@ -137,7 +145,7 @@ export async function deliverService(formData: FormData) {
 
   let result: Awaited<ReturnType<typeof deliverRequest>>;
   try {
-    result = await deliverRequest(id, admin.userId, resumeId, note);
+    result = await deliverRequest(id, admin.userId, doc ? { doc } : { resumeId }, note);
   } catch (error) {
     back({ aba: "pedidos", msg: error instanceof Error ? error.message : "Não foi possível entregar." });
   }
