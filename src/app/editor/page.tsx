@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { CheckoutModal } from "@/components/checkout-modal";
+import { AiImprove } from "@/components/ai-improve";
 import { useAccess } from "@/lib/use-access";
 import { ACCESS_DAYS, ACCESS_PRICE_LABEL, formatAccessUntil } from "@/lib/billing";
 import { trackUsage } from "@/lib/analytics";
@@ -1350,6 +1351,12 @@ export default function Editor() {
                       value={cv.summary}
                       onChange={(v) => set("summary", v)}
                     />
+                    <AiImprove
+                      kind="summary"
+                      text={cv.summary}
+                      role={cv.role}
+                      onApply={(value) => set("summary", value)}
+                    />
                     <ObjectiveSuggestions onChoose={(value) => set("summary", value)} />
                     {cv.summary.trim() && cv.summary.trim().length < 60 && (
                       <CoachTip
@@ -2651,6 +2658,15 @@ function ItemEditor({
         value={item.description}
         onChange={(v) => onChange("description", v)}
       />
+      {kind === "experience" && (
+        <AiImprove
+          kind="activities"
+          text={item.description}
+          title={item.title}
+          company={item.subtitle}
+          onApply={(value) => onChange("description", value)}
+        />
+      )}
       {kind === "experience" && (
         <ExperienceTaskSuggestions
           value={item.description}

@@ -2320,3 +2320,85 @@
     display: none !important;
   }
 }
+
+/* Melhorar com IA (editor) */
+.aiImprove {
+  display: grid;
+  gap: 8px;
+  margin: 2px 0 12px;
+}
+.aiImproveBtn {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #c9d8fb;
+  background: linear-gradient(135deg, #f3f6ff, #eef9f6);
+  color: #1d3fa8;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.aiImproveBtn span {
+  color: #7a4dd8;
+}
+.aiImproveBtn:hover:not(:disabled) {
+  border-color: #9fb7f5;
+}
+.aiImproveBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.aiImproveNote {
+  color: #6b7a8c;
+  font-size: 11px;
+}
+.aiImproveError {
+  margin: 0;
+  color: #b42318;
+  font-size: 12px;
+}
+.aiImproveResult {
+  border: 1px solid #d6e0f5;
+  background: #f8faff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+}
+.aiImproveResult b {
+  font-size: 12px;
+  color: #1d3fa8;
+}
+.aiImproveResult p {
+  margin: 0;
+  white-space: pre-line;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #1f2a37;
+}
+.aiImproveResult small {
+  color: #6b7a8c;
+  font-size: 11px;
+}
+.aiImproveResult div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.aiImproveResult div button {
+  border: 1px solid #d5e1ec;
+  background: #fff;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.aiImproveResult div .aiUse {
+  background: #1553d6;
+  border-color: #1553d6;
+  color: #fff;
+}
