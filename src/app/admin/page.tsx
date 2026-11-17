@@ -10,6 +10,7 @@ import Image from "next/image";
 import { CouponsTab, CustomersTab, FeedbackTab, OrdersTab, OverviewTab, SalesTab } from "./sections";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 export const metadata: Metadata = { title: "Administração", robots: { index: false, follow: false } };
 
 const TABS = [
