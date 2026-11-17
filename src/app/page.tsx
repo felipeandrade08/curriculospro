@@ -106,6 +106,13 @@ export default async function Home() {
                 Importar currículo antigo
               </Link>
             </div>
+            <Link href="/feito-para-voce" className="hero-service">
+              <span className="hero-service-tag">Novo</span>
+              <span>
+                Sem tempo? <b>Nossa equipe faz seu currículo em até 24h</b>
+              </span>
+              <span aria-hidden="true">→</span>
+            </Link>
             <ul className="hero-facts">
               <li>Comece sem cadastro</li>
               <li>Edite quantas vezes quiser</li>
@@ -127,6 +134,40 @@ export default async function Home() {
               </span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="fy-hl" aria-labelledby="fy-hl-title">
+        <div className="wrap fy-hl-grid">
+          <div>
+            <h2 id="fy-hl-title">Prefere não fazer sozinho? A gente faz o seu currículo.</h2>
+            <p>
+              Conte onde trabalhou e o que sabe fazer. Nossa equipe escreve, organiza e entrega seu currículo
+              pronto em até 24 horas — incluído no acesso de {ACCESS_PRICE_LABEL}.
+            </p>
+            <ul>
+              <li>Feito por pessoas, não por robô</li>
+              <li>Atendimento pelo WhatsApp</li>
+              <li>Você recebe pronto para baixar em PDF ou Word</li>
+            </ul>
+            <Link href="/feito-para-voce" className="btn btn-lg fy-hl-btn">
+              Quero que façam o meu currículo
+            </Link>
+          </div>
+          <ol className="fy-hl-steps" aria-label="Como funciona">
+            <li>
+              <b>Você conta sua história</b>
+              <span>Cola o currículo antigo ou escreve sua experiência, do seu jeito.</span>
+            </li>
+            <li>
+              <b>Nossa equipe monta</b>
+              <span>Objetivo, atividades e modelo profissional, tudo em 1 página.</span>
+            </li>
+            <li>
+              <b>Você recebe em até 24h</b>
+              <span>Aviso por e-mail e o currículo pronto na sua conta.</span>
+            </li>
+          </ol>
         </div>
       </section>
 
@@ -250,19 +291,6 @@ export default async function Home() {
           </div>
           <Thumb example={exampleById("finance")!} width={360} />
         </div>
-      </section>
-
-      <section className="wrap fy-band" aria-labelledby="fy-band-title">
-        <div>
-          <h2 id="fy-band-title">Sem tempo ou sem jeito com o celular? A gente faz para você.</h2>
-          <p>
-            Conte sua experiência e nossa equipe monta seu currículo em até 24 horas, incluído no acesso de{" "}
-            {ACCESS_PRICE_LABEL}. Atendimento humano pelo WhatsApp do começo ao fim.
-          </p>
-        </div>
-        <Link href="/feito-para-voce" className="btn btn-primary btn-lg">
-          Quero que façam o meu
-        </Link>
       </section>
 
       {testimonials.length > 0 && (
