@@ -12,6 +12,10 @@ export const TEMPLATE_IDS = [
   "compact",
   "tech",
   "corporate",
+  "vibrant",
+  "pastel",
+  "spotlight",
+  "mosaic",
 ] as const;
 
 export type TemplateId = (typeof TEMPLATE_IDS)[number];
@@ -93,7 +97,6 @@ export const TEMPLATES: TemplateMeta[] = [
     accent: "#0b6bcb",
     bestFor: "Experientes",
     photo: true,
-    isNew: true,
   },
   {
     id: "elegant",
@@ -104,7 +107,6 @@ export const TEMPLATES: TemplateMeta[] = [
     accent: "#9a3412",
     bestFor: "Saúde e educação",
     photo: false,
-    isNew: true,
   },
   {
     id: "compact",
@@ -115,7 +117,6 @@ export const TEMPLATES: TemplateMeta[] = [
     accent: "#334155",
     bestFor: "Muitas experiências",
     photo: false,
-    isNew: true,
   },
   {
     id: "tech",
@@ -126,7 +127,6 @@ export const TEMPLATES: TemplateMeta[] = [
     accent: "#059669",
     bestFor: "TI e engenharia",
     photo: false,
-    isNew: true,
   },
   {
     id: "corporate",
@@ -137,9 +137,56 @@ export const TEMPLATES: TemplateMeta[] = [
     accent: "#0f2a4a",
     bestFor: "Corporativo e logística",
     photo: true,
-    isNew: true,
   },
 ];
+
+// Modelos coloridos: chamam atenção sem atrapalhar a leitura (inclusive por robôs de seleção).
+TEMPLATES.push(
+  {
+    id: "vibrant",
+    name: "Vibrante",
+    tag: "Cabeçalho em degradê",
+    description: "Topo em degradê com títulos em etiquetas coloridas. Alegre e ainda profissional.",
+    layout: "single",
+    accent: "#db2777",
+    bestFor: "Vendas, beleza e eventos",
+    photo: true,
+    isNew: true,
+  },
+  {
+    id: "pastel",
+    name: "Pastel",
+    tag: "Lateral suave",
+    description: "Coluna lateral em tom pastel, foto com moldura colorida e competências em etiquetas.",
+    layout: "side-left",
+    accent: "#0d9488",
+    bestFor: "Saúde, educação e atendimento",
+    photo: true,
+    isNew: true,
+  },
+  {
+    id: "spotlight",
+    name: "Destaque",
+    tag: "Faixa lateral de cor",
+    description: "Faixa de cor na borda da folha e nome grande na cor do modelo. Moderno e marcante.",
+    layout: "single",
+    accent: "#ea580c",
+    bestFor: "Primeiro emprego e jovens",
+    photo: true,
+    isNew: true,
+  },
+  {
+    id: "mosaic",
+    name: "Mosaico",
+    tag: "Blocos de cor",
+    description: "Faixa de três tons no topo e títulos com marcador colorido. Organizado e cheio de vida.",
+    layout: "side-right",
+    accent: "#16a34a",
+    bestFor: "Comércio, logística e serviços",
+    photo: true,
+    isNew: true,
+  },
+);
 
 export const templateMeta = (id: string) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
 
@@ -158,4 +205,6 @@ export const ACCENT_COLORS = [
   "#b45309",
   "#334155",
   "#0f2a4a",
+  "#db2777",
+  "#ea580c",
 ];
