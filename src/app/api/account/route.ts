@@ -2,6 +2,7 @@ import { hasActiveAccess, hasKit } from "@/lib/billing";
 import { getKitUntil } from "@/lib/server/payments";
 import { getServerSession } from "@/lib/server/session";
 import { pendingReferralBonus } from "@/lib/server/referrals";
+import { adminEmail } from "@/lib/server/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,7 @@ export async function GET() {
         referralBonus,
         kitUntil,
         kit: session.plan === "pro" || hasKit(kitUntil),
+        team: !!adminEmail() && session.email.trim().toLowerCase() === adminEmail(),
       },
     });
   } catch {

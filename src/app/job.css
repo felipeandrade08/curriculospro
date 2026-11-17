@@ -2147,3 +2147,176 @@
     max-width: 560px;
   }
 }
+
+/* Modo equipe: atalho do painel no cabeçalho */
+.sh-team {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 10px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+}
+.sh-team::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--marker);
+}
+.sh-team:hover {
+  background: var(--pen);
+}
+.sh-team-m {
+  font-weight: 800;
+  color: var(--pen) !important;
+}
+@media (max-width: 900px) {
+  .sh-team {
+    display: none;
+  }
+}
+
+/* Barra da equipe no editor */
+.tb {
+  background: #0e1b2e;
+  color: #fff;
+  font: 400 14px/1.4 var(--font-text, system-ui);
+  position: relative;
+  z-index: 30;
+}
+.tb-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 8px 16px;
+}
+.tb-badge {
+  background: #ffd84d;
+  color: #0e1b2e;
+  font-weight: 800;
+  font-size: 12px;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.tb-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  align-items: baseline;
+  min-width: 0;
+}
+.tb-info span {
+  color: #b9c6db;
+}
+.tb-actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tb-actions button,
+.tb-actions a {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: 650 13px/1.2 var(--font-text, system-ui);
+  text-decoration: none;
+  cursor: pointer;
+}
+.tb-actions button[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.12);
+}
+.tb .tb-primary {
+  background: #1553d6;
+  border-color: #1553d6;
+  color: #fff;
+}
+.tb-panel {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 12px 16px 16px;
+  display: grid;
+  gap: 10px;
+  max-height: 46vh;
+  overflow: auto;
+}
+.tb-panel p {
+  margin: 0;
+}
+.tb-panel pre {
+  white-space: pre-wrap;
+  font: inherit;
+  color: #dbe4f2;
+  margin: 4px 0 0;
+}
+.tb-panel summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.tb-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+.tb-files a,
+.tb-panel a {
+  color: #9cc0ff;
+}
+.tb-steps {
+  margin: 0;
+  padding-left: 18px;
+  color: #dbe4f2;
+  display: grid;
+  gap: 2px;
+}
+.tb-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+.tb-form label {
+  display: grid;
+  gap: 4px;
+  font-weight: 650;
+  font-size: 13px;
+}
+.tb-form input[type="text"],
+.tb-form input:not([type]) {
+  min-width: 260px;
+  border-radius: 8px;
+  border: 0;
+  padding: 8px 10px;
+  font: inherit;
+}
+.tb-form button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font: 700 14px/1 var(--font-text, system-ui);
+  cursor: pointer;
+}
+.tb-err {
+  color: #ffb4ab;
+}
+.tb-done {
+  display: grid;
+  gap: 8px;
+}
+.tb-done .tb-actions {
+  margin-left: 0;
+}
+@media print {
+  .tb {
+    display: none !important;
+  }
+}

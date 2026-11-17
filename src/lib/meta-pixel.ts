@@ -1,3 +1,4 @@
+import { isTeamBrowser } from "@/lib/team";
 // Meta Pixel (Facebook/Instagram Ads). Só carrega com o ID configurado e depois do aceite de cookies.
 export const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || "";
 export const CONSENT_KEY = "curriculospro.consent.v1";
@@ -25,7 +26,7 @@ export function consentGiven() {
 }
 
 export function loadMetaPixel() {
-  if (!META_PIXEL_ID || typeof window === "undefined" || window.fbq) return;
+  if (!META_PIXEL_ID || typeof window === "undefined" || window.fbq || isTeamBrowser()) return;
   const fbq: Fbq = function (...args: unknown[]) {
     if (fbq.callMethod) fbq.callMethod(...args);
     else fbq.queue!.push(args);
@@ -45,7 +46,7 @@ export function loadMetaPixel() {
 
 /** Envia um evento padrão do Meta. eventID evita contar duas vezes a mesma compra. */
 export function metaTrack(event: string, params?: Record<string, unknown>, eventID?: string) {
-  if (typeof window === "undefined" || !window.fbq || !consentGiven()) return;
+  if (typeof window === "undefined" || !window.fbq || !consentGiven() || isTeamBrowser()) return;
   try {
     if (eventID) window.fbq("track", event, params || {}, { eventID });
     else window.fbq("track", event, params || {});

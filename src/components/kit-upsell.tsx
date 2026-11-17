@@ -1,12 +1,14 @@
 "use client";
 import { useKitGate } from "@/components/kit-gate";
+import { useTeam } from "@/components/team-flag";
 import { KIT_NAME, UPGRADE_PRICE_LABEL, formatAccessUntil } from "@/lib/billing";
 
 /** Em Meus currículos: convida quem tem o Currículo a completar para o Kit, ou mostra até quando o Kit vale. */
 export function KitUpsell() {
   const gate = useKitGate("/curriculos");
   const { access } = gate;
-  if (access.loading || !access.signedIn) return null;
+  const team = useTeam();
+  if (team || access.loading || !access.signedIn) return null;
   if (access.kit)
     return (
       <p className="ku-on">

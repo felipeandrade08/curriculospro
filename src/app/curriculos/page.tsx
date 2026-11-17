@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { ReferralCard } from "@/components/referral-card";
 import { JobTools } from "@/components/job-tools";
 import { KitUpsell } from "@/components/kit-upsell";
+import { CustomerOnly } from "@/components/team-flag";
 import { templateMeta } from "@/lib/templates";
 import {
   ACTIVE_RESUME_KEY,
@@ -182,7 +183,9 @@ export default function ResumesPage() {
       <div className="shell">
         <KitUpsell />
         <JobTools />
-        <ReferralCard />
+        <CustomerOnly>
+          <ReferralCard />
+        </CustomerOnly>
       </div>
       <section className="profileSection shell">
         <div className="sectionEyebrow">SUA BASE PROFISSIONAL</div>

@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { hasActiveAccess, hasKit } from "@/lib/billing";
+import { setTeamBrowser } from "@/lib/team";
 import { clearReferral, storedReferral } from "@/lib/referral";
 
 export type AccessInfo = {
@@ -48,6 +49,7 @@ export function useAccess() {
     try {
       const response = await fetch("/api/account", { cache: "no-store" });
       if (response.status === 401) {
+        setTeamBrowser(false);
         setAccess({ ...initial, loading: false });
         return;
       }
@@ -60,9 +62,11 @@ export function useAccess() {
           referralBonus?: boolean;
           kitUntil?: string | null;
           kit?: boolean;
+          team?: boolean;
         };
       };
-      if (storedReferral()) {
+      setTeamBrowser(!!data.account.team);
+      if (!data.account.team && storedReferral()) {
         await linkStoredReferral();
         const again = await fetch("/api/account", { cache: "no-store" });
         if (again.ok) data = await again.json();

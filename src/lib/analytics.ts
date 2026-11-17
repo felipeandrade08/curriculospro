@@ -1,3 +1,4 @@
+import { isTeamBrowser } from "@/lib/team";
 import { ACCESS_PRICE_CENTS } from "@/lib/billing";
 export type UsageEvent =
   | "site_visit"
@@ -44,6 +45,8 @@ const META_EVENTS: Partial<Record<UsageEvent, string>> = {
 
 export function trackUsage(event: UsageEvent) {
   if (typeof window === "undefined") return;
+  // A equipe não entra nas métricas nem no Pixel (não é cliente).
+  if (isTeamBrowser()) return;
   const metaEvent = META_EVENTS[event];
   if (metaEvent)
     void import("@/lib/meta-pixel").then((m) =>
