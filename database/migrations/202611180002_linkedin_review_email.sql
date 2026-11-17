@@ -1,0 +1,5 @@
+-- Pedido de avaliação por e-mail alguns dias depois da compra e evento do gerador de LinkedIn.
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS review_email_at timestamptz;
+
+ALTER TABLE usage_events DROP CONSTRAINT IF EXISTS usage_events_event_name_check;
+ALTER TABLE usage_events ADD CONSTRAINT usage_events_event_name_check CHECK (event_name IN ('site_visit', 'resume_started', 'pdf_print_requested', 'feedback_sent', 'donation_page_view', 'paywall_view', 'checkout_started', 'payment_approved', 'pricing_view', 'start_page_view', 'resume_imported', 'example_used', 'referral_visit', 'cover_letter_started', 'cover_letter_printed', 'docx_downloaded', 'service_requested', 'job_match_used', 'interview_view', 'applications_used', 'send_message_copied', 'linkedin_used'));

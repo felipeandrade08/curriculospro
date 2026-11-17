@@ -5,6 +5,7 @@ const TOOLS = [
   { href: "/enviar-curriculo", title: "Mensagem para enviar", text: "Texto pronto para WhatsApp, e-mail e LinkedIn." },
   { href: "/candidaturas", title: "Minhas candidaturas", text: "Anote onde enviou e saiba quando cobrar retorno." },
   { href: "/entrevista", title: "Treino de entrevista", text: "Perguntas da sua área e como responder." },
+  { href: "/linkedin", title: "Perfil do LinkedIn", text: "Título e Sobre prontos a partir do currículo." },
 ];
 
 /** Atalhos para as ferramentas de busca de emprego. */

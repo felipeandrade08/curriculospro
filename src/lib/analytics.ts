@@ -20,7 +20,8 @@ export type UsageEvent =
   | "job_match_used"
   | "interview_view"
   | "applications_used"
-  | "send_message_copied";
+  | "send_message_copied"
+  | "linkedin_used";
 
 const repeatable = new Set<UsageEvent>([
   "pdf_print_requested",
