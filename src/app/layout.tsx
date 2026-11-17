@@ -31,6 +31,8 @@ export const metadata: Metadata = {
   },
   robots: { index: true, follow: true },
   icons: { icon: "/brand/icon.png", shortcut: "/brand/icon.png", apple: "/brand/icon.png" },
+  // Confirmação do domínio no portfólio empresarial da Meta (código público, não é segredo).
+  other: { "facebook-domain-verification": "0pspstioc7n91onvi0f31w7jx5rn6j" },
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
