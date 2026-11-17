@@ -7,9 +7,11 @@ import { CopyButton } from "@/components/copy-button";
 import { readActiveResume } from "@/lib/active-resume";
 import { JOB_TARGET_KEY, emptyJobTarget, type JobTarget, type ResumeData } from "@/lib/resume";
 import { analyzeJob } from "@/lib/job-match";
-import { formAnswers } from "@/lib/form-answers";
+import { formAnswers, type FormAnswer } from "@/lib/form-answers";
+import { KitBlur, useKitGate } from "@/components/kit-gate";
 
 export default function AnswersPage() {
+  const gate = useKitGate("/respostas-candidatura");
   const [cv, setCv] = useState<ResumeData | null>(null);
   const [ready, setReady] = useState(false);
   const [job, setJob] = useState<JobTarget>(emptyJobTarget());
@@ -80,8 +82,31 @@ export default function AnswersPage() {
             <p className="ra-note">Nada aqui é inventado: as respostas usam só o que está no seu currículo.</p>
           </form>
           <div className="ra-list">
-            {answers.map((a) => {
-              const text = edits[a.id] ?? a.text;
+            {answers.slice(0, 1).map(renderAnswer)}
+            {answers.length > 1 && (
+              <KitBlur
+                kit={gate.kit}
+                loading={gate.loading}
+                onUnlock={gate.ask}
+                cta={gate.cta}
+                title={`Mais ${answers.length - 1} respostas prontas`}
+                text="Por que quer trabalhar aqui, por que você é a pessoa certa, conquista, pretensão salarial e disponibilidade, montadas com o seu currículo e a vaga."
+                height={300}
+              >
+                <div className="ra-list">{answers.slice(1).map(renderAnswer)}</div>
+              </KitBlur>
+            )}
+          </div>
+        </section>
+      )}
+      {gate.modal}
+      <SiteFooter />
+    </main>
+  );
+
+  function renderAnswer(a: FormAnswer) {
+
+    const text = edits[a.id] ?? a.text;
               return (
                 <article key={a.id} className="ra-item">
                   <header>
@@ -102,11 +127,5 @@ export default function AnswersPage() {
                   </small>
                 </article>
               );
-            })}
-          </div>
-        </section>
-      )}
-      <SiteFooter />
-    </main>
-  );
+  }
 }

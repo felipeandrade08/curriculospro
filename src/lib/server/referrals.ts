@@ -80,10 +80,16 @@ export async function rewardReferral(paymentId: string) {
     RETURNING referrer_id, referred_id`;
   if (!rows.length) return null;
   const { referrer_id, referred_id } = rows[0] as { referrer_id: string; referred_id: string };
-  await sql`UPDATE app_users SET access_until = access_until + make_interval(days => ${REFERRED_BONUS_DAYS}), updated_at = now()
+  // Quem tem o Kit Emprego ganha os dias extras também no Kit.
+  await sql`UPDATE app_users SET access_until = access_until + make_interval(days => ${REFERRED_BONUS_DAYS}),
+      kit_until = CASE WHEN kit_until IS NOT NULL AND kit_until >= access_until THEN access_until + make_interval(days => ${REFERRED_BONUS_DAYS}) ELSE kit_until END,
+      updated_at = now()
     WHERE id = ${referred_id}`;
   const [ref] = await sql`UPDATE app_users
-    SET access_until = GREATEST(COALESCE(access_until, now()), now()) + make_interval(days => ${REFERRER_BONUS_DAYS}), updated_at = now()
+    SET access_until = GREATEST(COALESCE(access_until, now()), now()) + make_interval(days => ${REFERRER_BONUS_DAYS}),
+      kit_until = CASE WHEN kit_until IS NOT NULL AND kit_until > now() AND kit_until >= access_until
+        THEN access_until + make_interval(days => ${REFERRER_BONUS_DAYS}) ELSE kit_until END,
+      updated_at = now()
     WHERE id = ${referrer_id} RETURNING email, display_name, access_until, email_opt_out`;
   return {
     referrerEmail: String(ref?.email || ""),
@@ -98,7 +104,11 @@ export async function revokeReferralReward(paymentId: string) {
   const rows = await sql`UPDATE referral_rewards SET revoked_at = now()
     WHERE payment_id = ${paymentId} AND revoked_at IS NULL RETURNING referrer_id, referred_id, referrer_days, referred_days`;
   for (const r of rows) {
-    await sql`UPDATE app_users SET access_until = access_until - make_interval(days => ${Number(r.referred_days)}) WHERE id = ${String(r.referred_id)}`;
-    await sql`UPDATE app_users SET access_until = access_until - make_interval(days => ${Number(r.referrer_days)}) WHERE id = ${String(r.referrer_id)}`;
+    await sql`UPDATE app_users SET access_until = access_until - make_interval(days => ${Number(r.referred_days)}),
+        kit_until = CASE WHEN kit_until IS NOT NULL AND kit_until >= access_until THEN kit_until - make_interval(days => ${Number(r.referred_days)}) ELSE kit_until END
+      WHERE id = ${String(r.referred_id)}`;
+    await sql`UPDATE app_users SET access_until = access_until - make_interval(days => ${Number(r.referrer_days)}),
+        kit_until = CASE WHEN kit_until IS NOT NULL AND kit_until >= access_until THEN kit_until - make_interval(days => ${Number(r.referrer_days)}) ELSE kit_until END
+      WHERE id = ${String(r.referrer_id)}`;
   }
 }

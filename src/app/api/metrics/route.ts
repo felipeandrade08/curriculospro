@@ -27,6 +27,8 @@ const allowed = new Set([
   "applications_used",
   "send_message_copied",
   "linkedin_used",
+  "kit_gate_view",
+  "robot_test_used",
 ]);
 const recent = new Map<string, number>();
 const WINDOW_MS = 60_000;

@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ReferralCard } from "@/components/referral-card";
 import { JobTools } from "@/components/job-tools";
+import { KitUpsell } from "@/components/kit-upsell";
 import { templateMeta } from "@/lib/templates";
 import {
   ACTIVE_RESUME_KEY,
@@ -179,6 +180,7 @@ export default function ResumesPage() {
         </div>
       </section>
       <div className="shell">
+        <KitUpsell />
         <JobTools />
         <ReferralCard />
       </div>

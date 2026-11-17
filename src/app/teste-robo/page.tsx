@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { parseResume, type ImportLine, type ImportResult } from "@/lib/import/parse";
 import { ImportError, readResumeFile } from "@/lib/import/read-file";
 import { robotChecks, robotScore, type Check } from "@/lib/robot-check";
+import { trackUsage } from "@/lib/analytics";
 
 type Done = { name: string; lines: ImportLine[]; result: ImportResult; checks: Check[]; score: number };
 
@@ -27,6 +28,7 @@ export default function RobotTestPage() {
       const result = parseResume(lines);
       const checks = robotChecks(lines, result, file.size);
       setDone({ name: file.name, lines, result, checks, score: robotScore(checks) });
+      trackUsage("robot_test_used");
       window.setTimeout(() => document.getElementById("rb-result")?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch (e) {
       setError(

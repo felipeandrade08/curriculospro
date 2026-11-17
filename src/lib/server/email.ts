@@ -101,20 +101,36 @@ export function purchaseEmail(p: {
   accessUntil: string;
   paymentId: string;
   bonusDays: number;
+  plan?: string;
 }) {
   const hi = firstName(p.name) ? "Olá, " + esc(firstName(p.name)) + "!" : "Olá!";
   const until = formatAccessUntil(p.accessUntil);
+  const kit = p.plan === "mes" || p.plan === "upgrade";
   const bonus = p.bonusDays
     ? `<p>Como você chegou por indicação, ganhou <b>+${p.bonusDays} dias de bônus</b>, já incluídos.</p>`
     : "";
+  const tools: [string, string][] = [
+    ["Adaptar o currículo para a vaga", "/adaptar-vaga"],
+    ["LinkedIn pronto", "/linkedin"],
+    ["Respostas para a candidatura", "/respostas-candidatura"],
+    ["Gupy, Indeed e Infojobs", "/plataformas"],
+    ["Treino de entrevista com correção", "/entrevista"],
+  ];
+  const kitHtml = kit
+    ? `<p>Seu <b>Kit Emprego</b> está liberado. Comece por aqui:</p><ul style="padding-left:18px;margin:0 0 12px">${tools
+        .map(([t, u]) => `<li><a href="${SITE_URL}${u}" style="color:#1553d6">${t}</a></li>`)
+        .join("")}</ul>`
+    : `<p style="background:#f4f7fb;border-radius:10px;padding:12px 14px;font-size:14px">Quer ajuda até a vaga? Complete para o <b>Kit Emprego</b> pagando só a diferença e libere LinkedIn pronto, respostas para a candidatura e dados prontos para Gupy, Indeed e Infojobs: <a href="${SITE_URL}/curriculos" style="color:#1553d6">ver o Kit</a>.</p>`;
   return {
-    subject: "Pagamento confirmado — downloads liberados até " + until.split(",")[0],
-    text: `${firstName(p.name) ? "Olá, " + firstName(p.name) + "!" : "Olá!"}\n\nRecebemos seu Pix de ${formatBRL(p.amountCents)}. Seus downloads em PDF estão liberados até ${until}.\n\nAbra seus currículos: ${SITE_URL}/curriculos\n\nPedido: ${p.paymentId}`,
+    subject: kit
+      ? "Kit Emprego liberado até " + until.split(",")[0]
+      : "Pagamento confirmado — downloads liberados até " + until.split(",")[0],
+    text: `${firstName(p.name) ? "Olá, " + firstName(p.name) + "!" : "Olá!"}\n\nRecebemos seu pagamento de ${formatBRL(p.amountCents)}. ${kit ? "Seu Kit Emprego e os downloads" : "Seus downloads em PDF e Word"} estão liberados até ${until}.\n\nAbra seus currículos: ${SITE_URL}/curriculos\n${kit ? tools.map(([t, u]) => `\n${t}: ${SITE_URL}${u}`).join("") + "\n" : ""}\nPedido: ${p.paymentId}`,
     html: layout({
-      preheader: "Downloads liberados até " + until,
-      title: "Pagamento confirmado",
-      body: `<p>${hi}</p><p>Recebemos seu Pix de <b>${formatBRL(p.amountCents)}</b>. Você pode baixar seus currículos e cartas de apresentação em PDF, sem marca d'água, quantas vezes quiser até <b>${until}</b>.</p>${bonus}
-<p style="background:#f4f7fb;border-radius:10px;padding:12px 14px;font-size:14px">Dica: ajuste o currículo para cada vaga e baixe de novo — não tem custo extra durante o período.</p>
+      preheader: (kit ? "Kit Emprego liberado até " : "Downloads liberados até ") + until,
+      title: kit ? "Kit Emprego liberado" : "Pagamento confirmado",
+      body: `<p>${hi}</p><p>Recebemos seu pagamento de <b>${formatBRL(p.amountCents)}</b>. Você pode baixar seus currículos e cartas de apresentação em PDF e Word, sem marca d'água, quantas vezes quiser até <b>${until}</b>.</p>${bonus}
+${kitHtml}
 <p style="font-size:13px;color:#6b778c">Pedido Mercado Pago: ${esc(p.paymentId)}</p>`,
       cta: { label: "Abrir meus currículos", url: SITE_URL + "/curriculos" },
     }),

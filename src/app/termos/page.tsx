@@ -48,7 +48,9 @@ export default function Terms() {
           <h2>Acesso pago para download</h2>
           <p>
             O download do currículo em PDF sem marca d&apos;água requer um acesso pago, cobrado uma única vez:
-            {ACCESS_DAYS} dias por {ACCESS_PRICE_LABEL} ou {ACCESS_PLANS.mes.days} dias por {MONTH_PRICE_LABEL}. Cupons
+            o pacote Currículo, com {ACCESS_DAYS} dias por {ACCESS_PRICE_LABEL}, ou o Kit Emprego, com {ACCESS_PLANS.mes.days} dias
+            por {MONTH_PRICE_LABEL}, que também libera as ferramentas de busca de emprego. Quem tem o pacote Currículo
+            ativo pode completar para o Kit Emprego pagando a diferença, e o acesso passa a somar 30 dias. Cupons
             de desconto valem conforme as condições informadas em cada um e são aplicados antes do pagamento. O período começa no momento em que o
             pagamento é confirmado e, durante ele, você pode baixar quantas vezes quiser todos os currículos
             da sua conta. Se você comprar um novo período antes do fim do atual, os dias são somados.

@@ -331,7 +331,7 @@ export default async function Home() {
             <p>
               Sem assinatura e sem renovação automática. Um pagamento libera {ACCESS_DAYS} dias de downloads
               ilimitados de todos os seus currículos: ajuste para cada vaga e baixe de novo sem pagar outra
-              vez. Precisa de mais tempo? Há também o acesso de 30 dias por {MONTH_PRICE_LABEL}.
+              vez. Quer ajuda até a vaga? O Kit Emprego, por {MONTH_PRICE_LABEL}, traz 30 dias e libera LinkedIn pronto, respostas para a candidatura e mais.
             </p>
             <Link href="/precos" className="price-link">
               Como funciona o pagamento

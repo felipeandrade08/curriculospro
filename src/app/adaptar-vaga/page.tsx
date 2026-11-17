@@ -12,6 +12,7 @@ import { readLibrary } from "@/lib/start";
 import { addRequirement, analyzeJob, type JobRequirement, type MatchKind } from "@/lib/job-match";
 import { SiteHeader } from "@/components/site-header";
 import { trackUsage } from "@/lib/analytics";
+import { KitBlur, KitTag, useKitGate } from "@/components/kit-gate";
 import { SiteFooter } from "@/components/site-footer";
 
 const KIND: Record<MatchKind, string> = {
@@ -51,6 +52,7 @@ export default function JobMatchPage() {
     if (ready) localStorage.setItem(JOB_TARGET_KEY, JSON.stringify(target));
   }, [target, ready]);
 
+  const gate = useKitGate("/adaptar-vaga");
   const doc = docs.find((d) => d.id === docId) || null;
   const description = useDeferredValue(target.description),
     title = useDeferredValue(target.title);
@@ -188,8 +190,9 @@ export default function JobMatchPage() {
                           </small>
                         </span>
                         {r.addable ? (
-                          <button type="button" onClick={() => add(r)}>
+                          <button type="button" onClick={() => (gate.kit ? add(r) : gate.ask())}>
                             Eu tenho, adicionar
+                            {!gate.kit && <KitTag />}
                           </button>
                         ) : (
                           <button type="button" className="ghost" onClick={openEditor}>
@@ -234,6 +237,15 @@ export default function JobMatchPage() {
                 {result.tips.length > 0 && (
                   <section className="jm-tips">
                     <h2>Dicas para esta vaga</h2>
+                    <KitBlur
+                      kit={gate.kit}
+                      loading={gate.loading}
+                      onUnlock={gate.ask}
+                      cta={gate.cta}
+                      title={`${result.tips.length} dica${result.tips.length > 1 ? "s" : ""} para esta vaga`}
+                      text="Veja o que mudar no currículo para esta vaga e adicione com um toque o que você já tem."
+                      height={120}
+                    >
                     <ul>
                       {result.tips.map((t) => (
                         <li key={t.text}>
@@ -246,6 +258,7 @@ export default function JobMatchPage() {
                         </li>
                       ))}
                     </ul>
+                    </KitBlur>
                   </section>
                 )}
 
@@ -264,6 +277,7 @@ export default function JobMatchPage() {
           </div>
         </section>
       )}
+      {gate.modal}
       <SiteFooter />
     </main>
   );

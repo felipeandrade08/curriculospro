@@ -5,6 +5,7 @@ import { readActiveResume } from "@/lib/active-resume";
 import type { ResumeData } from "@/lib/resume";
 import { googleJobs, platformBySlug } from "@/lib/platforms";
 import { CopyButton } from "@/components/copy-button";
+import { KitBlur, useKitGate } from "@/components/kit-gate";
 
 const clean = (s: string) => s.replace(/\(a\)|\(o\)/g, "").replace(/\s+/g, " ").trim();
 const bullets = (d: string) =>
@@ -16,6 +17,7 @@ const bullets = (d: string) =>
 /** Dados do currículo prontos para colar nos campos da plataforma + busca de vagas. */
 export function PlatformKit({ slug }: { slug: string }) {
   const p = platformBySlug(slug)!;
+  const gate = useKitGate("/plataformas/" + slug);
   const [cv, setCv] = useState<ResumeData | null>(null);
   const [ready, setReady] = useState(false);
   const [role, setRole] = useState("");
@@ -87,6 +89,16 @@ export function PlatformKit({ slug }: { slug: string }) {
           <section className="pk-card">
             <h2>Seus dados prontos para copiar</h2>
             <p>Copie cada bloco e cole no campo correspondente {p.em === "na" ? "da" : "do"} {p.name}.</p>
+            <KitBlur
+              kit={gate.kit}
+              loading={gate.loading}
+              onUnlock={gate.ask}
+              cta={gate.cta}
+              title={`Seus dados prontos para o ${p.name}`}
+              text="Resumo, cada experiência, habilidades, formação e cursos separados para copiar e colar, sem digitar nada de novo."
+              height={220}
+            >
+            <div className="pk-fields">
             {cv.summary.trim() && (
               <div className="pk-field">
                 <header>
@@ -162,6 +174,8 @@ export function PlatformKit({ slug }: { slug: string }) {
                 <p>{cv.languages.join(" · ")}</p>
               </div>
             )}
+            </div>
+            </KitBlur>
           </section>
         )
       )}
@@ -176,6 +190,7 @@ export function PlatformKit({ slug }: { slug: string }) {
           Montar minhas respostas
         </Link>
       </section>
+      {gate.modal}
     </div>
   );
 }

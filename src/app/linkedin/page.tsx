@@ -7,6 +7,7 @@ import { readActiveResume } from "@/lib/active-resume";
 import type { ResumeData } from "@/lib/resume";
 import { ABOUT_MAX, HEADLINE_MAX, aboutText, experienceTexts, headlines } from "@/lib/linkedin";
 import { trackUsage } from "@/lib/analytics";
+import { KitBlur, useKitGate } from "@/components/kit-gate";
 
 const CHECK_KEY = "curriculospro.linkedinCheck.v1";
 const CHECKS = [
@@ -22,6 +23,7 @@ const CHECKS = [
 ] as const;
 
 export default function LinkedinPage() {
+  const gate = useKitGate("/linkedin");
   const [cv, setCv] = useState<ResumeData | null>(null);
   const [ready, setReady] = useState(false);
   const [style, setStyle] = useState<"texto" | "topicos">("texto");
@@ -95,7 +97,7 @@ export default function LinkedinPage() {
                   <h2>Título</h2>
                   <span>Aparece embaixo do seu nome e nas buscas. Escolha um.</span>
                 </header>
-                {heads.map((h, i) => (
+                {heads.slice(0, gate.kit ? heads.length : 1).map((h, i) => (
                   <div key={h} className="li-row">
                     <p>{h}</p>
                     <small>
@@ -105,6 +107,17 @@ export default function LinkedinPage() {
                   </div>
                 ))}
               </article>
+
+              <KitBlur
+                kit={gate.kit}
+                loading={gate.loading}
+                onUnlock={gate.ask}
+                cta={gate.cta}
+                title="Seu perfil completo do LinkedIn"
+                text="Mais opções de título, o texto do Sobre pronto (corrido ou em tópicos), as experiências e as competências para copiar."
+                height={260}
+              >
+              <div className="li-main">
 
               <article className="li-card">
                 <header>
@@ -167,6 +180,8 @@ export default function LinkedinPage() {
                   </div>
                 </article>
               )}
+              </div>
+              </KitBlur>
             </div>
 
             <aside className="li-side">
@@ -193,6 +208,7 @@ export default function LinkedinPage() {
           </section>
         )
       )}
+      {gate.modal}
       <SiteFooter />
     </main>
   );
