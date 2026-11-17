@@ -32,11 +32,11 @@ const n = (v: unknown) => Number(v || 0);
 const pct = (a: number, b: number) => (b ? Math.round((a / b) * 1000) / 10 : 0);
 
 function Delta({ now, before }: { now: number; before: number }) {
-  if (!before && !now) return <small className="ad-delta">sem movimento</small>;
-  if (!before) return <small className="ad-delta up">novo no período</small>;
+  if (!before && !now) return <small className="cpa-delta">sem movimento</small>;
+  if (!before) return <small className="cpa-delta up">novo no período</small>;
   const d = Math.round(((now - before) / before) * 100);
   return (
-    <small className={"ad-delta " + (d > 0 ? "up" : d < 0 ? "down" : "")}>
+    <small className={"cpa-delta " + (d > 0 ? "up" : d < 0 ? "down" : "")}>
       {d > 0 ? "▲ " : d < 0 ? "▼ " : ""}
       {Math.abs(d)}% vs. período anterior
     </small>
@@ -45,7 +45,7 @@ function Delta({ now, before }: { now: number; before: number }) {
 
 function Failed({ what }: { what: string }) {
   return (
-    <div className="ad-alert">Não foi possível carregar {what}. Confira a conexão com o banco de dados.</div>
+    <div className="cpa-alert">Não foi possível carregar {what}. Confira a conexão com o banco de dados.</div>
   );
 }
 
@@ -134,69 +134,69 @@ export async function OverviewTab({ days, href }: { days: number; href: Href }) 
 
   return (
     <>
-      <div className="ad-kpis">
-        <article className="ad-kpi main">
+      <div className="cpa-kpis">
+        <article className="cpa-kpi main">
           <span>Faturamento</span>
           <strong>{formatBRL(n(data.sales?.revenue))}</strong>
           <Delta now={n(data.sales?.revenue)} before={n(data.sales?.prev_revenue)} />
         </article>
-        <article className="ad-kpi">
+        <article className="cpa-kpi">
           <span>Vendas</span>
           <strong>{sales}</strong>
           <Delta now={sales} before={n(data.sales?.prev_sales)} />
         </article>
-        <article className="ad-kpi">
+        <article className="cpa-kpi">
           <span>Hoje</span>
           <strong>{formatBRL(n(data.sales?.today))}</strong>
-          <small className="ad-delta">vendas aprovadas hoje</small>
+          <small className="cpa-delta">vendas aprovadas hoje</small>
         </article>
-        <article className="ad-kpi">
+        <article className="cpa-kpi">
           <span>Conversão</span>
           <strong>{pct(sales, offers).toLocaleString("pt-BR")}%</strong>
-          <small className="ad-delta">pagaram ÷ viram a oferta</small>
+          <small className="cpa-delta">pagaram ÷ viram a oferta</small>
         </article>
-        <article className="ad-kpi">
+        <article className="cpa-kpi">
           <span>Visitas</span>
           <strong>{(ev.get("site_visit") || 0).toLocaleString("pt-BR")}</strong>
           <Delta now={ev.get("site_visit") || 0} before={prevEv.get("site_visit") || 0} />
         </article>
-        <article className="ad-kpi">
+        <article className="cpa-kpi">
           <span>Novas contas</span>
           <strong>{n(data.users?.signups)}</strong>
           <Delta now={n(data.users?.signups)} before={n(data.users?.prev_signups)} />
         </article>
-        <article className="ad-kpi">
+        <article className="cpa-kpi">
           <span>Acessos ativos</span>
           <strong>{n(data.users?.active)}</strong>
-          <small className="ad-delta">com download liberado agora</small>
+          <small className="cpa-delta">com download liberado agora</small>
         </article>
-        <article className="ad-kpi">
+        <article className="cpa-kpi">
           <span>Nota média</span>
           <strong>
             {data.rating.total
               ? data.rating.avg.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " ★"
               : "—"}
           </strong>
-          <small className="ad-delta">{data.rating.total} avaliação(ões) no período</small>
+          <small className="cpa-delta">{data.rating.total} avaliação(ões) no período</small>
         </article>
       </div>
 
-      <div className="ad-grid">
-        <section className="ad-panel">
+      <div className="cpa-grid">
+        <section className="cpa-panel">
           <header>
             <h2>Visitas e vendas por dia</h2>
-            <span className="ad-legend">
+            <span className="cpa-legend">
               <i className="v" /> visitas <i className="s" /> vendas
             </span>
           </header>
           <Chart series={series} />
         </section>
-        <section className="ad-panel">
+        <section className="cpa-panel">
           <header>
             <h2>Funil</h2>
-            <span className="ad-muted">últimos {days} dias</span>
+            <span className="cpa-muted">últimos {days} dias</span>
           </header>
-          <ol className="ad-funnel">
+          <ol className="cpa-funnel">
             {funnel.map((f, i) => (
               <li key={f.label}>
                 <div>
@@ -212,7 +212,7 @@ export async function OverviewTab({ days, href }: { days: number; href: Href }) 
               </li>
             ))}
           </ol>
-          <dl className="ad-mini">
+          <dl className="cpa-mini">
             <div>
               <dt>Importaram currículo</dt>
               <dd>{ev.get("resume_imported") || 0}</dd>
@@ -226,20 +226,20 @@ export async function OverviewTab({ days, href }: { days: number; href: Href }) 
               <dd>{ev.get("pdf_print_requested") || 0}</dd>
             </div>
           </dl>
-          <p className="ad-muted">
+          <p className="cpa-muted">
             Etapas contadas uma vez por sessão; vendas confirmadas pelo Mercado Pago.
           </p>
         </section>
       </div>
 
-      <div className="ad-grid two">
-        <section className="ad-panel">
+      <div className="cpa-grid two">
+        <section className="cpa-panel">
           <header>
             <h2>Últimas vendas</h2>
             <Link href={href({ aba: "vendas" })}>Ver todas</Link>
           </header>
           {data.recentSales.length ? (
-            <ul className="ad-list">
+            <ul className="cpa-list">
               {data.recentSales.map((r, i) => (
                 <li key={i}>
                   <span>{String(r.email).replace(/#substituido:.*/, "")}</span>
@@ -249,26 +249,26 @@ export async function OverviewTab({ days, href }: { days: number; href: Href }) 
               ))}
             </ul>
           ) : (
-            <p className="ad-empty">Nenhuma venda ainda.</p>
+            <p className="cpa-empty">Nenhuma venda ainda.</p>
           )}
         </section>
-        <section className="ad-panel">
+        <section className="cpa-panel">
           <header>
             <h2>Avaliações recentes</h2>
             <Link href={href({ aba: "avaliacoes" })}>Moderar</Link>
           </header>
           {data.latestFeedback.length ? (
-            <ul className="ad-list fb">
+            <ul className="cpa-list fb">
               {data.latestFeedback.map((r, i) => (
                 <li key={i}>
-                  <span className="ad-stars">{"★".repeat(n(r.rating))}</span>
+                  <span className="cpa-stars">{"★".repeat(n(r.rating))}</span>
                   <p>{String(r.message)}</p>
                   <time>{dateTime(r.created_at)}</time>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="ad-empty">Nenhuma avaliação ainda.</p>
+            <p className="cpa-empty">Nenhuma avaliação ainda.</p>
           )}
         </section>
       </div>
@@ -286,7 +286,7 @@ function Chart({ series }: { series: { k: string; visits: number; sales: number 
   const bw = Math.max(2, step * 0.62);
   const labelEvery = series.length > 31 ? 14 : series.length > 7 ? 5 : 1;
   return (
-    <svg className="ad-chart" viewBox={`0 0 ${W} ${H + 24}`} role="img" aria-label="Visitas e vendas por dia">
+    <svg className="cpa-chart" viewBox={`0 0 ${W} ${H + 24}`} role="img" aria-label="Visitas e vendas por dia">
       {[0.5, 1].map((t) => (
         <line key={t} x1={pad} x2={W} y1={H - (H - 10) * t} y2={H - (H - 10) * t} className="grid" />
       ))}
@@ -366,31 +366,31 @@ export async function SalesTab({
   }
   return (
     <>
-      <div className="ad-kpis">
-        <article className="ad-kpi main">
+      <div className="cpa-kpis">
+        <article className="cpa-kpi main">
           <span>Faturamento</span>
           <strong>{formatBRL(n(sum?.revenue))}</strong>
-          <small className="ad-delta">{n(sum?.paid)} pagamento(s) aprovado(s)</small>
+          <small className="cpa-delta">{n(sum?.paid)} pagamento(s) aprovado(s)</small>
         </article>
-        <article className="ad-kpi">
+        <article className="cpa-kpi">
           <span>Cobranças geradas</span>
           <strong>{n(sum?.total)}</strong>
-          <small className="ad-delta">
+          <small className="cpa-delta">
             {pct(n(sum?.paid), n(sum?.total)).toLocaleString("pt-BR")}% foram pagos
           </small>
         </article>
-        <article className="ad-kpi">
+        <article className="cpa-kpi">
           <span>Aguardando</span>
           <strong>{n(sum?.pending)}</strong>
-          <small className="ad-delta">{n(sum?.lost)} expirado(s) ou recusado(s)</small>
+          <small className="cpa-delta">{n(sum?.lost)} expirado(s) ou recusado(s)</small>
         </article>
-        <article className="ad-kpi">
+        <article className="cpa-kpi">
           <span>Estornos</span>
           <strong>{n(sum?.refunded)}</strong>
-          <small className="ad-delta">acesso removido automaticamente</small>
+          <small className="cpa-delta">acesso removido automaticamente</small>
         </article>
       </div>
-      <div className="ad-kpis">
+      <div className="cpa-kpis">
         {(
           [
             ["semana", "Currículo (R$ 9,90)"],
@@ -400,24 +400,24 @@ export async function SalesTab({
         ).map(([id, label]) => {
           const r = byPlan.find((x) => String(x.plan) === id);
           return (
-            <article key={id} className="ad-kpi">
+            <article key={id} className="cpa-kpi">
               <span>{label}</span>
               <strong>{n(r?.paid)}</strong>
-              <small className="ad-delta">
+              <small className="cpa-delta">
                 {formatBRL(n(r?.revenue))} · {pct(n(r?.paid), n(sum?.paid)).toLocaleString("pt-BR")}% das vendas
               </small>
             </article>
           );
         })}
       </div>
-      <section className="ad-panel">
+      <section className="cpa-panel">
         <header>
           <h2>Pagamentos dos últimos {days} dias</h2>
-          <a className="ad-btn ghost" href={"/api/admin/pagamentos?dias=" + days}>
+          <a className="cpa-btn ghost" href={"/api/admin/pagamentos?dias=" + days}>
             Baixar planilha (CSV)
           </a>
         </header>
-        <form className="ad-filters" action="/admin">
+        <form className="cpa-filters" action="/admin">
           <input type="hidden" name="aba" value="vendas" />
           <input type="hidden" name="dias" value={days} />
           <input
@@ -434,14 +434,14 @@ export async function SalesTab({
             <option value="rejected">Recusados</option>
             <option value="refunded">Estornados</option>
           </select>
-          <button className="ad-btn" type="submit">
+          <button className="cpa-btn" type="submit">
             Filtrar
           </button>
           {(q || status) && <Link href={href({ q: "", status: "" })}>Limpar</Link>}
         </form>
         {rows.length ? (
-          <div className="ad-table-wrap">
-            <table className="ad-table">
+          <div className="cpa-table-wrap">
+            <table className="cpa-table">
               <thead>
                 <tr>
                   <th>Criado em</th>
@@ -465,7 +465,7 @@ export async function SalesTab({
                       </td>
                       <td>
                         {formatBRL(n(p.amount_cents))}
-                        <small className="ad-muted">
+                        <small className="cpa-muted">
                           {" "}
                           {p.method === "card" ? "cartão" : "Pix"}
                           {p.plan === "mes" ? " · Kit" : p.plan === "upgrade" ? " · Upgrade" : " · Currículo"}
@@ -473,7 +473,7 @@ export async function SalesTab({
                         </small>
                       </td>
                       <td>
-                        <span className={"ad-pill " + st}>{PAY_STATUS[st] || st}</span>
+                        <span className={"cpa-pill " + st}>{PAY_STATUS[st] || st}</span>
                       </td>
                       <td>{st === "approved" ? dateTime(p.access_until) : "—"}</td>
                       <td>
@@ -486,9 +486,9 @@ export async function SalesTab({
             </table>
           </div>
         ) : (
-          <p className="ad-empty">Nenhum pagamento encontrado.</p>
+          <p className="cpa-empty">Nenhum pagamento encontrado.</p>
         )}
-        <p className="ad-muted">
+        <p className="cpa-muted">
           Estornos são feitos no painel do Mercado Pago; o acesso da pessoa é removido sozinho quando o
           estorno é confirmado.
         </p>
@@ -537,17 +537,17 @@ export async function FeedbackTab({ filter, href }: { filter: string; href: Href
   const total = dist.reduce((s, r) => s + n(r.total), 0);
   const avg = total ? dist.reduce((s, r) => s + n(r.rating) * n(r.total), 0) / total : 0;
   return (
-    <div className="ad-fb">
-      <aside className="ad-panel ad-fb-side">
-        <strong className="ad-avg">
+    <div className="cpa-fb">
+      <aside className="cpa-panel cpa-fb-side">
+        <strong className="cpa-avg">
           {avg.toLocaleString("pt-BR", { maximumFractionDigits: 1, minimumFractionDigits: 1 })}
         </strong>
-        <span className="ad-stars">
+        <span className="cpa-stars">
           {"★".repeat(Math.round(avg))}
           <em>{"★".repeat(5 - Math.round(avg))}</em>
         </span>
-        <p className="ad-muted">{total} avaliação(ões) no total</p>
-        <ul className="ad-dist">
+        <p className="cpa-muted">{total} avaliação(ões) no total</p>
+        <ul className="cpa-dist">
           {[5, 4, 3, 2, 1].map((r) => {
             const c = n(dist.find((d) => n(d.rating) === r)?.total);
             return (
@@ -561,16 +561,16 @@ export async function FeedbackTab({ filter, href }: { filter: string; href: Href
             );
           })}
         </ul>
-        <p className="ad-muted">
+        <p className="cpa-muted">
           Só aparecem no site as avaliações que a pessoa autorizou e que você publicar. Elas surgem em
           /depoimentos e na página inicial em até 5 minutos.
         </p>
-        <Link href="/depoimentos" className="ad-link">
+        <Link href="/depoimentos" className="cpa-link">
           Ver página pública
         </Link>
       </aside>
       <section>
-        <div className="ad-chips">
+        <div className="cpa-chips">
           {FILTERS.map((f) => (
             <Link
               key={f.id}
@@ -582,30 +582,30 @@ export async function FeedbackTab({ filter, href }: { filter: string; href: Href
           ))}
           {filter === "novas" && rows.length > 0 && (
             <form action={markAllFeedbackRead}>
-              <button className="ad-btn ghost small" type="submit">
+              <button className="cpa-btn ghost small" type="submit">
                 Marcar todas como lidas
               </button>
             </form>
           )}
         </div>
-        {rows.length === 0 && <p className="ad-empty">Nada por aqui neste filtro.</p>}
-        <div className="ad-fb-list">
+        {rows.length === 0 && <p className="cpa-empty">Nada por aqui neste filtro.</p>}
+        <div className="cpa-fb-list">
           {rows.map((r) => {
             const canPublish = !!r.allow_public && !!r.author_name;
             const st = String(r.status);
             return (
-              <article key={String(r.id)} className={"ad-fb-item " + st}>
-                <div className="ad-fb-meta">
-                  <span className="ad-stars">
+              <article key={String(r.id)} className={"cpa-fb-item " + st}>
+                <div className="cpa-fb-meta">
+                  <span className="cpa-stars">
                     {"★".repeat(n(r.rating))}
                     <em>{"★".repeat(5 - n(r.rating))}</em>
                   </span>
-                  <span className={"ad-pill " + String(r.category)}>{CAT[String(r.category)] || "—"}</span>
-                  <span className={"ad-pill st-" + st}>{FB_STATUS[st] || st}</span>
+                  <span className={"cpa-pill " + String(r.category)}>{CAT[String(r.category)] || "—"}</span>
+                  <span className={"cpa-pill st-" + st}>{FB_STATUS[st] || st}</span>
                   <time>{dateTime(r.created_at)}</time>
                 </div>
                 <p>{String(r.message)}</p>
-                <div className="ad-fb-who">
+                <div className="cpa-fb-who">
                   {canPublish ? (
                     <>
                       <b>{String(r.author_name)}</b>
@@ -615,7 +615,7 @@ export async function FeedbackTab({ filter, href }: { filter: string; href: Href
                     "Anônimo · não autorizou publicação"
                   )}
                 </div>
-                <form action={replyFeedback} className="ad-reply">
+                <form action={replyFeedback} className="cpa-reply">
                   <input type="hidden" name="id" value={String(r.id)} />
                   <textarea
                     name="reply"
@@ -626,11 +626,11 @@ export async function FeedbackTab({ filter, href }: { filter: string; href: Href
                       canPublish ? "Resposta pública (aparece junto do depoimento)" : "Anotação interna"
                     }
                   />
-                  <button className="ad-btn ghost small" type="submit">
+                  <button className="cpa-btn ghost small" type="submit">
                     {r.admin_reply ? "Atualizar resposta" : "Salvar resposta"}
                   </button>
                 </form>
-                <div className="ad-fb-actions">
+                <div className="cpa-fb-actions">
                   {canPublish && st !== "published" && (
                     <StatusButton id={String(r.id)} status="published" label="Publicar no site" primary />
                   )}
@@ -645,7 +645,7 @@ export async function FeedbackTab({ filter, href }: { filter: string; href: Href
                   <form action={deleteFeedback}>
                     <input type="hidden" name="id" value={String(r.id)} />
                     <ConfirmButton
-                      className="ad-btn danger small"
+                      className="cpa-btn danger small"
                       message="Excluir esta avaliação para sempre?"
                     >
                       Excluir
@@ -676,7 +676,7 @@ function StatusButton({
     <form action={setFeedbackStatus}>
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="status" value={status} />
-      <button className={"ad-btn small" + (primary ? "" : " ghost")} type="submit">
+      <button className={"cpa-btn small" + (primary ? "" : " ghost")} type="submit">
         {label}
       </button>
     </form>
@@ -708,20 +708,20 @@ export async function CustomersTab({ q, msg }: { q: string; msg: string }) {
   }
   const now = Date.now();
   return (
-    <div className="ad-cust">
-      <section className="ad-panel">
+    <div className="cpa-cust">
+      <section className="cpa-panel">
         <header>
           <h2>Liberar acesso manualmente</h2>
         </header>
-        <p className="ad-muted">
+        <p className="cpa-muted">
           Para quem pagou e não recebeu, cortesias ou parcerias. Soma os dias ao acesso atual da pessoa.
         </p>
         {msg && (
-          <p className="ad-msg" role="status">
+          <p className="cpa-msg" role="status">
             {msg}
           </p>
         )}
-        <form action={grantAccess} className="ad-grant">
+        <form action={grantAccess} className="cpa-grant">
           <label>
             <span>E-mail da conta</span>
             <input name="email" type="email" required defaultValue={term} placeholder="pessoa@email.com" />
@@ -740,14 +740,14 @@ export async function CustomersTab({ q, msg }: { q: string; msg: string }) {
             <span>Motivo (opcional)</span>
             <input name="reason" maxLength={200} placeholder="Ex.: Pix pago sem liberação" />
           </label>
-          <button className="ad-btn" type="submit">
+          <button className="cpa-btn" type="submit">
             Liberar acesso
           </button>
         </form>
         {grants.length > 0 && (
           <>
             <h3>Últimas liberações</h3>
-            <ul className="ad-list">
+            <ul className="cpa-list">
               {grants.map((g, i) => (
                 <li key={i}>
                   <span>{String(g.email)}</span>
@@ -762,21 +762,21 @@ export async function CustomersTab({ q, msg }: { q: string; msg: string }) {
           </>
         )}
       </section>
-      <section className="ad-panel">
+      <section className="cpa-panel">
         <header>
           <h2>{term ? "Resultado da busca" : "Contas mais recentes"}</h2>
         </header>
-        <form className="ad-filters" action="/admin">
+        <form className="cpa-filters" action="/admin">
           <input type="hidden" name="aba" value="clientes" />
           <input name="q" defaultValue={q} placeholder="Buscar por e-mail" aria-label="Buscar por e-mail" />
-          <button className="ad-btn" type="submit">
+          <button className="cpa-btn" type="submit">
             Buscar
           </button>
           {q && <Link href="/admin?aba=clientes">Limpar</Link>}
         </form>
         {users.length ? (
-          <div className="ad-table-wrap">
-            <table className="ad-table">
+          <div className="cpa-table-wrap">
+            <table className="cpa-table">
               <thead>
                 <tr>
                   <th>Conta</th>
@@ -799,9 +799,9 @@ export async function CustomersTab({ q, msg }: { q: string; msg: string }) {
                       <td>{shortDate(u.created_at)}</td>
                       <td>
                         {active ? (
-                          <span className="ad-pill approved">até {dateTime(u.access_until)}</span>
+                          <span className="cpa-pill approved">até {dateTime(u.access_until)}</span>
                         ) : (
-                          <span className="ad-pill">sem acesso</span>
+                          <span className="cpa-pill">sem acesso</span>
                         )}
                       </td>
                       <td>{n(u.paid)}</td>
@@ -812,7 +812,7 @@ export async function CustomersTab({ q, msg }: { q: string; msg: string }) {
                             <input type="hidden" name="userId" value={String(u.id)} />
                             <input type="hidden" name="q" value={q} />
                             <ConfirmButton
-                              className="ad-btn danger small"
+                              className="cpa-btn danger small"
                               message={"Encerrar o acesso de " + String(u.email) + " agora?"}
                             >
                               Encerrar acesso
@@ -827,7 +827,7 @@ export async function CustomersTab({ q, msg }: { q: string; msg: string }) {
             </table>
           </div>
         ) : (
-          <p className="ad-empty">Nenhuma conta encontrada.</p>
+          <p className="cpa-empty">Nenhuma conta encontrada.</p>
         )}
       </section>
     </div>
@@ -869,11 +869,11 @@ export async function OrdersTab({
   const now = Date.now();
   return (
     <>
-      <section className="ad-panel">
+      <section className="cpa-panel">
         <header>
           <h2>Como entregar um pedido</h2>
         </header>
-        <ol className="ad-howto">
+        <ol className="cpa-howto">
           <li>
             Clique em <b>Montar no editor</b>: o currículo abre já com os dados do cliente.
           </li>
@@ -887,12 +887,12 @@ export async function OrdersTab({
           </li>
         </ol>
         {msg && (
-          <p className="ad-msg" role="status">
+          <p className="cpa-msg" role="status">
             {msg}
           </p>
         )}
       </section>
-      <div className="ad-chips">
+      <div className="cpa-chips">
         {[
           ["abertos", "Em aberto"],
           ["entregues", "Entregues"],
@@ -907,8 +907,8 @@ export async function OrdersTab({
           </Link>
         ))}
       </div>
-      {rows.length === 0 && <p className="ad-empty">Nenhum pedido neste filtro.</p>}
-      <div className="ad-fb-list">
+      {rows.length === 0 && <p className="cpa-empty">Nenhum pedido neste filtro.</p>}
+      <div className="cpa-fb-list">
         {rows.map((r) => {
           const d = r.data as {
             name: string;
@@ -934,20 +934,20 @@ export async function OrdersTab({
                 ".",
             );
           return (
-            <article key={String(r.id)} className={"ad-fb-item " + (st === "new" ? "new" : "")}>
-              <div className="ad-fb-meta">
+            <article key={String(r.id)} className={"cpa-fb-item " + (st === "new" ? "new" : "")}>
+              <div className="cpa-fb-meta">
                 <b>
                   #{String(r.id)} · {d.name}
                 </b>
                 <span
                   className={
-                    "ad-pill " +
+                    "cpa-pill " +
                     (st === "delivered" ? "approved" : st === "cancelled" ? "refunded" : "pending")
                   }
                 >
                   {ORDER_STATUS[st] || st}
                 </span>
-                {late && <span className="ad-pill refunded">Prazo de 24h perto do fim</span>}
+                {late && <span className="cpa-pill refunded">Prazo de 24h perto do fim</span>}
                 <time>
                   {dateTime(r.created_at)} · há {Math.round(hours)}h
                 </time>
@@ -962,26 +962,26 @@ export async function OrdersTab({
               {d.notes && (
                 <details>
                   <summary>Experiência contada pelo cliente</summary>
-                  <p className="ad-pre">{d.notes}</p>
+                  <p className="cpa-pre">{d.notes}</p>
                 </details>
               )}
               {d.sourceText && (
                 <details>
                   <summary>Currículo antigo colado</summary>
-                  <p className="ad-pre">{d.sourceText}</p>
+                  <p className="cpa-pre">{d.sourceText}</p>
                 </details>
               )}
               {d.resume && (
-                <p className="ad-muted">Enviou um currículo do aparelho como base: “{d.resume.title}”.</p>
+                <p className="cpa-muted">Enviou um currículo do aparelho como base: “{d.resume.title}”.</p>
               )}
               {(st === "new" || st === "in_progress") && (
-                <div className="ad-fb-actions">
+                <div className="cpa-fb-actions">
                   <BuildInEditor id={String(r.id)} data={d} />
                   {st === "new" && (
                     <form action={setServiceStatus}>
                       <input type="hidden" name="id" value={String(r.id)} />
                       <input type="hidden" name="status" value="in_progress" />
-                      <button className="ad-btn ghost small" type="submit">
+                      <button className="cpa-btn ghost small" type="submit">
                         Marcar em produção
                       </button>
                     </form>
@@ -989,14 +989,14 @@ export async function OrdersTab({
                   <form action={setServiceStatus}>
                     <input type="hidden" name="id" value={String(r.id)} />
                     <input type="hidden" name="status" value="cancelled" />
-                    <ConfirmButton className="ad-btn danger small" message="Cancelar este pedido?">
+                    <ConfirmButton className="cpa-btn danger small" message="Cancelar este pedido?">
                       Cancelar
                     </ConfirmButton>
                   </form>
                 </div>
               )}
               {(st === "new" || st === "in_progress") && (
-                <form action={deliverService} className="ad-deliver">
+                <form action={deliverService} className="cpa-deliver">
                   <input type="hidden" name="id" value={String(r.id)} />
                   <label>
                     <span>Currículo pronto (da sua conta)</span>
@@ -1019,12 +1019,12 @@ export async function OrdersTab({
                       placeholder="Ex.: Destacamos seu atendimento e os cursos do SENAC."
                     />
                   </label>
-                  <button className="ad-btn small" type="submit">
+                  <button className="cpa-btn small" type="submit">
                     Entregar
                   </button>
                 </form>
               )}
-              {st === "delivered" && <p className="ad-muted">Entregue em {dateTime(r.delivered_at)}.</p>}
+              {st === "delivered" && <p className="cpa-muted">Entregue em {dateTime(r.delivered_at)}.</p>}
             </article>
           );
         })}
@@ -1048,21 +1048,21 @@ export async function CouponsTab({ msg }: { msg: string }) {
   }
   const now = Date.now();
   return (
-    <div className="ad-cust">
-      <section className="ad-panel">
+    <div className="cpa-cust">
+      <section className="cpa-panel">
         <header>
           <h2>Criar cupom</h2>
         </header>
-        <p className="ad-muted">
+        <p className="cpa-muted">
           Divulgue o código ou o link <code>{SITE_URL}/?cupom=CODIGO</code>: quem entra pelo link já recebe o
           cupom preenchido no pagamento.
         </p>
         {msg && (
-          <p className="ad-msg" role="status">
+          <p className="cpa-msg" role="status">
             {msg}
           </p>
         )}
-        <form action={createCoupon} className="ad-grant ad-coupon-form">
+        <form action={createCoupon} className="cpa-grant cpa-coupon-form">
           <label>
             <span>Código</span>
             <input name="code" required maxLength={20} placeholder="Ex.: INSTA20" style={{ textTransform: "uppercase" }} />
@@ -1100,27 +1100,27 @@ export async function CouponsTab({ msg }: { msg: string }) {
               <option value="30">30 dias</option>
             </select>
           </label>
-          <label className="wide ad-check">
+          <label className="wide cpa-check">
             <input name="first" type="checkbox" /> <span>Só na primeira compra</span>
           </label>
           <label className="wide">
             <span>Anotação (opcional)</span>
             <input name="description" maxLength={200} placeholder="Ex.: Post do Instagram de novembro" />
           </label>
-          <button className="ad-btn" type="submit">
+          <button className="cpa-btn" type="submit">
             Criar cupom
           </button>
         </form>
       </section>
-      <section className="ad-panel">
+      <section className="cpa-panel">
         <header>
           <h2>Cupons</h2>
         </header>
         {!rows.length ? (
-          <p className="ad-empty">Nenhum cupom ainda.</p>
+          <p className="cpa-empty">Nenhum cupom ainda.</p>
         ) : (
-          <div className="ad-table-wrap">
-            <table className="ad-table">
+          <div className="cpa-table-wrap">
+            <table className="cpa-table">
               <thead>
                 <tr>
                   <th>Código</th>
@@ -1139,12 +1139,12 @@ export async function CouponsTab({ msg }: { msg: string }) {
                     <tr key={String(c.code)}>
                       <td>
                         <b>{String(c.code)}</b>
-                        {c.description ? <small className="ad-muted"> {String(c.description)}</small> : null}
+                        {c.description ? <small className="cpa-muted"> {String(c.description)}</small> : null}
                       </td>
                       <td>
                         {c.percent_off ? n(c.percent_off) + "%" : formatBRL(n(c.amount_off_cents))}
-                        {c.plan ? <small className="ad-muted"> · {c.plan === "mes" ? "Kit Emprego" : "Currículo"}</small> : null}
-                        {c.first_purchase_only ? <small className="ad-muted"> · 1ª compra</small> : null}
+                        {c.plan ? <small className="cpa-muted"> · {c.plan === "mes" ? "Kit Emprego" : "Currículo"}</small> : null}
+                        {c.first_purchase_only ? <small className="cpa-muted"> · 1ª compra</small> : null}
                       </td>
                       <td>
                         {n(c.uses)}
@@ -1153,12 +1153,12 @@ export async function CouponsTab({ msg }: { msg: string }) {
                       <td>{formatBRL(n(c.revenue))}</td>
                       <td>
                         {status}
-                        {c.expires_at && !expired ? <small className="ad-muted"> até {shortDate(c.expires_at)}</small> : null}
+                        {c.expires_at && !expired ? <small className="cpa-muted"> até {shortDate(c.expires_at)}</small> : null}
                       </td>
                       <td>
                         <form action={toggleCoupon}>
                           <input type="hidden" name="code" value={String(c.code)} />
-                          <button className="ad-btn ghost small" type="submit">
+                          <button className="cpa-btn ghost small" type="submit">
                             {c.active ? "Desativar" : "Ativar"}
                           </button>
                         </form>

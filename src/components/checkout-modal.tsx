@@ -45,6 +45,17 @@ export function CheckoutModal({
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  /** Diferença entre o relógio do servidor e o do aparelho (relógio errado no PC não pode "vencer" o Pix). */
+  const skew = useRef(0);
+  const [endReason, setEndReason] = useState<"expired" | "cancelled">("expired");
+  const syncClock = (response: Response) => {
+    const header = response.headers.get("date");
+    const server = header ? new Date(header).getTime() : NaN;
+    if (Number.isFinite(server)) {
+      const diff = server - Date.now();
+      skew.current = Math.abs(diff) > 60_000 ? diff : 0;
+    }
+  };
   const dialog = useRef<HTMLElement>(null);
   const unlockedRef = useRef(false);
   const [hasRef, setHasRef] = useState(false);
@@ -98,7 +109,10 @@ export function CheckoutModal({
           onUnlocked(next.accessUntil ?? null);
         }
       } else if (next.status === "pending") setStage("pix");
-      else if (next.status === "expired" || next.status === "cancelled") setStage("expired");
+      else if (next.status === "expired" || next.status === "cancelled") {
+        setEndReason(next.status === "cancelled" ? "cancelled" : "expired");
+        setStage("expired");
+      }
       else {
         setError("O pagamento não foi aprovado. Gere um novo código Pix e tente novamente.");
         setStage("error");
@@ -169,6 +183,7 @@ export function CheckoutModal({
         headers: { "content-type": "application/json" },
         body: payload(),
       });
+      syncClock(response);
       const data = await response.json().catch(() => ({}));
       if (response.status === 401) {
         setStage("offer");
@@ -191,6 +206,7 @@ export function CheckoutModal({
     const check = async () => {
       try {
         const response = await fetch("/api/checkout/pix/" + checkout.paymentId, { cache: "no-store" });
+        syncClock(response);
         if (!response.ok) return;
         const data = await response.json();
         if (active && data.checkout) applyCheckout(data.checkout as CheckoutPix);
@@ -215,9 +231,14 @@ export function CheckoutModal({
     return () => window.clearInterval(timer);
   }, [open, stage]);
 
-  const remaining = checkout?.expiresAt ? Math.max(0, new Date(checkout.expiresAt).getTime() - now) : 0;
+  const remaining = checkout?.expiresAt
+    ? Math.max(0, new Date(checkout.expiresAt).getTime() - (now + skew.current))
+    : 0;
   useEffect(() => {
-    if (stage === "pix" && checkout?.expiresAt && remaining === 0) setStage("expired");
+    if (stage === "pix" && checkout?.expiresAt && remaining === 0) {
+      setEndReason("expired");
+      setStage("expired");
+    }
   }, [stage, checkout, remaining]);
 
   const copyCode = async () => {
@@ -507,8 +528,12 @@ export function CheckoutModal({
             <div className="checkoutCheck neutral" aria-hidden="true">
               ⏱
             </div>
-            <h2 id="checkoutTitle">O código Pix expirou</h2>
-            <p>Nenhuma cobrança foi feita. Gere um novo código para concluir o pagamento.</p>
+            <h2 id="checkoutTitle">{endReason === "cancelled" ? "Este Pix foi cancelado" : "O código Pix expirou"}</h2>
+            <p>
+              {endReason === "cancelled"
+                ? "O Mercado Pago cancelou este código antes do pagamento. Nenhuma cobrança foi feita. Gere um novo código para continuar."
+                : "O código vale por 30 minutos e passou do prazo sem pagamento. Nenhuma cobrança foi feita. Gere um novo código para concluir."}
+            </p>
             <button className="checkoutPrimary" type="button" onClick={createPix}>
               Gerar novo código Pix
             </button>

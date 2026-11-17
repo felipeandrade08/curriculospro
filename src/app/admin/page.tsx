@@ -30,9 +30,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
   if (!check.ok) {
     if (check.reason === "signed-out") redirect("/auth/sign-in?callbackURL=%2Fadmin");
     return (
-      <main className="ad">
+      <main className="cpa">
         <SiteHeader />
-        <section className="ad-notice">
+        <section className="cpa-notice">
           <h1>
             {check.reason === "not-configured"
               ? "Admin ainda não configurado"
@@ -78,10 +78,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
   };
 
   return (
-    <main className="ad">
+    <main className="cpa">
       <SiteHeader />
-      <div className="ad-top">
-        <div className="wrap ad-top-inner">
+      <div className="cpa-top">
+        <div className="wrap cpa-top-inner">
           <div>
             <h1>Administração</h1>
             <p>
@@ -93,7 +93,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
               })}
             </p>
           </div>
-          <nav className="ad-period" aria-label="Período">
+          <nav className="cpa-period" aria-label="Período">
             {PERIODS.map((p) => (
               <Link key={p} href={href({ dias: String(p) })} aria-current={p === days ? "true" : undefined}>
                 {p} dias
@@ -101,19 +101,19 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
             ))}
           </nav>
         </div>
-        <nav className="wrap ad-tabs" aria-label="Seções">
+        <nav className="wrap cpa-tabs" aria-label="Seções">
           {TABS.map((t) => (
             <Link key={t.id} href={href({ aba: t.id })} aria-current={t.id === tab ? "page" : undefined}>
               {t.label}
-              {t.id === "avaliacoes" && newFeedback > 0 && <span className="ad-badge">{newFeedback}</span>}
-              {t.id === "pedidos" && openOrders > 0 && <span className="ad-badge">{openOrders}</span>}
+              {t.id === "avaliacoes" && newFeedback > 0 && <span className="cpa-badge">{newFeedback}</span>}
+              {t.id === "pedidos" && openOrders > 0 && <span className="cpa-badge">{openOrders}</span>}
             </Link>
           ))}
         </nav>
       </div>
-      <div className="wrap ad-body">
+      <div className="wrap cpa-body">
         {dbError && (
-          <div className="ad-alert">
+          <div className="cpa-alert">
             Falta atualizar o banco de dados: rode <code>npm run db:migrate</code> com a DATABASE_URL de
             produção para ativar depoimentos e liberação manual de acesso.
           </div>

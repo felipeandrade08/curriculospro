@@ -34,7 +34,7 @@ export function BuildInEditor({ id, data }: { id: string; data: Data }) {
     window.open("/editor", "_blank");
   };
   return (
-    <button type="button" className="ad-btn ghost small" onClick={open}>
+    <button type="button" className="cpa-btn ghost small" onClick={open}>
       Montar no editor
     </button>
   );
