@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { ACCESS_DAYS, ACCESS_PRICE_CENTS, ACCESS_PRODUCT_NAME, PIX_EXPIRATION_MINUTES } from "@/lib/billing";
+import { ACCESS_PLANS, PIX_EXPIRATION_MINUTES, isAccessPlan } from "@/lib/billing";
+import { priceFor } from "@/lib/server/coupons";
 import { getServerSession } from "@/lib/server/session";
 import { createPixPayment, mercadoPagoConfigured, MercadoPagoError } from "@/lib/server/mercadopago";
 import {
@@ -27,7 +28,12 @@ export async function POST(request: Request) {
     const session = await getServerSession();
     if (!session) return Response.json({ error: "unauthorized" }, { status: 401 });
 
-    const reusable = await findReusablePending(session.userId);
+    const body = (await request.json().catch(() => ({}))) as { plan?: unknown; coupon?: unknown };
+    const plan = ACCESS_PLANS[isAccessPlan(body.plan) ? body.plan : "semana"];
+    const price = await priceFor(plan.id, body.coupon, session.userId);
+    if (!price.ok) return Response.json({ error: "invalid_coupon", message: price.message }, { status: 400 });
+
+    const reusable = await findReusablePending(session.userId, price.amountCents, plan.days, price.couponCode);
     if (reusable) return Response.json({ checkout: toCheckout(reusable) });
 
     if ((await countRecentPayments(session.userId)) >= MAX_PIX_PER_DAY)
@@ -45,8 +51,8 @@ export async function POST(request: Request) {
       base && base.startsWith("https://") ? base + "/api/webhooks/mercadopago" : undefined;
 
     const payment = await createPixPayment({
-      amountCents: ACCESS_PRICE_CENTS,
-      description: ACCESS_PRODUCT_NAME,
+      amountCents: price.amountCents,
+      description: plan.product,
       payerEmail: session.email,
       externalReference: session.userId,
       expiresAt,
@@ -58,8 +64,8 @@ export async function POST(request: Request) {
       id: String(payment.id),
       user_id: session.userId,
       status: payment.status,
-      amount_cents: ACCESS_PRICE_CENTS,
-      access_days: ACCESS_DAYS,
+      amount_cents: price.amountCents,
+      access_days: plan.days,
       qr_code: data?.qr_code || null,
       qr_code_base64: data?.qr_code_base64 || null,
       ticket_url: data?.ticket_url || null,
@@ -68,6 +74,8 @@ export async function POST(request: Request) {
         : expiresAt
       ).toISOString(),
       granted_at: null,
+      plan: plan.id,
+      coupon_code: price.couponCode,
     };
     await insertPayment({
       id: row.id,
@@ -80,6 +88,9 @@ export async function POST(request: Request) {
       qrCodeBase64: row.qr_code_base64,
       ticketUrl: row.ticket_url,
       expiresAt: new Date(row.expires_at!),
+      plan: plan.id,
+      couponCode: price.couponCode,
+      originalCents: price.originalCents,
     });
     return Response.json({ checkout: toCheckout(row) }, { status: 201 });
   } catch (error) {

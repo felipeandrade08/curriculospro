@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { checkAdmin } from "@/lib/server/admin";
 import { db } from "@/lib/server/db";
-import { CustomersTab, FeedbackTab, OrdersTab, OverviewTab, SalesTab } from "./sections";
+import { CouponsTab, CustomersTab, FeedbackTab, OrdersTab, OverviewTab, SalesTab } from "./sections";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Administração", robots: { index: false, follow: false } };
@@ -16,6 +16,7 @@ const TABS = [
   { id: "pedidos", label: "Pedidos" },
   { id: "avaliacoes", label: "Avaliações" },
   { id: "clientes", label: "Clientes" },
+  { id: "cupons", label: "Cupons" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 const PERIODS = [7, 30, 90] as const;
@@ -129,6 +130,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
         )}
         {tab === "avaliacoes" && <FeedbackTab filter={one("filtro") || "novas"} href={href} />}
         {tab === "clientes" && <CustomersTab q={one("q")} msg={one("msg")} />}
+        {tab === "cupons" && <CouponsTab msg={one("msg")} />}
       </div>
     </main>
   );

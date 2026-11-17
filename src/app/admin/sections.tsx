@@ -10,7 +10,10 @@ import {
   replyFeedback,
   revokeAccess,
   setFeedbackStatus,
+  createCoupon,
+  toggleCoupon,
 } from "./actions";
+import { SITE_URL } from "@/lib/site";
 import { ConfirmButton } from "./confirm-button";
 import { BuildInEditor } from "./build-in-editor";
 
@@ -346,7 +349,7 @@ export async function SalesTab({
         count(*)::int AS total
       FROM payments WHERE created_at >= now() - make_interval(days => ${days})`;
     rows =
-      await sql`SELECT p.id, u.email, p.amount_cents, p.status, p.created_at, p.approved_at, p.revoked_at, u.access_until
+      await sql`SELECT p.id, u.email, p.amount_cents, p.status, p.created_at, p.approved_at, p.revoked_at, u.access_until, p.method, p.plan, p.coupon_code
       FROM payments p JOIN app_users u ON u.id = p.user_id
       WHERE p.created_at >= now() - make_interval(days => ${days})
         AND (${q.trim()} = '' OR lower(u.email) LIKE ${like} OR p.id = ${q.trim()})
@@ -435,7 +438,15 @@ export async function SalesTab({
                           {String(p.email)}
                         </Link>
                       </td>
-                      <td>{formatBRL(n(p.amount_cents))}</td>
+                      <td>
+                        {formatBRL(n(p.amount_cents))}
+                        <small className="ad-muted">
+                          {" "}
+                          {p.method === "card" ? "cartão" : "Pix"}
+                          {p.plan === "mes" ? " · 30 dias" : ""}
+                          {p.coupon_code ? " · " + String(p.coupon_code) : ""}
+                        </small>
+                      </td>
                       <td>
                         <span className={"ad-pill " + st}>{PAY_STATUS[st] || st}</span>
                       </td>
@@ -994,5 +1005,147 @@ export async function OrdersTab({
         })}
       </div>
     </>
+  );
+}
+
+export async function CouponsTab({ msg }: { msg: string }) {
+  const sql = db();
+  let rows: Record<string, unknown>[];
+  try {
+    rows = await sql`SELECT c.*, (
+        SELECT count(*)::int FROM payments p WHERE p.coupon_code = c.code AND p.granted_at IS NOT NULL AND p.revoked_at IS NULL
+      ) AS uses, (
+        SELECT COALESCE(sum(p.amount_cents), 0)::int FROM payments p WHERE p.coupon_code = c.code AND p.granted_at IS NOT NULL AND p.revoked_at IS NULL
+      ) AS revenue
+      FROM coupons c ORDER BY c.active DESC, c.created_at DESC LIMIT 100`;
+  } catch {
+    return <Failed what="os cupons (rode a migração do banco)" />;
+  }
+  const now = Date.now();
+  return (
+    <div className="ad-cust">
+      <section className="ad-panel">
+        <header>
+          <h2>Criar cupom</h2>
+        </header>
+        <p className="ad-muted">
+          Divulgue o código ou o link <code>{SITE_URL}/?cupom=CODIGO</code>: quem entra pelo link já recebe o
+          cupom preenchido no pagamento.
+        </p>
+        {msg && (
+          <p className="ad-msg" role="status">
+            {msg}
+          </p>
+        )}
+        <form action={createCoupon} className="ad-grant">
+          <label>
+            <span>Código</span>
+            <input name="code" required maxLength={20} placeholder="Ex.: INSTA20" style={{ textTransform: "uppercase" }} />
+          </label>
+          <label>
+            <span>Tipo</span>
+            <select name="kind" defaultValue="percent">
+              <option value="percent">% de desconto</option>
+              <option value="amount">R$ de desconto</option>
+            </select>
+          </label>
+          <label>
+            <span>Valor</span>
+            <input name="value" required inputMode="decimal" placeholder="Ex.: 20 ou 2,00" />
+          </label>
+          <label>
+            <span>Plano</span>
+            <select name="plan" defaultValue="">
+              <option value="">Todos</option>
+              <option value="semana">Só 7 dias</option>
+              <option value="mes">Só 30 dias</option>
+            </select>
+          </label>
+          <label>
+            <span>Limite de usos</span>
+            <input name="max_uses" type="number" min={0} placeholder="Sem limite" />
+          </label>
+          <label>
+            <span>Vale por</span>
+            <select name="days" defaultValue="0">
+              <option value="0">Sem prazo</option>
+              <option value="1">1 dia</option>
+              <option value="3">3 dias</option>
+              <option value="7">7 dias</option>
+              <option value="30">30 dias</option>
+            </select>
+          </label>
+          <label className="wide ad-check">
+            <input name="first" type="checkbox" /> <span>Só na primeira compra</span>
+          </label>
+          <label className="wide">
+            <span>Anotação (opcional)</span>
+            <input name="description" maxLength={200} placeholder="Ex.: Post do Instagram de novembro" />
+          </label>
+          <button className="ad-btn" type="submit">
+            Criar cupom
+          </button>
+        </form>
+      </section>
+      <section className="ad-panel">
+        <header>
+          <h2>Cupons</h2>
+        </header>
+        {!rows.length ? (
+          <p className="ad-empty">Nenhum cupom ainda.</p>
+        ) : (
+          <div className="ad-table-wrap">
+            <table className="ad-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Desconto</th>
+                  <th>Usos</th>
+                  <th>Vendas</th>
+                  <th>Situação</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((c) => {
+                  const expired = !!c.expires_at && new Date(String(c.expires_at)).getTime() < now;
+                  const status = !c.active ? "Desativado" : expired ? "Expirado" : "Ativo";
+                  return (
+                    <tr key={String(c.code)}>
+                      <td>
+                        <b>{String(c.code)}</b>
+                        {c.description ? <small className="ad-muted"> {String(c.description)}</small> : null}
+                      </td>
+                      <td>
+                        {c.percent_off ? n(c.percent_off) + "%" : formatBRL(n(c.amount_off_cents))}
+                        {c.plan ? <small className="ad-muted"> · {c.plan === "mes" ? "30 dias" : "7 dias"}</small> : null}
+                        {c.first_purchase_only ? <small className="ad-muted"> · 1ª compra</small> : null}
+                      </td>
+                      <td>
+                        {n(c.uses)}
+                        {c.max_uses ? " / " + n(c.max_uses) : ""}
+                      </td>
+                      <td>{formatBRL(n(c.revenue))}</td>
+                      <td>
+                        {status}
+                        {c.expires_at && !expired ? <small className="ad-muted"> até {shortDate(c.expires_at)}</small> : null}
+                      </td>
+                      <td>
+                        <form action={toggleCoupon}>
+                          <input type="hidden" name="code" value={String(c.code)} />
+                          <button className="ad-btn ghost small" type="submit">
+                            {c.active ? "Desativar" : "Ativar"}
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
   );
 }

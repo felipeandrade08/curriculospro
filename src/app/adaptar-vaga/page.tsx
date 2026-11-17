@@ -1,250 +1,269 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   ACTIVE_RESUME_KEY,
   JOB_TARGET_KEY,
-  PROFESSIONAL_PROFILE_KEY,
   RESUME_LIBRARY_KEY,
-  JOB_SELECTION_KEY,
-  JobSelection,
-  JobTarget,
-  ProfessionalProfile,
-  ResumeDocument,
-  analyzeJobTarget,
-  buildJobSelection,
   emptyJobTarget,
-  isProfessionalProfile,
+  type JobTarget,
+  type ResumeDocument,
 } from "@/lib/resume";
+import { readLibrary } from "@/lib/start";
+import { addRequirement, analyzeJob, type JobRequirement, type MatchKind } from "@/lib/job-match";
 import { SiteHeader } from "@/components/site-header";
+import { trackUsage } from "@/lib/analytics";
 import { SiteFooter } from "@/components/site-footer";
 
-export default function JobTargetPage() {
+const KIND: Record<MatchKind, string> = {
+  license: "Habilitação",
+  education: "Formação",
+  language: "Idioma",
+  course: "Curso",
+  skill: "Competência",
+  soft: "Comportamento",
+};
+
+function verdict(score: number) {
+  if (score >= 75) return { text: "Combina bem", tone: "good" };
+  if (score >= 50) return { text: "Combina em parte", tone: "mid" };
+  return { text: "Precisa de ajustes", tone: "low" };
+}
+
+export default function JobMatchPage() {
   const [target, setTarget] = useState<JobTarget>(emptyJobTarget()),
-    [profile, setProfile] = useState<ProfessionalProfile | null>(null),
-    [resume, setResume] = useState<ResumeDocument | null>(null),
+    [docs, setDocs] = useState<ResumeDocument[]>([]),
+    [docId, setDocId] = useState(""),
     [ready, setReady] = useState(false),
-    [selected, setSelected] = useState<Set<string>>(new Set()),
-    [selectionStatus, setSelectionStatus] = useState("");
+    [added, setAdded] = useState<string[]>([]);
+
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(JOB_TARGET_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as JobTarget;
-        if (parsed?.version === 1) setTarget(parsed);
-      }
-      const rawProfile = localStorage.getItem(PROFESSIONAL_PROFILE_KEY);
-      if (rawProfile) {
-        const parsed = JSON.parse(rawProfile);
-        if (isProfessionalProfile(parsed)) setProfile(parsed);
-      }
-      const docs = JSON.parse(localStorage.getItem(RESUME_LIBRARY_KEY) || "[]") as ResumeDocument[],
-        id = localStorage.getItem(ACTIVE_RESUME_KEY);
-      setResume(docs.find((x) => x.id === id) || docs[0] || null);
-    } catch {
-    } finally {
-      setReady(true);
-    }
+      const saved = JSON.parse(localStorage.getItem(JOB_TARGET_KEY) || "null");
+      if (saved?.version === 1) setTarget(saved);
+    } catch {}
+    const lib = readLibrary();
+    setDocs(lib);
+    const active = localStorage.getItem(ACTIVE_RESUME_KEY);
+    setDocId(lib.find((d) => d.id === active)?.id || lib[0]?.id || "");
+    setReady(true);
   }, []);
   useEffect(() => {
     if (ready) localStorage.setItem(JOB_TARGET_KEY, JSON.stringify(target));
   }, [target, ready]);
-  const analysis = useMemo(
-    () => (profile && target.description.trim() ? analyzeJobTarget(target, profile, resume?.cv) : null),
-    [target, profile, resume],
+
+  const doc = docs.find((d) => d.id === docId) || null;
+  const description = useDeferredValue(target.description),
+    title = useDeferredValue(target.title);
+  const result = useMemo(
+    () => (doc && description.trim().length > 40 ? analyzeJob(description, title, doc.cv) : null),
+    [doc, description, title],
   );
-  const candidates = useMemo(
-    () => (profile && target.description.trim() ? buildJobSelection(target, profile) : []),
-    [target, profile],
-  );
-  const toggle = (id: string) =>
-    setSelected((current) => {
-      const next = new Set(current);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  const saveSelection = () => {
-    if (!resume) {
-      setSelectionStatus("Abra um currículo antes de aplicar esta seleção.");
-      return;
-    }
-    const value: JobSelection = {
-      version: 1,
-      resumeId: resume.id,
-      jobUpdatedAt: target.updatedAt,
-      profileUpdatedAt: profile?.updatedAt,
-      selectedIds: [...selected],
-      updatedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(JOB_SELECTION_KEY + ":" + resume.id, JSON.stringify(value));
-    setSelectionStatus("Seleção salva para este currículo. Nada foi reescrito ou removido.");
-  };
+
+  const hasResult = !!result;
+  useEffect(() => {
+    if (hasResult) trackUsage("job_match_used");
+  }, [hasResult]);
+
   const change = (key: "title" | "company" | "description", value: string) =>
     setTarget({ ...target, [key]: value, updatedAt: new Date().toISOString() });
+
+  const saveDoc = (next: ResumeDocument) => {
+    const lib = readLibrary().map((d) => (d.id === next.id ? next : d));
+    localStorage.setItem(RESUME_LIBRARY_KEY, JSON.stringify(lib));
+    localStorage.setItem(ACTIVE_RESUME_KEY, next.id);
+    setDocs(lib);
+  };
+  const add = (r: JobRequirement) => {
+    if (!doc) return;
+    saveDoc({ ...doc, cv: addRequirement(doc.cv, r), updatedAt: new Date().toISOString() });
+    setAdded((a) => [...a, r.label]);
+  };
+  const useRole = () => {
+    if (!doc || !target.title.trim()) return;
+    saveDoc({ ...doc, cv: { ...doc.cv, role: target.title.trim() }, updatedAt: new Date().toISOString() });
+    setAdded((a) => [...a, "Objetivo: " + target.title.trim()]);
+  };
+  const openEditor = () => {
+    if (doc) localStorage.setItem(ACTIVE_RESUME_KEY, doc.id);
+    location.href = "/editor";
+  };
+
+  const has = result?.requirements.filter((r) => r.has) || [],
+    missing = result?.requirements.filter((r) => !r.has) || [],
+    v = result ? verdict(result.score) : null;
+
   return (
-    <main className="jobTargetPage">
+    <main className="jm">
       <SiteHeader active="curriculos" />
-      <section className="jobTargetHero shell">
-        <div>
-          <span className="pill">ADAPTAÇÃO POR VAGA</span>
-          <h1>Entenda a vaga antes de adaptar seu currículo.</h1>
-          <p>
-            O CurriculosPRO compara a descrição da oportunidade apenas com informações que já existem no seu
-            Perfil Profissional e no currículo selecionado.
-          </p>
-        </div>
-        <a className="secondary" href="/editor">
-          ← Voltar ao currículo
-        </a>
+      <section className="jm-head shell">
+        <h1>Seu currículo combina com a vaga?</h1>
+        <p>
+          Cole o anúncio da vaga. Mostramos o que ela pede, o que já está no seu currículo e o que dá para
+          melhorar antes de enviar.
+        </p>
       </section>
-      <section className="jobTargetWorkspace shell">
-        <div className="jobTargetInput">
-          <header>
-            <div>
-              <small>CONTEXTO DA OPORTUNIDADE</small>
-              <h2>Cole a vaga como ela foi publicada</h2>
-            </div>
-            <span>Salvo somente neste dispositivo nesta etapa</span>
-          </header>
-          <div className="profileGrid">
+
+      {ready && !docs.length ? (
+        <section className="jm-empty shell">
+          <b>Você ainda não tem um currículo neste aparelho</b>
+          <p>Crie o seu primeiro (leva poucos minutos) e volte aqui para comparar com a vaga.</p>
+          <a className="btn btn-primary" href="/comecar">
+            Criar meu currículo
+          </a>
+        </section>
+      ) : (
+        <section className="jm-grid shell">
+          <div className="jm-input">
+            {docs.length > 1 && (
+              <label>
+                <span>Currículo que você vai enviar</span>
+                <select value={docId} onChange={(e) => setDocId(e.target.value)}>
+                  {docs.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title || d.cv.name || "Currículo sem nome"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label>
-              <span>
-                Cargo <small>opcional</small>
-              </span>
+              <span>Cargo da vaga</span>
               <input
                 value={target.title}
                 onChange={(e) => change("title", e.target.value)}
-                placeholder="Ex.: Assistente Administrativo"
+                placeholder="Ex.: Auxiliar Administrativo"
               />
             </label>
             <label>
-              <span>
-                Empresa <small>opcional</small>
-              </span>
-              <input
-                value={target.company}
-                onChange={(e) => change("company", e.target.value)}
-                placeholder="Ex.: Empresa XYZ"
+              <span>Anúncio da vaga</span>
+              <textarea
+                rows={14}
+                value={target.description}
+                onChange={(e) => change("description", e.target.value)}
+                placeholder="Copie o texto da vaga (requisitos, atividades, diferenciais) do site, LinkedIn, Indeed ou WhatsApp e cole aqui."
               />
             </label>
+            <p className="jm-note">
+              O texto fica só neste aparelho. Nada é adicionado ao seu currículo sem você tocar em
+              &ldquo;Eu tenho&rdquo;.
+            </p>
           </div>
-          <label>
-            <span>Descrição da vaga</span>
-            <textarea
-              rows={13}
-              value={target.description}
-              onChange={(e) => change("description", e.target.value)}
-              placeholder="Cole aqui requisitos, atividades e demais informações da vaga."
-            />
-          </label>
-          <div className="jobTruthRule">
-            <b>Regra de evidência</b>
-            <span>
-              Termos da vaga podem orientar a seleção e a redação, mas nunca viram experiência ou competência
-              sua sem evidência no seu perfil.
-            </span>
-          </div>
-        </div>
-        <div className="jobTargetAnalysis">
-          <header>
-            <small>ANÁLISE SEGURA</small>
-            <h2>O que já pode ser comprovado</h2>
-          </header>
-          {!profile ? (
-            <div className="jobEmpty">
-              <b>Perfil Profissional necessário</b>
-              <p>Crie ou complete seu perfil para comparar sua trajetória com a vaga.</p>
-              <a href="/perfil-profissional">Abrir Perfil Profissional</a>
-            </div>
-          ) : !analysis ? (
-            <div className="jobEmpty">
-              <b>Cole a descrição da vaga</b>
-              <p>A análise começa no seu navegador assim que houver contexto suficiente.</p>
-            </div>
-          ) : (
-            <>
-              <div className="jobAnalysisStat">
-                <b>{analysis.matched.length}</b>
-                <span>termos encontrados em informações reais</span>
+
+          <div className="jm-result" aria-live="polite">
+            {!result || !v ? (
+              <div className="jm-wait">
+                <b>Cole a vaga ao lado</b>
+                <p>A comparação aparece aqui na hora.</p>
               </div>
-              <section className="jobEvidence">
-                <h3>Correspondências comprovadas</h3>
-                {analysis.matched.length ? (
-                  analysis.matched.slice(0, 18).map((x) => (
-                    <div key={x.term}>
-                      <b>{x.term}</b>
-                      <small>{x.sources.join(" · ")}</small>
-                    </div>
-                  ))
-                ) : (
-                  <p>Nenhuma correspondência clara foi encontrada ainda.</p>
-                )}
-              </section>
-              <section className="jobUnverified">
-                <h3>Termos da vaga sem evidência encontrada</h3>
-                <p>Eles não serão adicionados ao currículo automaticamente.</p>
-                <div>
-                  {analysis.unverified.map((x) => (
-                    <span key={x}>{x}</span>
-                  ))}
+            ) : (
+              <>
+                <div className={"jm-score jm-" + v.tone}>
+                  <div className="jm-num">
+                    {result.requirements.length ? result.score : "–"}
+                    {result.requirements.length > 0 && <small>%</small>}
+                  </div>
+                  <div>
+                    <b>{result.requirements.length ? v.text : "Não reconhecemos requisitos"}</b>
+                    <span>
+                      {result.requirements.length
+                        ? `Você já tem ${has.length} de ${result.requirements.length} itens que a vaga pede.`
+                        : "Confira as palavras que a vaga repete abaixo."}
+                    </span>
+                  </div>
                 </div>
-              </section>
-            </>
-          )}
-        </div>
-      </section>
-      {profile && analysis && (
-        <section className="jobAssisted shell">
-          <header>
-            <div>
-              <small>SELEÇÃO ASSISTIDA</small>
-              <h2>Escolha o que vale destacar neste currículo</h2>
-              <p>
-                As correspondências são apenas pistas textuais. Você decide o que realmente representa sua
-                trajetória para esta vaga.
-              </p>
-            </div>
-            <div>
-              <b>{selected.size}</b>
-              <span>selecionado(s)</span>
-            </div>
-          </header>
-          <div className="jobSelectionList">
-            {candidates.map((item) => (
-              <label key={item.id} className={"jobSelectionItem " + (selected.has(item.id) ? "active" : "")}>
-                <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
-                <span>
-                  <b>{item.label}</b>
-                  <small>{item.detail}</small>
-                  {item.matchedTerms.length > 0 ? (
-                    <em>Corresponde a: {item.matchedTerms.slice(0, 6).join(", ")}</em>
-                  ) : (
-                    <em className="neutral">
-                      Sem correspondência textual direta — disponível se você considerar relevante.
-                    </em>
+
+                {missing.length > 0 && (
+                  <section className="jm-list">
+                    <h2>Falta no seu currículo</h2>
+                    {missing.map((r) => (
+                      <div key={r.key} className="jm-row miss">
+                        <span className="jm-ic" aria-hidden>
+                          !
+                        </span>
+                        <span className="jm-label">
+                          <b>{r.label}</b>
+                          <small>
+                            {KIND[r.kind]}
+                            {r.mentions > 1 ? `, citado ${r.mentions} vezes` : ""}
+                          </small>
+                        </span>
+                        {r.addable ? (
+                          <button type="button" onClick={() => add(r)}>
+                            Eu tenho, adicionar
+                          </button>
+                        ) : (
+                          <button type="button" className="ghost" onClick={openEditor}>
+                            Ajustar formação
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <p className="jm-note">Adicione só o que é verdade. Na entrevista eles vão perguntar.</p>
+                  </section>
+                )}
+
+                {has.length > 0 && (
+                  <section className="jm-list">
+                    <h2>Você já tem</h2>
+                    {has.map((r) => (
+                      <div key={r.key} className="jm-row ok">
+                        <span className="jm-ic" aria-hidden>
+                          ✓
+                        </span>
+                        <span className="jm-label">
+                          <b>{r.label}</b>
+                          <small>{KIND[r.kind]}</small>
+                        </span>
+                      </div>
+                    ))}
+                  </section>
+                )}
+
+                {!result.requirements.length && result.repeated.length > 0 && (
+                  <section className="jm-list">
+                    <h2>Palavras que a vaga repete</h2>
+                    <div className="jm-chips">
+                      {result.repeated.map((w) => (
+                        <span key={w}>{w}</span>
+                      ))}
+                    </div>
+                    <p className="jm-note">Se fizerem sentido para você, use essas palavras no resumo e nas experiências.</p>
+                  </section>
+                )}
+
+                {result.tips.length > 0 && (
+                  <section className="jm-tips">
+                    <h2>Dicas para esta vaga</h2>
+                    <ul>
+                      {result.tips.map((t) => (
+                        <li key={t.text}>
+                          {t.text}
+                          {t.action === "role" && (
+                            <button type="button" onClick={useRole}>
+                              Usar como objetivo
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                <div className="jm-foot">
+                  {added.length > 0 && (
+                    <span>
+                      Adicionado: {added.join(", ")}
+                    </span>
                   )}
-                </span>
-              </label>
-            ))}
+                  <button type="button" className="btn btn-primary" onClick={openEditor}>
+                    Abrir currículo no editor
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-          <footer>
-            <span>{selectionStatus || "Nenhuma alteração será feita no currículo até você confirmar."}</span>
-            <button type="button" disabled={!selected.size} onClick={saveSelection}>
-              Salvar seleção para esta vaga
-            </button>
-          </footer>
         </section>
       )}
-      <section className="jobNextStep shell">
-        <div>
-          <small>SELEÇÃO PRONTA</small>
-          <h2>Continue no editor do currículo</h2>
-          <p>
-            O que você escolheu fica vinculado a este currículo. No editor, use <b>Aplicar seleção da vaga</b>{" "}
-            para adicionar somente os itens confirmados por você.
-          </p>
-        </div>
-        <a href="/editor">Voltar ao editor e aplicar</a>
-      </section>
       <SiteFooter />
     </main>
   );

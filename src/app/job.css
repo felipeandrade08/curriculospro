@@ -1,0 +1,459 @@
+/* Seu currículo combina com a vaga? (/adaptar-vaga) */
+.jm {
+  min-height: 100vh;
+}
+.jm-head {
+  padding-top: 44px;
+  padding-bottom: 26px;
+}
+.jm-head h1 {
+  font-size: clamp(30px, 4.2vw, 48px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0 0 12px;
+  max-width: 18ch;
+}
+.jm-head p {
+  color: var(--ink-2);
+  font-size: 18px;
+  margin: 0;
+  max-width: 60ch;
+}
+.jm-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 22px;
+  align-items: start;
+  padding-bottom: 72px;
+}
+.jm-input,
+.jm-result,
+.jm-empty {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 22px;
+}
+.jm-input {
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 90px;
+}
+.jm-input label {
+  display: grid;
+  gap: 6px;
+}
+.jm-input label > span {
+  font-weight: 650;
+  font-size: 14px;
+}
+.jm-input :is(input, textarea, select) {
+  width: 100%;
+  border: 1.5px solid var(--rule);
+  border-radius: 10px;
+  padding: 11px 12px;
+  font: 400 15px/1.5 var(--font-text);
+  color: var(--ink);
+  background: #fff;
+}
+.jm-input textarea {
+  resize: vertical;
+  min-height: 260px;
+}
+.jm-input :is(input, textarea, select):focus {
+  border-color: var(--pen);
+  outline: none;
+}
+.jm-note {
+  color: var(--ink-3);
+  font-size: 13px;
+  margin: 0;
+}
+.jm-empty {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  margin-bottom: 72px;
+  max-width: 640px;
+  margin-left: max(28px, (100% - 1180px) / 2 + 28px);
+}
+.jm-empty p {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.jm-wait {
+  min-height: 300px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: var(--ink-3);
+}
+.jm-wait b {
+  color: var(--ink);
+  font-size: 18px;
+}
+.jm-wait p {
+  margin: 4px 0 0;
+}
+.jm-score {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+.jm-score.jm-good {
+  background: #e6f7f0;
+}
+.jm-score.jm-mid {
+  background: #fff6d6;
+}
+.jm-score.jm-low {
+  background: #fdebea;
+}
+.jm-num {
+  font: 750 52px/1 var(--font-display);
+  letter-spacing: -0.04em;
+  min-width: 2.4em;
+  font-variant-numeric: tabular-nums;
+}
+.jm-num small {
+  font-size: 24px;
+}
+.jm-good .jm-num {
+  color: #0b7a55;
+}
+.jm-mid .jm-num {
+  color: #8a6400;
+}
+.jm-low .jm-num {
+  color: #b42318;
+}
+.jm-score b {
+  display: block;
+  font-size: 18px;
+}
+.jm-score span {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.jm-list,
+.jm-tips {
+  margin-bottom: 20px;
+}
+.jm .jm-list h2,
+.jm .jm-tips h2 {
+  font-size: 16px;
+  letter-spacing: 0;
+  margin: 0 0 8px;
+}
+.jm-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+}
+.jm-ic {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 14px;
+  flex: none;
+}
+.jm-row.miss .jm-ic {
+  background: #fff1d6;
+  color: #8a5a00;
+}
+.jm-row.ok .jm-ic {
+  background: #e6f7f0;
+  color: #0b7a55;
+}
+.jm-label {
+  flex: 1;
+  display: grid;
+  min-width: 0;
+}
+.jm-label small {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+.jm-row button,
+.jm-tips button {
+  border: 1.5px solid var(--pen);
+  background: var(--pen-soft);
+  color: var(--pen-dark);
+  font: 650 13px/1 var(--font-text);
+  border-radius: 9px;
+  padding: 9px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.jm-row button:hover,
+.jm-tips button:hover {
+  background: var(--pen);
+  color: #fff;
+}
+.jm-row button.ghost {
+  border-color: var(--rule);
+  background: #fff;
+  color: var(--ink-2);
+}
+.jm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.jm-chips span {
+  background: var(--desk);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 13px;
+}
+.jm-tips ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.jm-tips li {
+  background: var(--desk);
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 14.5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.jm-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--rule);
+  padding-top: 16px;
+}
+.jm-foot span {
+  color: #0b7a55;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+@media (max-width: 860px) {
+  .jm-grid {
+    grid-template-columns: 1fr;
+  }
+  .jm-input {
+    position: static;
+  }
+  .jm-input textarea {
+    min-height: 200px;
+  }
+}
+@media (max-width: 480px) {
+  .jm-row {
+    flex-wrap: wrap;
+  }
+  .jm-row button {
+    margin-left: 38px;
+  }
+}
+
+/* Checkout: planos, cupom e cartão */
+.checkoutPlans {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.checkoutPlan {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  border: 1.5px solid #dbe4ef;
+  background: #fff;
+  font: inherit;
+  color: #142a43;
+  cursor: pointer;
+}
+.checkoutPlan.on {
+  border-color: #1553d6;
+  background: #f0f6ff;
+  box-shadow: 0 0 0 3px rgba(21, 83, 214, 0.12);
+}
+.checkoutPlan .cpName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4f6584;
+}
+.checkoutPlan strong {
+  font-size: 26px;
+  letter-spacing: -0.8px;
+  color: #0b4fa0;
+  line-height: 1.1;
+}
+.checkoutPlan small {
+  font-size: 12px;
+  color: #5b6b80;
+  line-height: 1.35;
+}
+.checkoutPlan em {
+  position: absolute;
+  top: -9px;
+  right: 10px;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  color: #0e7a5f;
+  background: #dcf7ec;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.checkoutCoupon {
+  margin-top: 12px;
+}
+.checkoutCoupon .linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #1553d6;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.checkoutCoupon form {
+  display: flex;
+  gap: 8px;
+}
+.checkoutCoupon input {
+  flex: 1;
+  min-width: 0;
+  border: 1.5px solid #dbe4ef;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.checkoutCoupon form button {
+  border: 0;
+  border-radius: 10px;
+  padding: 0 16px;
+  background: #0f2540;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.checkoutCoupon form button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.couponOk,
+.couponBad {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+}
+.couponOk {
+  color: #0b7a55;
+}
+.couponBad {
+  color: #b42318;
+}
+.checkoutSecondary {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  margin-top: 10px;
+  border: 1.5px solid #cfd9e6;
+  border-radius: 14px;
+  background: #fff;
+  color: #0f2540;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.checkoutSecondary:hover:not(:disabled) {
+  border-color: #0f2540;
+}
+.checkoutSecondary:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* Retorno do pagamento com cartão (/pagamento) */
+.pay-card {
+  max-width: 560px;
+  margin: 64px auto 96px;
+  padding: 36px 28px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+.pay-card h1 {
+  font-size: 28px;
+  margin: 6px 0 0;
+}
+.pay-card p {
+  color: var(--ink-2);
+  margin: 0 0 12px;
+  max-width: 44ch;
+}
+.pay-ic {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  font-weight: 800;
+}
+.pay-ic.ok {
+  background: #e6f7f0;
+  color: #0b7a55;
+}
+.pay-ic.wait {
+  background: var(--pen-soft);
+  color: var(--pen);
+}
+.pay-ic.bad {
+  background: #fdebea;
+  color: #b42318;
+}
+
+/* Preços com três colunas */
+.pricingPlans.three {
+  grid-template-columns: repeat(3, minmax(0, 360px));
+}
+@media (max-width: 1100px) {
+  .pricingPlans.three {
+    grid-template-columns: repeat(2, minmax(0, 380px));
+  }
+}
+@media (max-width: 760px) {
+  .pricingPlans.three {
+    grid-template-columns: minmax(0, 440px);
+  }
+}

@@ -3,12 +3,12 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { UsageBeacon } from "@/components/usage-beacon";
-import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
+import { ACCESS_DAYS, ACCESS_PLANS, ACCESS_PRICE_LABEL, MONTH_PRICE_LABEL } from "@/lib/billing";
 import { SUPPORT_WHATSAPP_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Preços",
-  description: `Crie e edite seu currículo grátis. Baixe em PDF sem marca d'água por ${ACCESS_PRICE_LABEL} com ${ACCESS_DAYS} dias de downloads ilimitados. Pagamento único via Pix.`,
+  description: `Crie e edite seu currículo grátis. Baixe em PDF sem marca d'água por ${ACCESS_PRICE_LABEL} com ${ACCESS_DAYS} dias de downloads ilimitados. Ou 30 dias por ${MONTH_PRICE_LABEL}. Pagamento único via Pix ou cartão.`,
   alternates: { canonical: "/precos" },
 };
 
@@ -28,19 +28,23 @@ const rows: [string, boolean, boolean][] = [
 const faq = [
   {
     q: "É uma assinatura?",
-    a: `Não. Você paga ${ACCESS_PRICE_LABEL} uma única vez e tem ${ACCESS_DAYS} dias de acesso. Não existe renovação automática nem cobrança recorrente.`,
+    a: `Não. Você paga uma única vez: ${ACCESS_PRICE_LABEL} por ${ACCESS_DAYS} dias ou ${MONTH_PRICE_LABEL} por ${ACCESS_PLANS.mes.days} dias de acesso. Não existe renovação automática nem cobrança recorrente.`,
   },
   {
     q: "Como funciona o pagamento?",
-    a: "O pagamento é feito por Pix, processado pelo Mercado Pago. Você escaneia o QR Code ou usa o copia e cola no app do seu banco, e o download é liberado automaticamente em poucos segundos após a confirmação.",
+    a: "Por Pix ou cartão de crédito e débito, processados pelo Mercado Pago. No Pix, você escaneia o QR Code ou usa o copia e cola no app do seu banco. No cartão, você paga na página segura do Mercado Pago. O download é liberado automaticamente assim que o pagamento é confirmado.",
   },
   {
     q: "Posso editar e baixar de novo?",
     a: `Sim. Durante os ${ACCESS_DAYS} dias você pode ajustar seus currículos para cada vaga e baixar quantas vezes quiser, de qualquer currículo da sua conta.`,
   },
   {
-    q: `O que acontece depois dos ${ACCESS_DAYS} dias?`,
+    q: "O que acontece quando o acesso termina?",
     a: "Seus currículos continuam salvos e você pode seguir editando gratuitamente. Quando precisar baixar novamente, é só liberar um novo período.",
+  },
+  {
+    q: "Tenho um cupom de desconto. Onde uso?",
+    a: "Na hora de pagar, toque em “Tenho um cupom de desconto”, digite o código e toque em Aplicar. O valor com desconto aparece antes de você pagar.",
   },
   {
     q: "Preciso criar uma conta?",
@@ -69,7 +73,7 @@ export default function PricingPage() {
         </p>
       </section>
 
-      <section className="pricingPlans shell" aria-label="Planos">
+      <section className="pricingPlans three shell" aria-label="Planos">
         <article className="pricingPlan">
           <header>
             <h2>Grátis</h2>
@@ -90,7 +94,7 @@ export default function PricingPage() {
           <header>
             <h2>Acesso {ACCESS_DAYS} dias</h2>
             <strong>{ACCESS_PRICE_LABEL}</strong>
-            <span>pagamento único via Pix</span>
+            <span>pagamento único via Pix ou cartão</span>
           </header>
           <ul>
             <li>Tudo do plano grátis</li>
@@ -117,6 +121,26 @@ export default function PricingPage() {
             Criar meu currículo
           </Link>
           <small>Você só paga na hora de baixar.</small>
+        </article>
+        <article className="pricingPlan">
+          <header>
+            <h2>Acesso {ACCESS_PLANS.mes.days} dias</h2>
+            <strong>{MONTH_PRICE_LABEL}</strong>
+            <span>pagamento único via Pix ou cartão</span>
+          </header>
+          <ul>
+            <li>Tudo do acesso de {ACCESS_DAYS} dias</li>
+            <li>
+              <b>Downloads ilimitados</b> por {ACCESS_PLANS.mes.days} dias
+            </li>
+            <li>Para quem vai enviar currículo para muitas vagas ao longo do mês</li>
+            <li>Compare o currículo com cada vaga e ajuste antes de enviar</li>
+            <li>Sem assinatura e sem renovação automática</li>
+          </ul>
+          <Link href="/comecar" className="btn btn-ghost btn-lg">
+            Criar meu currículo
+          </Link>
+          <small>Escolha o período na hora de pagar.</small>
         </article>
       </section>
 

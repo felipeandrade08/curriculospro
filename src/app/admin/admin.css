@@ -707,3 +707,12 @@
     grid-template-columns: 1fr;
   }
 }
+.ad-grant .ad-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ad-grant .ad-check input {
+  width: 18px;
+  height: 18px;
+}

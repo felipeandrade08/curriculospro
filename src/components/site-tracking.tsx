@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { captureReferral } from "@/lib/referral";
+import { captureCoupon, captureReferral } from "@/lib/referral";
 import { trackUsage } from "@/lib/analytics";
 import { CONSENT_KEY, META_PIXEL_ID, consentGiven, loadMetaPixel, metaTrack } from "@/lib/meta-pixel";
 
@@ -13,6 +13,7 @@ export function SiteTracking() {
 
   useEffect(() => {
     if (captureReferral()) trackUsage("referral_visit");
+    captureCoupon();
     if (!META_PIXEL_ID) return;
     let stored: string | null = null;
     try {

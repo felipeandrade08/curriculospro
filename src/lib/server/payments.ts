@@ -14,6 +14,8 @@ export type PaymentRow = {
   ticket_url: string | null;
   expires_at: string | null;
   granted_at: string | null;
+  plan?: string | null;
+  coupon_code?: string | null;
 };
 
 const iso = (value: unknown) => (value ? new Date(String(value)).toISOString() : null);
@@ -28,29 +30,39 @@ export async function insertPayment(row: {
   qrCode: string | null;
   qrCodeBase64: string | null;
   ticketUrl: string | null;
-  expiresAt: Date;
+  expiresAt: Date | null;
+  method?: "pix" | "card";
+  plan?: string;
+  couponCode?: string | null;
+  originalCents?: number;
 }) {
   const sql = db();
-  await sql`INSERT INTO payments(id,user_id,status,status_detail,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at)
-    VALUES(${row.id},${row.userId},${row.status},${row.statusDetail},${row.amountCents},${row.accessDays},${row.qrCode},${row.qrCodeBase64},${row.ticketUrl},${row.expiresAt.toISOString()})
-`;
+  await sql`INSERT INTO payments(id,user_id,status,status_detail,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at,method,plan,coupon_code,original_cents)
+    VALUES(${row.id},${row.userId},${row.status},${row.statusDetail},${row.amountCents},${row.accessDays},${row.qrCode},${row.qrCodeBase64},${row.ticketUrl},${row.expiresAt ? row.expiresAt.toISOString() : null},${row.method || "pix"},${row.plan || "semana"},${row.couponCode || null},${row.originalCents ?? row.amountCents})
+    ON CONFLICT (id) DO NOTHING`;
 }
 
 export async function findPayment(id: string) {
   const sql = db();
   const rows =
-    (await sql`SELECT id,user_id,status,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at,granted_at
+    (await sql`SELECT id,user_id,status,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at,granted_at,plan,coupon_code
     FROM payments WHERE id=${id}`) as PaymentRow[];
   return rows[0] || null;
 }
 
 /** Um Pix ainda válido do mesmo usuário é reaproveitado para não gerar cobranças duplicadas. */
-export async function findReusablePending(userId: string) {
+export async function findReusablePending(
+  userId: string,
+  amountCents: number,
+  accessDays: number,
+  couponCode: string | null,
+) {
   const sql = db();
   const rows =
-    (await sql`SELECT id,user_id,status,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at,granted_at
+    (await sql`SELECT id,user_id,status,amount_cents,access_days,qr_code,qr_code_base64,ticket_url,expires_at,granted_at,plan,coupon_code
     FROM payments
     WHERE user_id=${userId} AND status='pending' AND expires_at > now() + interval '3 minutes' AND qr_code IS NOT NULL
+      AND amount_cents=${amountCents} AND access_days=${accessDays} AND coupon_code IS NOT DISTINCT FROM ${couponCode}
     ORDER BY created_at DESC LIMIT 1`) as PaymentRow[];
   return rows[0] || null;
 }
@@ -163,5 +175,61 @@ export function toCheckout(row: PaymentRow, accessUntil?: string | null): Checko
     expiresAt: iso(row.expires_at),
     amountCents: Number(row.amount_cents),
     accessUntil: accessUntil ?? null,
+    plan: row.plan === "mes" ? "mes" : "semana",
+    couponCode: row.coupon_code ?? null,
   };
+}
+
+type IntentRow = {
+  id: string;
+  user_id: string;
+  plan: string;
+  amount_cents: number;
+  original_cents: number;
+  access_days: number;
+  coupon_code: string | null;
+};
+
+export async function createCheckoutIntent(i: Omit<IntentRow, "id">) {
+  const sql = db();
+  const id = crypto.randomUUID();
+  await sql`INSERT INTO checkout_intents(id,user_id,plan,amount_cents,original_cents,access_days,coupon_code)
+    VALUES(${id},${i.user_id},${i.plan},${i.amount_cents},${i.original_cents},${i.access_days},${i.coupon_code})`;
+  return id;
+}
+
+export async function setIntentPreference(id: string, preferenceId: string) {
+  const sql = db();
+  await sql`UPDATE checkout_intents SET preference_id=${preferenceId} WHERE id=${id}`;
+}
+
+/**
+ * Pagamentos do Checkout Pro (cartão) só ganham ID depois que a pessoa paga.
+ * Aqui o pagamento consultado na API é ligado à intenção de compra criada no site.
+ */
+export async function adoptCheckoutProPayment(payment: MercadoPagoPayment): Promise<PaymentRow | null> {
+  const intentId = payment.metadata?.intent_id;
+  if (!intentId || typeof intentId !== "string") return null;
+  const sql = db();
+  const intent = ((await sql`SELECT id,user_id,plan,amount_cents,original_cents,access_days,coupon_code
+    FROM checkout_intents WHERE id=${intentId}`) as IntentRow[])[0];
+  if (!intent || String(payment.external_reference || "") !== intent.user_id) return null;
+  await insertPayment({
+    id: String(payment.id),
+    userId: intent.user_id,
+    status: payment.status,
+    statusDetail: payment.status_detail || null,
+    amountCents: Number(intent.amount_cents),
+    accessDays: Number(intent.access_days),
+    qrCode: null,
+    qrCodeBase64: null,
+    ticketUrl: null,
+    expiresAt: null,
+    method: payment.payment_type_id === "bank_transfer" ? "pix" : "card",
+    plan: intent.plan,
+    couponCode: intent.coupon_code,
+    originalCents: Number(intent.original_cents),
+  });
+  await sql`UPDATE checkout_intents SET payment_id=${String(payment.id)} WHERE id=${intent.id}`;
+  return findPayment(String(payment.id));
 }

@@ -16,7 +16,11 @@ export type UsageEvent =
   | "cover_letter_started"
   | "cover_letter_printed"
   | "docx_downloaded"
-  | "service_requested";
+  | "service_requested"
+  | "job_match_used"
+  | "interview_view"
+  | "applications_used"
+  | "send_message_copied";
 
 const repeatable = new Set<UsageEvent>([
   "pdf_print_requested",
@@ -26,6 +30,7 @@ const repeatable = new Set<UsageEvent>([
   "cover_letter_printed",
   "docx_downloaded",
   "service_requested",
+  "send_message_copied",
 ]);
 
 // Eventos do site que também vão para o Meta Pixel (se houver consentimento).
