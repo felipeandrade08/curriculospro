@@ -58,6 +58,40 @@ export function CloudSync() {
       active = false;
     };
   }, [session.data]);
+  // Ao abrir Meus currículos com a conta conectada, baixa sozinho o que existe na conta e ainda não está
+  // neste aparelho (ex.: currículo entregue pela equipe no "Fazemos para você"). Não envia nada.
+  useEffect(() => {
+    if (!session.data) return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/resumes", { cache: "no-store" });
+        if (!res.ok || !active) return;
+        const data = (await res.json()) as { resumes?: CloudResume[]; deleted?: { id: string }[] };
+        const local = readLocal();
+        const localIds = new Set(local.map((x) => x.id));
+        const pending: string[] = JSON.parse(localStorage.getItem(pendingKey) || "[]");
+        const blocked = new Set([...pending, ...(data.deleted || []).map((x) => x.id)]);
+        const fresh = (data.resumes || []).filter(
+          (x) => isResumeDocument(x.document) && !localIds.has(x.document.id) && !blocked.has(x.document.id),
+        );
+        if (!fresh.length || !active) return;
+        writeLocal([...fresh.map((x) => x.document), ...local]);
+        const revisions: Record<string, number> = JSON.parse(localStorage.getItem(key) || "{}");
+        for (const x of fresh) revisions[x.document.id] = x.revision;
+        localStorage.setItem(key, JSON.stringify(revisions));
+        setStatus(
+          fresh.length === 1
+            ? "1 currículo da sua conta foi trazido para este aparelho."
+            : fresh.length + " currículos da sua conta foram trazidos para este aparelho.",
+        );
+      } catch {}
+    })();
+    return () => {
+      active = false;
+    };
+  }, [session.data, key, pendingKey]);
+
   const resolve = (conflict: Conflict, choice: "local-copy" | "remote") => {
     const items = readLocal();
     if (choice === "remote")
