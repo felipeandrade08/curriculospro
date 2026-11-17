@@ -462,10 +462,10 @@
 .pf .pf-block {
   margin-top: 26px;
 }
-.lp .pf .pf-block h2,
-.lp .pf-faq h2,
-.lp .pf-related h2,
-.lp .pf-index h2 {
+.lp .pf .pf-block h2:not(.cv *),
+.lp .pf-faq h2:not(.cv *),
+.lp .pf-related h2:not(.cv *),
+.lp .pf-index h2:not(.cv *) {
   font-size: 19px;
   letter-spacing: -0.01em;
   margin: 0 0 10px;
@@ -571,8 +571,8 @@
   line-height: 1.6;
   color: var(--ink-2);
 }
-.lp .gd section h2,
-.lp .gd-more h2 {
+.lp .gd section h2:not(.cv *),
+.lp .gd-more h2:not(.cv *) {
   font-size: 22px;
   letter-spacing: -0.01em;
   margin: 34px 0 10px;
@@ -629,4 +629,543 @@
   color: var(--ink-3);
   font-size: 14.5px;
   line-height: 1.5;
+}
+
+/* Treino de entrevista (/entrevista) */
+.iv-head {
+  padding-top: 44px;
+  padding-bottom: 22px;
+}
+.iv-head h1,
+.ms-head h1,
+.ap-head h1 {
+  font-size: clamp(30px, 4.2vw, 46px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin: 0 0 12px;
+}
+.iv-head p,
+.ms-head p,
+.ap-head p {
+  color: var(--ink-2);
+  font-size: 18px;
+  max-width: 60ch;
+  margin: 0;
+}
+.iv-area {
+  display: inline-grid;
+  gap: 6px;
+  margin-top: 18px;
+  font-weight: 650;
+  font-size: 14px;
+}
+.iv-area select,
+.ms-form :is(input, select, textarea),
+.ap-form :is(input, select, textarea),
+.iv-a textarea {
+  border: 1.5px solid var(--rule);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: 400 15px/1.5 var(--font-text);
+  color: var(--ink);
+  background: #fff;
+  width: 100%;
+}
+.iv-area select {
+  min-width: 280px;
+}
+.iv-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 22px;
+  align-items: start;
+  padding-bottom: 72px;
+}
+.iv-pitch,
+.iv-progress {
+  grid-column: 1;
+}
+.iv-pitch {
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 22px;
+}
+.lp .iv-pitch h2,
+.iv .iv-pitch h2 {
+  color: #fff;
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+.iv-pitch p {
+  color: #b9c6db;
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+.iv-pitch blockquote {
+  margin: 0 0 14px;
+  font-size: 17px;
+  line-height: 1.6;
+}
+.iv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.iv-actions button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font: 650 14px/1 var(--font-text);
+  background: var(--marker);
+  color: var(--ink);
+  cursor: pointer;
+}
+.iv-actions button.ghost {
+  background: transparent;
+  color: inherit;
+  border: 1.5px solid currentColor;
+}
+.iv-progress {
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.iv-bar {
+  display: block;
+  height: 8px;
+  background: var(--rule);
+  border-radius: 99px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.iv-bar i {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+  transition: width 0.3s;
+}
+.iv-list {
+  grid-column: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.iv-list li {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+}
+.iv-list li.open {
+  border-color: var(--pen);
+}
+.iv-q {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 16px 18px;
+  font: 650 16px/1.4 var(--font-text);
+  color: var(--ink);
+  cursor: pointer;
+}
+.iv-q em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0b7a55;
+  background: #e6f7f0;
+  border-radius: 99px;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+.iv-a {
+  padding: 0 18px 18px;
+  display: grid;
+  gap: 10px;
+}
+.iv-a p {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.iv-avoid {
+  color: #8a3b12 !important;
+}
+.iv-a label {
+  display: grid;
+  gap: 6px;
+  font-weight: 650;
+  font-size: 14px;
+}
+.iv-a .iv-actions button.ghost {
+  color: var(--pen);
+}
+.iv-side {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  position: sticky;
+  top: 90px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: grid;
+  gap: 8px;
+}
+.iv .iv-side h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.iv-side ul {
+  margin: 0 0 6px;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--ink-2);
+  font-size: 14.5px;
+}
+.iv-side a {
+  color: var(--pen);
+  font-weight: 650;
+  font-size: 14.5px;
+}
+@media (max-width: 900px) {
+  .iv-body {
+    grid-template-columns: 1fr;
+  }
+  .iv-side {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+  }
+}
+
+/* Mensagem para enviar (/enviar-curriculo) */
+.ms-head,
+.ap-head {
+  padding-top: 44px;
+  padding-bottom: 24px;
+}
+.ms-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 22px;
+  align-items: start;
+  padding-bottom: 72px;
+}
+.ms-form,
+.ms-out {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 22px;
+}
+.ms-form {
+  display: grid;
+  gap: 14px;
+}
+.ms-form label,
+.ap-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 650;
+  font-size: 14px;
+}
+.ms-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.ms-tabs button {
+  border: 1.5px solid var(--rule);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 13px;
+  font: 600 14px/1 var(--font-text);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.ms-tabs button[aria-selected="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.ms-subject {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.ms-subject span {
+  color: var(--ink-3);
+}
+.ms-subject button {
+  border: 0;
+  background: none;
+  color: var(--pen);
+  font: 650 13px/1 var(--font-text);
+  cursor: pointer;
+}
+.ms-text {
+  white-space: pre-wrap;
+  font: 400 16px/1.6 var(--font-text);
+  background: #e7f6ec;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 0 0 14px;
+  color: var(--ink);
+}
+.ms-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.ms-phone {
+  flex: 1 1 200px;
+  border: 1.5px solid var(--rule);
+  border-radius: 12px;
+  padding: 11px 12px;
+  font: 400 15px/1.2 var(--font-text);
+  min-height: 44px;
+}
+.ms-note {
+  color: var(--ink-3);
+  font-size: 14px;
+  margin: 12px 0 0;
+}
+.ms-note a {
+  color: var(--pen);
+  font-weight: 650;
+}
+@media (max-width: 860px) {
+  .ms-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Minhas candidaturas (/candidaturas) */
+.ap-grid {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+  padding-bottom: 72px;
+}
+.ap-form {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+  position: sticky;
+  top: 90px;
+}
+.ap .ap-form h2 {
+  font-size: 19px;
+  margin: 0;
+}
+.ap-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ap-note {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+.ap-list {
+  display: grid;
+  gap: 12px;
+}
+.ap-follow {
+  background: #fff6d6;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.ap-follow p {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: 14.5px;
+}
+.ap-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ap-filters button {
+  border: 1.5px solid var(--rule);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 13px;
+  font: 600 14px/1 var(--font-text);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.ap-filters button span {
+  color: var(--ink-3);
+  margin-left: 4px;
+}
+.ap-filters button[aria-selected="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.ap-filters button[aria-selected="true"] span {
+  color: #b9c6db;
+}
+.ap-empty {
+  background: #fff;
+  border: 1px dashed var(--rule);
+  border-radius: var(--radius);
+  padding: 28px;
+  text-align: center;
+  color: var(--ink-2);
+}
+.ap-empty a {
+  color: var(--pen);
+  font-weight: 650;
+}
+.ap-item {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--pen);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+.ap-item.st-entrevista {
+  border-left-color: #c58a00;
+}
+.ap-item.st-aprovado {
+  border-left-color: var(--ok);
+}
+.ap-item.st-recusado {
+  border-left-color: #a8b3c2;
+  opacity: 0.8;
+}
+.ap-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+.ap-top > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ap-top b {
+  font-size: 16.5px;
+}
+.ap-top span,
+.ap-top small {
+  color: var(--ink-3);
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+.ap-top select {
+  border: 1.5px solid var(--rule);
+  border-radius: 9px;
+  padding: 7px 9px;
+  font: 600 13.5px/1.2 var(--font-text);
+  background: #fff;
+  max-width: 190px;
+}
+.ap-item textarea {
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  padding: 8px 10px;
+  font: 400 14px/1.45 var(--font-text);
+  resize: vertical;
+  width: 100%;
+}
+.ap-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.ap-actions button,
+.ap-actions a {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--pen);
+  font: 650 13.5px/1.2 var(--font-text);
+  cursor: pointer;
+}
+.ap-actions .ap-del {
+  color: var(--ink-3);
+  margin-left: auto;
+}
+@media (max-width: 860px) {
+  .ap-grid {
+    grid-template-columns: 1fr;
+  }
+  .ap-form {
+    position: static;
+  }
+}
+
+/* Atalhos de ferramentas (JobTools) */
+.jt {
+  margin: 8px 0 22px;
+}
+.jt h2,
+.lp .jt h2:not(.cv *) {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+}
+.jt-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.jt-grid a {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.jt-grid a:hover {
+  border-color: var(--pen);
+}
+.jt-grid b {
+  font-size: 15.5px;
+}
+.jt-grid span {
+  color: var(--ink-3);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+@media (max-width: 900px) {
+  .jt-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.lp .jt {
+  margin: 56px 0 8px;
+}
+.lp .jt h2:not(.cv *) {
+  font-size: clamp(24px, 2.6vw, 30px);
+  margin-bottom: 16px;
 }

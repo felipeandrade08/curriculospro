@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ResumeThumb } from "@/components/resume-view";
 import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
+import { JobTools } from "@/components/job-tools";
 import { EXAMPLE_CATEGORIES, RESUME_EXAMPLES, exampleById, type ResumeExample } from "@/lib/examples";
 import { TEMPLATES } from "@/lib/templates";
 import { defaultOrder, type ResumeData } from "@/lib/resume";
@@ -292,6 +293,10 @@ export default async function Home() {
           <Thumb example={exampleById("finance")!} width={360} />
         </div>
       </section>
+
+      <div className="wrap">
+        <JobTools title="Ferramentas grátis para a sua busca de emprego" />
+      </div>
 
       {testimonials.length > 0 && (
         <section className="wrap tm-home" aria-labelledby="tm-title">
