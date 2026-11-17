@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // A entrega do "Fazemos para você" envia o PDF pronto (até 4 MB) por uma server action.
   experimental: { serverActions: { bodySizeLimit: "5mb" } },
+  // PDF no servidor: o Chrome (@sparticuz/chromium) vai inteiro para a função, sem empacotar.
+  serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+  outputFileTracingIncludes: {
+    "/api/export/pdf": ["./node_modules/@sparticuz/chromium/bin/**"],
+    "/admin": ["./node_modules/@sparticuz/chromium/bin/**"],
+    "/api/admin/pedido/[id]/entregar": ["./node_modules/@sparticuz/chromium/bin/**"],
+  },
   async redirects() {
     return [{ source: "/apoie", destination: "/precos", permanent: true }];
   },

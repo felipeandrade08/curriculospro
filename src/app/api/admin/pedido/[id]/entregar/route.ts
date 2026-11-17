@@ -4,6 +4,7 @@ import { isSameOrigin } from "@/lib/server/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /** Entrega pelo editor: currículo aberto + PDF + recado. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {

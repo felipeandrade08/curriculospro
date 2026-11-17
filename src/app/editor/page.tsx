@@ -100,7 +100,7 @@ export default function Editor() {
     [density, setDensity] = useState<"comfortable" | "compact">("comfortable"),
     [sectionOrder, setSectionOrder] = useState<SectionKey[]>(defaultOrder),
     [hidden, setHidden] = useState<SectionKey[]>([]),
-    [pdfHint, setPdfHint] = useState(false),
+    [pdfHint, setPdfHint] = useState<false | "saved" | "print">(false),
     [askReview, setAskReview] = useState(false),
     [checkoutOpen, setCheckoutOpen] = useState(false),
     [fitOn, setFitOn] = useState(false),
@@ -442,16 +442,9 @@ export default function Editor() {
       setWordBusy(false);
     }
   };
-  const printResume = () => {
-    if (!access.active) {
-      setCheckoutOpen(true);
-      return;
-    }
-    trackUsage("pdf_print_requested");
-    setPdfHint(true);
-    try {
-      setAskReview(!isTeamBrowser() && !localStorage.getItem("curriculospro.reviewAsked.v1"));
-    } catch {}
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const printDialog = () => {
+    setPdfHint("print");
     const previous = document.title;
     document.title = safeFilename(documentTitle || cv.name || "curriculo") + "-CurriculosPRO";
     setTimeout(() => {
@@ -460,6 +453,56 @@ export default function Editor() {
         document.title = previous;
       }, 500);
     }, 80);
+  };
+  /** Baixa o PDF pronto gerado no servidor; se falhar, abre a janela de impressão como antes. */
+  const printResume = async () => {
+    if (!access.active) {
+      setCheckoutOpen(true);
+      return;
+    }
+    if (pdfBusy) return;
+    trackUsage("pdf_print_requested");
+    try {
+      setAskReview(!isTeamBrowser() && !localStorage.getItem("curriculospro.reviewAsked.v1"));
+    } catch {}
+    setPdfBusy(true);
+    try {
+      const now = new Date().toISOString();
+      const response = await fetch("/api/export/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: activeId.current || "export",
+          title: documentTitle || cv.name || "Meu currículo",
+          createdAt: now,
+          updatedAt: now,
+          cv,
+          template,
+          accent,
+          density,
+          sectionOrder,
+          hidden,
+          sections: visibleSections,
+          scale: fitOn && pageInfo.natural > 1 && pageInfo.fits ? pageInfo.scale : 1,
+        }),
+      });
+      if (response.status === 402 || response.status === 401) {
+        setCheckoutOpen(true);
+        return;
+      }
+      if (!response.ok) throw new Error("pdf");
+      const blob = await response.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = safeFilename(documentTitle || cv.name || "curriculo") + "-CurriculosPRO.pdf";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      setPdfHint("saved");
+    } catch {
+      printDialog();
+    } finally {
+      setPdfBusy(false);
+    }
   };
   const assistant = useMemo(() => {
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cv.email),
@@ -1000,17 +1043,28 @@ export default function Editor() {
         >
           {wordBusy ? "Gerando…" : "Word"}
         </button>
-        <button onClick={printResume} className="download">
-          {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
+        <button onClick={printResume} className="download" disabled={pdfBusy}>
+          {pdfBusy ? "Gerando PDF…" : access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
         </button>
       </header>
       {pdfHint && (
         <div className="pdfHint">
-          <b>PDF pronto para salvar</b>
-          <span>
-            Na janela que abrir, escolha <strong>Salvar como PDF</strong>. Para currículos longos, confira
-            todas as páginas antes de salvar.
-          </span>
+          {pdfHint === "saved" ? (
+            <>
+              <b>PDF baixado</b>
+              <span>
+                O arquivo foi salvo nos downloads do seu aparelho, pronto para enviar às empresas.
+              </span>
+            </>
+          ) : (
+            <>
+              <b>PDF pronto para salvar</b>
+              <span>
+                Na janela que abrir, escolha <strong>Salvar como PDF</strong>. Para currículos longos, confira
+                todas as páginas antes de salvar.
+              </span>
+            </>
+          )}
           <button type="button" onClick={() => setPdfHint(false)}>
             Entendi
           </button>
@@ -1618,7 +1672,7 @@ export default function Editor() {
                       “boa” ou “ruim”.
                     </p>
                     <div className="reviewPdfActions">
-                      <button type="button" className="download" onClick={printResume}>
+                      <button type="button" className="download" onClick={printResume} disabled={pdfBusy}>
                         {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
                       </button>
                       <button
@@ -1659,7 +1713,7 @@ export default function Editor() {
                     {journey[guideIndex + 1].short} →
                   </button>
                 ) : (
-                  <button type="button" className="wizNext" onClick={printResume}>
+                  <button type="button" className="wizNext" onClick={printResume} disabled={pdfBusy}>
                     {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
                   </button>
                 )}
@@ -1767,7 +1821,7 @@ export default function Editor() {
         </aside>
         <section className="preview" ref={previewRef}>
           <div className="mobilePdfAction">
-            <button type="button" className="download" onClick={printResume}>
+            <button type="button" className="download" onClick={printResume} disabled={pdfBusy}>
               {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
             </button>
             <button type="button" className="downloadWord" onClick={downloadWord} disabled={wordBusy}>
@@ -1858,7 +1912,7 @@ export default function Editor() {
         </section>
       </div>
       <div className={"mobileDownloadBar " + (mobilePreview ? "inPreview" : "")}>
-        <button type="button" className="download" onClick={printResume}>
+        <button type="button" className="download" onClick={printResume} disabled={pdfBusy}>
           {access.active ? "Baixar PDF ↓" : "Baixar PDF · " + ACCESS_PRICE_LABEL}
         </button>
         <button type="button" className="downloadWord" onClick={downloadWord} disabled={wordBusy}>

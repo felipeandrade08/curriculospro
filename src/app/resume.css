@@ -860,3 +860,19 @@
 .cvThumbInner .cv {
   min-height: 1123px;
 }
+
+/* Gerador de PDF no servidor (/pdf-render) */
+.pdfRender {
+  background: #fff;
+}
+.pdfMeasure .cv {
+  min-height: 0 !important;
+}
+@media print {
+  .pdfRender .cv {
+    width: 210mm !important;
+    min-height: 296mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+}
