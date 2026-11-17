@@ -21,7 +21,9 @@ export function SiteFooter() {
         <nav aria-label="Produto">
           <h2>Produto</h2>
           <Link href="/modelos">Modelos de currículo</Link>
-          <Link href="/exemplos">Exemplos por profissão</Link>
+          <Link href="/exemplos">Exemplos de currículo</Link>
+          <Link href="/curriculo">Currículo por profissão</Link>
+          <Link href="/adaptar-vaga">Comparar com uma vaga</Link>
           <Link href="/precos">Preços</Link>
           <Link href="/importar">Importar currículo</Link>
         </nav>
@@ -31,6 +33,13 @@ export function SiteFooter() {
           <Link href="/perfil-profissional">Perfil profissional</Link>
           <Link href="/auth/sign-in">Entrar</Link>
           <Link href="/auth/sign-up">Criar conta</Link>
+        </nav>
+        <nav aria-label="Carreira">
+          <h2>Carreira</h2>
+          <Link href="/guias">Guias</Link>
+          <Link href="/entrevista">Treino de entrevista</Link>
+          <Link href="/enviar-curriculo">Mensagem para enviar</Link>
+          <Link href="/candidaturas">Minhas candidaturas</Link>
         </nav>
         <nav aria-label="Ajuda">
           <h2>Ajuda</h2>

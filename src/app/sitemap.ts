@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
 import { RESUME_EXAMPLES } from "@/lib/examples";
+import { PROFESSIONS } from "@/lib/professions";
+import { GUIDES } from "@/lib/guides";
 import { SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = SITE_URL;
-  const pages = ["", "/comecar", "/importar", "/depoimentos", "/feito-para-voce", "/adaptar-vaga", "/modelos", "/exemplos", "/precos", "/privacidade", "/termos"];
+  const pages = ["", "/comecar", "/importar", "/depoimentos", "/feito-para-voce", "/adaptar-vaga", "/curriculo", "/guias", "/entrevista", "/enviar-curriculo", "/modelos", "/exemplos", "/precos", "/privacidade", "/termos"];
   return [
     ...pages.map((path) => ({
       url: base + path,
@@ -17,6 +19,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.7,
+    })),
+    ...PROFESSIONS.map((x) => ({
+      url: base + "/curriculo/" + x.slug,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.75,
+    })),
+    ...GUIDES.map((x) => ({
+      url: base + "/guias/" + x.slug,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
     })),
   ];
 }
