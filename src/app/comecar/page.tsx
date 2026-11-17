@@ -8,6 +8,7 @@ import {
   IdentificationCard,
   MagnifyingGlass,
   PencilSimpleLine,
+  UsersThree,
 } from "@phosphor-icons/react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -127,6 +128,17 @@ export default function StartPage() {
             </div>
           </button>
         ) : null}
+
+        <Link href="/feito-para-voce" className="st-path">
+          <UsersThree size={30} weight="duotone" aria-hidden="true" />
+          <div>
+            <h2>Quero que façam para mim</h2>
+            <p>Conte sua experiência e nossa equipe entrega seu currículo pronto em até 24 horas.</p>
+            <span className="st-go">
+              Pedir para a equipe <ArrowRight size={16} aria-hidden="true" />
+            </span>
+          </div>
+        </Link>
 
         <Link href="/editor?new=blank" className="st-path">
           <PencilSimpleLine size={30} weight="duotone" aria-hidden="true" />

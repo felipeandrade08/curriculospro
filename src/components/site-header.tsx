@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 
-type Active = "modelos" | "exemplos" | "curriculos" | "precos";
+type Active = "modelos" | "exemplos" | "curriculos" | "precos" | "feito";
 
 const links: { href: string; label: string; key: Active }[] = [
   { href: "/modelos", label: "Modelos", key: "modelos" },
   { href: "/exemplos", label: "Exemplos por profissão", key: "exemplos" },
+  { href: "/feito-para-voce", label: "Fazemos para você", key: "feito" },
   { href: "/precos", label: "Preços", key: "precos" },
   { href: "/curriculos", label: "Meus currículos", key: "curriculos" },
 ];
@@ -22,7 +23,7 @@ export function SiteHeader({ active }: { active?: Active }) {
             <Link
               key={link.key}
               href={link.href}
-              className={active === link.key ? "is-active" : undefined}
+              className={(active === link.key ? "is-active " : "") + (link.key === "feito" ? "sh-hl" : "")}
               aria-current={active === link.key ? "page" : undefined}
             >
               {link.label}

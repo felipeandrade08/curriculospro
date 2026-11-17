@@ -120,7 +120,7 @@ export default function DoneForYouPage() {
 
   return (
     <main className="lp fy">
-      <SiteHeader />
+      <SiteHeader active="feito" />
       <section className="wrap fy-hero">
         <div>
           <h1>Prefere que a gente faça o seu currículo?</h1>
