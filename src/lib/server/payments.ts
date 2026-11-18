@@ -2,6 +2,7 @@ import { db } from "@/lib/server/db";
 import type { CheckoutPix } from "@/lib/billing";
 import type { MercadoPagoPayment } from "@/lib/server/mercadopago";
 import type { SaleSource } from "@/lib/server/sales-source";
+import { ensurePanelOrder } from "@/lib/server/panel-orders";
 import { afterPaymentGranted, afterPaymentRevoked } from "@/lib/server/after-payment";
 
 export type PaymentRow = {
@@ -197,6 +198,8 @@ export async function applyProviderPayment(payment: MercadoPagoPayment, row: Pay
   }
   if (payment.status === "approved") {
     const granted = await grantAccess(row.id, payment.status_detail || null, payment.date_approved || null);
+    // Venda do "Cobrar no Pix" (Fazemos para você): abre o pedido em Pedidos assim que é paga.
+    await ensurePanelOrder(row.id).catch((error) => console.error("Pedido da venda pelo Pix falhou", row.id, error));
     if (granted) await afterPaymentGranted(row.id);
     return { status: "approved" as const, granted };
   }

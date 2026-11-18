@@ -1,6 +1,7 @@
 import { checkAdmin } from "@/lib/server/admin";
 import { db } from "@/lib/server/db";
 import { deliverFromForm } from "@/lib/server/deliver";
+import { ensurePanelOrder } from "@/lib/server/panel-orders";
 import { isSameOrigin } from "@/lib/server/request";
 
 export const runtime = "nodejs";
@@ -27,38 +28,14 @@ export async function POST(request: Request) {
   if (!pay?.customer) return Response.json({ ok: false, message: "Cobrança não encontrada." }, { status: 404 });
   if (!pay.granted_at || pay.revoked_at)
     return Response.json({ ok: false, message: "Esta cobrança ainda não foi paga." }, { status: 409 });
-  const customer = pay.customer as Record<string, string>;
 
-  // Um pedido por cobrança: se já existe e não foi entregue, reaproveita.
-  let requestId = customer.requestId || "";
-  if (requestId) {
-    const [req] = await sql`SELECT status FROM service_requests WHERE id = ${requestId}`;
-    if (req?.status === "delivered")
-      return Response.json({ ok: false, message: "O currículo desta venda já foi entregue." }, { status: 409 });
-    if (!req) requestId = "";
-  }
-  if (!requestId) {
-    const data = {
-      name: customer.name || "",
-      whatsapp: customer.phone || "",
-      email: customer.email || "",
-      role: "",
-      city: "",
-      notes: customer.description || "",
-      sourceText: "",
-      resume: null,
-      delivery: customer.phone ? "whatsapp" : "email",
-      via: "pix",
-      paymentId,
-      inAccount: !!pay.user_id,
-    };
-    // Sem conta do cliente, o pedido fica na conta da equipe (o cliente baixa pelo link).
-    const owner = pay.user_id ? String(pay.user_id) : check.session.userId;
-    const [req] = await sql`INSERT INTO service_requests (user_id, status, data)
-      VALUES (${owner}, 'in_progress', ${JSON.stringify(data)}::jsonb) RETURNING id::text`;
-    requestId = String(req.id);
-    await sql`UPDATE payments SET customer = customer || ${JSON.stringify({ requestId })}::jsonb WHERE id = ${paymentId}`;
-  }
+  // Um pedido por venda (criado quando o Pix foi pago); vendas antigas ganham o pedido agora.
+  const requestId = await ensurePanelOrder(paymentId, check.session.userId).catch(() => null);
+  if (!requestId)
+    return Response.json({ ok: false, message: "Não foi possível abrir o pedido desta venda. Tente de novo." }, { status: 500 });
+  const [req] = await sql`SELECT status FROM service_requests WHERE id = ${requestId}`;
+  if (req?.status === "delivered")
+    return Response.json({ ok: false, message: "O currículo desta venda já foi entregue." }, { status: 409 });
 
   form.set("id", requestId);
   const result = await deliverFromForm(form, check.session.userId);
