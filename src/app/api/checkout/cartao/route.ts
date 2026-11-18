@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       payerEmail: session.email,
       externalReference: session.userId,
       returnUrl: base + "/pagamento",
-      notificationUrl: base.startsWith("https://") ? base + "/api/webhooks/mercadopago" : undefined,
+      notificationUrl: base.startsWith("https://") ? base + "/api/webhooks/mercadopago?source_news=webhooks" : undefined,
     });
     await setIntentPreference(intentId, preference.id);
     return Response.json({ url: preference.init_point }, { status: 201 });

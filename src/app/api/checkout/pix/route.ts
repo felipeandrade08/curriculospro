@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     const expiresAt = new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60 * 1000);
     const base = publicBaseUrl(request);
     const notificationUrl =
-      base && base.startsWith("https://") ? base + "/api/webhooks/mercadopago" : undefined;
+      base && base.startsWith("https://") ? base + "/api/webhooks/mercadopago?source_news=webhooks" : undefined;
 
     const payment = await createPixPayment({
       amountCents: price.amountCents,

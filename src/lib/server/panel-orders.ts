@@ -57,3 +57,52 @@ export async function ensurePanelOrder(paymentId: string, ownerFallback?: string
     throw error;
   }
 }
+
+/**
+ * Rede de segurança para as vendas do "Cobrar no Pix": confere no Mercado Pago os Pix do painel
+ * que ainda constam como aguardando (caso o aviso automático não tenha chegado) e abre o pedido
+ * das vendas pagas que ainda não têm. Roda ao abrir o painel e na rotina diária.
+ */
+export async function syncPanelCharges(ownerFallback?: string) {
+  const sql = db();
+  const { getPayment } = await import("@/lib/server/mercadopago");
+  const { applyProviderPayment, findPayment } = await import("@/lib/server/payments");
+  const result = { checked: 0, paid: 0, orders: 0, errors: 0 };
+
+  const pending = await sql`SELECT id FROM payments
+    WHERE customer IS NOT NULL AND granted_at IS NULL AND revoked_at IS NULL
+      AND status IN ('pending', 'in_process') AND NOT (customer ? 'replacedBy')
+      AND created_at > now() - interval '3 days'
+    ORDER BY created_at DESC LIMIT 15`;
+  for (const p of pending) {
+    try {
+      const row = await findPayment(String(p.id));
+      if (!row) continue;
+      result.checked++;
+      const payment = await getPayment(String(p.id));
+      const applied = await applyProviderPayment(payment, row);
+      if (applied.status === "approved") result.paid++;
+    } catch (error) {
+      result.errors++;
+      console.error("Conferência do Pix do painel falhou", p.id, error);
+    }
+  }
+
+  const missing = await sql`SELECT id FROM payments
+    WHERE customer IS NOT NULL AND granted_at IS NOT NULL AND revoked_at IS NULL
+      AND plan IN ('servico', 'avulso')
+      AND (NOT (customer ? 'requestId') OR (customer->>'requestId' = 'pending' AND updated_at < now() - interval '5 minutes'))
+    ORDER BY created_at DESC LIMIT 20`;
+  for (const p of missing) {
+    try {
+      // Reserva presa (falha no meio): libera e tenta de novo.
+      await sql`UPDATE payments SET customer = customer - 'requestId'
+        WHERE id = ${String(p.id)} AND customer->>'requestId' = 'pending'`;
+      if (await ensurePanelOrder(String(p.id), ownerFallback)) result.orders++;
+    } catch (error) {
+      result.errors++;
+      console.error("Pedido da venda pelo Pix falhou", p.id, error);
+    }
+  }
+  return result;
+}
