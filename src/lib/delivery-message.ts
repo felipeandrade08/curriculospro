@@ -8,7 +8,7 @@ export function whatsappDeliveryUrl(whatsapp: string, name: string, link: string
     "! Seu currículo feito pela equipe CurriculosPRO está pronto ✅\n\nBaixe em PDF ou Word por este link (vale 30 dias):\n" +
     link +
     (inAccount
-      ? "\n\nEle também fica salvo em Meus currículos, se quiser editar. Qualquer ajuste, é só responder aqui!"
-      : "\n\nQualquer ajuste, é só responder aqui!");
+      ? "\n\nEle também fica salvo em Meus currículos, se quiser editar. Você tem 7 dias de suporte: qualquer ajuste, é só responder aqui!"
+      : "\n\nVocê tem 7 dias de suporte: qualquer ajuste, é só responder aqui!");
   return "https://wa.me/55" + number + "?text=" + encodeURIComponent(text);
 }

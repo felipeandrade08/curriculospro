@@ -59,6 +59,8 @@ export const PLAN_FEATURES = {
     "Entrevista: dicas e correção das suas respostas",
   ],
 };
+/** "Fazemos para você": a equipe monta o currículo; o cliente tem este prazo para pedir ajustes. */
+export const SERVICE_SUPPORT_DAYS = 7;
 export const hasKit = (kitUntil?: string | null) => !!kitUntil && new Date(kitUntil).getTime() > Date.now();
 export const MONTH_PRICE_LABEL = formatBRL(ACCESS_PLANS.mes.cents);
 export const isAccessPlan = (x: unknown): x is AccessPlanId => x === "semana" || x === "mes" || x === "upgrade";

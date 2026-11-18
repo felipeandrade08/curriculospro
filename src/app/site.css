@@ -1110,3 +1110,94 @@ body {
 .libraryHero h1 {
   line-height: 1.08 !important;
 }
+
+/* Preços: faixa do "Fazemos para você" */
+.pricingPage .pricingService {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 28px;
+  align-items: center;
+  margin-top: 28px;
+  margin-bottom: 28px;
+  padding: 28px 32px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #0f2a4a, #1553d6);
+  color: #fff;
+}
+.pricingPage .pricingService h2 {
+  margin: 8px 0 14px;
+  color: #fff;
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.2;
+}
+.pricingServiceTag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--marker, #ffe066);
+  color: #0e1b2e;
+  font-size: 12px;
+  font-weight: 800;
+}
+.pricingPage .pricingService ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.pricingPage .pricingService li {
+  position: relative;
+  padding-left: 24px;
+  color: rgba(255, 255, 255, 0.92);
+}
+.pricingPage .pricingService li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--marker, #ffe066);
+  font-weight: 800;
+}
+.pricingPage .pricingService b {
+  color: #fff;
+}
+.pricingServiceCta {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+  padding: 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.pricingServiceCta strong {
+  font-size: 34px;
+  line-height: 1;
+}
+.pricingServiceCta span {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.pricingServiceCta a:not(.btn) {
+  color: #fff;
+  font-size: 13px;
+  text-decoration: underline;
+}
+.pricingServiceCta .btn {
+  width: 100%;
+  justify-content: center;
+}
+@media (max-width: 760px) {
+  .pricingPage .pricingService {
+    grid-template-columns: 1fr;
+    padding: 22px;
+  }
+}
+.pricingPage .pricingServiceCta .btn {
+  background: var(--marker, #ffe066);
+  border-color: #f2cf3c;
+  color: #0e1b2e !important;
+}
+.pricingPage .pricingServiceCta .btn:hover {
+  background: #ffd43b;
+}

@@ -10,6 +10,7 @@ import {
   KIT_NAME,
   KIT_PRICE_LABEL,
   MONTH_PRICE_LABEL,
+  SERVICE_SUPPORT_DAYS,
   UPGRADE_PRICE_LABEL,
 } from "@/lib/billing";
 import { SUPPORT_WHATSAPP_URL } from "@/lib/site";
@@ -34,6 +35,10 @@ const rows: [string, boolean, boolean][] = [
 ];
 
 const faq = [
+  {
+    q: "Como funciona o “Fazemos para você”?",
+    a: `Você paga ${ACCESS_PRICE_LABEL}, envia o currículo antigo ou conta onde trabalhou (pelo site ou pelo WhatsApp) e nossa equipe monta seu currículo em até 24 horas. Você recebe em PDF e Word e tem ${SERVICE_SUPPORT_DAYS} dias de suporte para pedir ajustes.`,
+  },
   {
     q: "É uma assinatura?",
     a: `Não. Você paga uma única vez: ${ACCESS_PRICE_LABEL} pelo pacote Currículo (${ACCESS_DAYS} dias) ou ${MONTH_PRICE_LABEL} pelo ${KIT_NAME} (${ACCESS_PLANS.mes.days} dias). Não existe renovação automática nem cobrança recorrente.`,
@@ -212,6 +217,37 @@ export default function PricingPage() {
             <span>Por {ACCESS_DAYS} dias, baixe e atualize seus currículos quantas vezes precisar.</span>
           </li>
         </ol>
+      </section>
+
+      <section className="pricingService shell" aria-labelledby="serviceTitle">
+        <div>
+          <span className="pricingServiceTag">Fazemos para você</span>
+          <h2 id="serviceTitle">Prefere que a gente faça? Seu currículo pronto por {ACCESS_PRICE_LABEL}</h2>
+          <ul>
+            <li>
+              Nossa equipe monta seu currículo em <b>até 24 horas</b>
+            </li>
+            <li>
+              Você manda o currículo antigo ou conta onde trabalhou, <b>pelo site ou pelo WhatsApp</b>
+            </li>
+            <li>
+              Recebe em <b>PDF e Word</b>, por link no WhatsApp e por e-mail
+            </li>
+            <li>
+              <b>{SERVICE_SUPPORT_DAYS} dias de suporte</b> para pedir ajustes
+            </li>
+          </ul>
+        </div>
+        <div className="pricingServiceCta">
+          <strong>{ACCESS_PRICE_LABEL}</strong>
+          <span>pagamento único · sem mensalidade</span>
+          <Link href="/feito-para-voce" className="btn btn-primary btn-lg">
+            Quero que façam o meu
+          </Link>
+          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+            Ou peça pelo WhatsApp
+          </a>
+        </div>
       </section>
 
       <section className="pricingFaq shell" aria-labelledby="faqTitle">

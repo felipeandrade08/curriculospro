@@ -6,7 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { CheckoutModal } from "@/components/checkout-modal";
 import { useAccess } from "@/lib/use-access";
 import { trackUsage } from "@/lib/analytics";
-import { ACCESS_DAYS, ACCESS_PRICE_LABEL, formatAccessUntil } from "@/lib/billing";
+import { ACCESS_DAYS, ACCESS_PRICE_LABEL, SERVICE_SUPPORT_DAYS, formatAccessUntil } from "@/lib/billing";
 import { ACTIVE_RESUME_KEY, RESUME_LIBRARY_KEY, type ResumeDocument } from "@/lib/resume";
 import { readLibrary } from "@/lib/start";
 import { readResumeFile } from "@/lib/import/read-file";
@@ -213,12 +213,13 @@ export default function DoneForYouPage() {
           <h1>Prefere que a gente faça o seu currículo?</h1>
           <p>
             Envie suas informações e nossa equipe monta um currículo profissional para você em{" "}
-            <b>até 24 horas</b>. Já vem incluído no acesso de {ACCESS_PRICE_LABEL}.
+            <b>até 24 horas</b>, por {ACCESS_PRICE_LABEL}, com <b>{SERVICE_SUPPORT_DAYS} dias de suporte</b> para ajustes.
           </p>
           <ul className="fy-trust">
             <li>Atendimento feito por pessoas, pelo WhatsApp</li>
             <li>Empresa registrada — CNPJ {COMPANY.cnpj}</li>
             <li>Pagamento seguro pelo Mercado Pago</li>
+            <li>{SERVICE_SUPPORT_DAYS} dias para pedir ajustes à equipe</li>
             <li>Você revisa e muda o que quiser depois</li>
           </ul>
         </div>
