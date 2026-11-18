@@ -170,7 +170,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
           </div>
         )}
         {tab === "geral" && <OverviewTab days={days} href={href} />}
-        {tab === "cobrar" && <ChargeTab />}
+        {tab === "cobrar" && <ChargeTab adminUserId={check.session.userId} />}
         {tab === "vendas" && <SalesTab days={days} q={one("q")} status={one("status")} href={href} />}
         {tab === "pedidos" && (
           <OrdersTab

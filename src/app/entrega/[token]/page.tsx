@@ -67,10 +67,14 @@ export default async function DeliveryPage({ params }: { params: Promise<{ token
           </p>
           <div className="dl-next">
             <b>Quer mudar alguma coisa?</b>
-            <p>
-              O currículo também está salvo em <Link href="/curriculos">Meus currículos</Link>. Entre com a conta
-              que você usou no pedido para editar e baixar de novo.
-            </p>
+            {delivery.inAccount ? (
+              <p>
+                O currículo também está salvo em <Link href="/curriculos">Meus currículos</Link>. Entre com a conta
+                que você usou no pedido para editar e baixar de novo.
+              </p>
+            ) : (
+              <p>É só responder a nossa mensagem no WhatsApp que a equipe ajusta para você.</p>
+            )}
             <b>Próximo passo</b>
             <p>
               Antes de enviar, <Link href="/adaptar-vaga">compare com a vaga</Link> e pegue a{" "}

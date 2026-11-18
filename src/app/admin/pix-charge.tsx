@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChargeDeliver } from "./charge-deliver";
 
 type Charge = {
   id: string;
@@ -23,7 +24,7 @@ const KINDS = [
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /** Gera Pix para o cliente pagar pelo WhatsApp e acompanha o pagamento. */
-export function PixCharge() {
+export function PixCharge({ cloud }: { cloud: { id: string; title: string; updated: string }[] }) {
   const router = useRouter();
   const [kind, setKind] = useState<(typeof KINDS)[number]["id"]>("servico");
   const [amount, setAmount] = useState("");
@@ -148,6 +149,16 @@ export function PixCharge() {
             </small>
           </div>
         </div>
+        {charge.status === "approved" && (
+          <div className="cpa-pix-deliver">
+            <h3>Entregar o currículo</h3>
+            <small className="cpa-muted">
+              Escolha o currículo que você montou para o cliente. Geramos o link para ele baixar em PDF e Word
+              {email ? " e mandamos por e-mail" : ""}.
+            </small>
+            <ChargeDeliver paymentId={charge.id} name={name} phone={phone} cloud={cloud} inAccount={needsAccount} open />
+          </div>
+        )}
       </div>
     );
 

@@ -59,9 +59,9 @@ export async function deliverFromForm(formData: FormData, adminUserId: string): 
   let emailed = false;
   if (emailConfigured() && result.email) {
     const attachments: { filename: string; content: Uint8Array }[] = [];
+    const delivery = await loadDelivery(id).catch(() => null);
     if (pdf) attachments.push({ filename: base + ".pdf", content: pdf });
     try {
-      const delivery = await loadDelivery(id);
       if (delivery) {
         const docx = await resumeToDocx(delivery.resume.cv, {
           accent: delivery.resume.accent,
@@ -80,6 +80,7 @@ export async function deliverFromForm(formData: FormData, adminUserId: string): 
         note,
         link,
         attached: attachments.map((a) => (a.filename.endsWith(".pdf") ? "PDF" : "Word")),
+        inAccount: delivery?.inAccount,
       }),
       attachments,
       idempotencyKey: "svc-delivered-" + id,

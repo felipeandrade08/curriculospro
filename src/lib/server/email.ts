@@ -279,12 +279,15 @@ export function serviceDeliveredEmail(p: {
   note: string | null;
   link: string;
   attached: string[];
+  /** Cliente sem conta (venda pelo painel): não citar Meus currículos. */
+  inAccount?: boolean;
 }) {
   const hi = firstName(p.name) ? "Olá, " + firstName(p.name) + "! " : "";
+  const inAccount = p.inAccount !== false;
   const files = p.attached.length ? p.attached.join(" e ") : "";
   return {
     subject: "Seu currículo está pronto ✅",
-    text: `${hi}Seu currículo feito pela nossa equipe está pronto.${files ? " Ele vai anexado neste e-mail (" + files + ")." : ""}${p.note ? "\n\nRecado da equipe: " + p.note : ""}\n\nBaixe também por este link, sem precisar entrar na conta (vale ${30} dias): ${p.link}\n\nEle também está salvo em Meus currículos, se quiser editar: ${SITE_URL}/curriculos`,
+    text: `${hi}Seu currículo feito pela nossa equipe está pronto.${files ? " Ele vai anexado neste e-mail (" + files + ")." : ""}${p.note ? "\n\nRecado da equipe: " + p.note : ""}\n\nBaixe também por este link, sem precisar entrar na conta (vale ${30} dias): ${p.link}${inAccount ? `\n\nEle também está salvo em Meus currículos, se quiser editar: ${SITE_URL}/curriculos` : "\n\nQuer mudar alguma coisa? É só responder este e-mail ou falar com a gente no WhatsApp."}`,
     html: layout({
       preheader: files ? "Seu currículo vai anexado em " + files + "." : "Baixe em PDF ou Word.",
       title: "Seu currículo está pronto",
@@ -295,7 +298,11 @@ export function serviceDeliveredEmail(p: {
           ? `<p style="background:#f4f7fb;border-radius:10px;padding:12px 14px"><b>Recado da equipe:</b> ${esc(p.note)}</p>`
           : ""
       }<p>Você também pode baixar pelo botão abaixo, sem precisar entrar na conta. O link vale 30 dias.</p>
-<p style="font-size:14px;color:#6b778c">Quer mudar alguma coisa? Ele está salvo em <a href="${SITE_URL}/curriculos" style="color:#1553d6">Meus currículos</a> para você editar e baixar de novo.</p>`,
+${
+        inAccount
+          ? `<p style="font-size:14px;color:#6b778c">Quer mudar alguma coisa? Ele está salvo em <a href="${SITE_URL}/curriculos" style="color:#1553d6">Meus currículos</a> para você editar e baixar de novo.</p>`
+          : `<p style="font-size:14px;color:#6b778c">Quer mudar alguma coisa? É só responder este e-mail ou falar com a gente no WhatsApp.</p>`
+      }`,
       cta: { label: "Baixar meu currículo", url: p.link },
     }),
   };

@@ -38,6 +38,8 @@ export type Delivery = {
   deliveredAt: string;
   resume: ResumeDocument;
   pdf: { id: string; filename: string } | null;
+  /** Falso quando o cliente não tem conta (venda pelo Cobrar no Pix): não falar em Meus currículos. */
+  inAccount: boolean;
 };
 
 export async function loadDelivery(requestId: string): Promise<Delivery | null> {
@@ -53,8 +55,9 @@ export async function loadDelivery(requestId: string): Promise<Delivery | null> 
       ORDER BY id DESC LIMIT 1`;
     if (f) pdf = { id: String(f.id), filename: String(f.filename) };
   } catch {}
-  const data = (s.data || {}) as { name?: string; role?: string };
+  const data = (s.data || {}) as { name?: string; role?: string; inAccount?: boolean };
   return {
+    inAccount: data.inAccount !== false,
     requestId: String(s.id),
     name: String(data.name || ""),
     role: String(data.role || ""),

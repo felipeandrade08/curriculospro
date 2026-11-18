@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { channelOf, type SaleSource } from "@/lib/server/sales-source";
 import { PixCharge } from "./pix-charge";
+import { ChargeDeliver } from "./charge-deliver";
 import { db } from "@/lib/server/db";
 import { formatBRL } from "@/lib/billing";
 import {
@@ -67,24 +68,35 @@ const PAY_STATUS: Record<string, string> = {
 
 /* ───────────── Cobrar no Pix ───────────── */
 
-export async function ChargeTab() {
+export async function ChargeTab({ adminUserId }: { adminUserId: string }) {
   let rows: Record<string, unknown>[] = [];
+  let mine: Record<string, unknown>[] = [];
   try {
     rows = await db()`SELECT p.id, p.amount_cents, p.status, p.granted_at, p.revoked_at, p.created_at, p.expires_at,
-        p.plan, p.customer, u.email AS account
+        p.plan, p.customer, u.email AS account, s.id::text AS request_id, s.status AS request_status, s.delivered_at
       FROM payments p LEFT JOIN app_users u ON u.id = p.user_id
+      LEFT JOIN service_requests s ON s.id::text = p.customer->>'requestId'
       WHERE p.customer IS NOT NULL ORDER BY p.created_at DESC LIMIT 30`;
+    // As cópias já entregues ("— feito pela equipe") não entram na lista de escolha.
+    mine = await db()`SELECT id, title, updated_at FROM resumes WHERE user_id = ${adminUserId} AND deleted_at IS NULL
+        AND title NOT LIKE '% — feito pela equipe'
+      ORDER BY updated_at DESC LIMIT 40`;
   } catch {
     return <Failed what="as cobranças" />;
   }
   const paid = rows.filter((r) => r.granted_at && !r.revoked_at);
+  const cloud = mine.map((m) => ({
+    id: String(m.id),
+    title: String(m.title),
+    updated: new Date(String(m.updated_at)).toISOString(),
+  }));
   return (
     <>
       <section className="cpa-panel">
         <header>
           <h2>Gerar Pix para o cliente</h2>
         </header>
-        <PixCharge />
+        <PixCharge cloud={cloud} />
       </section>
       <section className="cpa-panel">
         <header>
@@ -103,11 +115,17 @@ export async function ChargeTab() {
                   <th>O quê</th>
                   <th>Valor</th>
                   <th>Status</th>
+                  <th>Currículo</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => {
                   const c = (r.customer || {}) as Record<string, string>;
+                  const isPaid = !!r.granted_at && !r.revoked_at;
+                  const link =
+                    r.request_status === "delivered" && r.delivered_at
+                      ? deliveryUrl(String(r.request_id), new Date(String(r.delivered_at)).toISOString())
+                      : undefined;
                   const expired = !r.granted_at && r.expires_at && new Date(String(r.expires_at)) < new Date();
                   const st = r.revoked_at
                     ? "refunded"
@@ -128,6 +146,20 @@ export async function ChargeTab() {
                       <td>{formatBRL(n(r.amount_cents))}</td>
                       <td>
                         <span className={"cpa-pill " + st}>{PAY_STATUS[st] || st}</span>
+                      </td>
+                      <td>
+                        {isPaid || link ? (
+                          <ChargeDeliver
+                            paymentId={String(r.id)}
+                            name={c.name || ""}
+                            phone={c.phone || ""}
+                            cloud={cloud}
+                            link={link}
+                            inAccount={!!r.account}
+                          />
+                        ) : (
+                          "—"
+                        )}
                       </td>
                     </tr>
                   );
