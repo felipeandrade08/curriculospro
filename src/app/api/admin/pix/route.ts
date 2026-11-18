@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   }
   const title =
     description ||
-    (plan ? plan.product : kind === "servico" ? "Fazemos para você — currículo pronto" : "CurriculosPRO");
+    (plan ? plan.product : kind === "servico" ? "Fazemos para você — currículo pronto + 7 dias de ajustes" : "CurriculosPRO");
 
   try {
     const expiresAt = new Date(Date.now() + EXPIRES_HOURS * 3600 * 1000);
