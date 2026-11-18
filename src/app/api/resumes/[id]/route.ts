@@ -1,3 +1,4 @@
+import { isSameOrigin } from "@/lib/server/request";
 import { db } from "@/lib/server/db";
 import { getServerSession } from "@/lib/server/session";
 import { defaultOrder, isResumeDocument } from "@/lib/resume";
@@ -5,6 +6,7 @@ type Context = { params: Promise<{ id: string }> };
 type ResumeWrite = import("@/lib/resume").ResumeDocument & { revision?: unknown };
 
 export async function PUT(request: Request, { params }: Context) {
+  if (!isSameOrigin(request)) return Response.json({ error: "forbidden_origin" }, { status: 403 });
   const session = await getServerSession();
   if (!session) return Response.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
@@ -63,7 +65,8 @@ export async function PUT(request: Request, { params }: Context) {
     updatedAt: new Date(String(rows[0].updated_at)).toISOString(),
   });
 }
-export async function DELETE(_: Request, { params }: Context) {
+export async function DELETE(request: Request, { params }: Context) {
+  if (!isSameOrigin(request)) return Response.json({ error: "forbidden_origin" }, { status: 403 });
   const session = await getServerSession();
   if (!session) return Response.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params,

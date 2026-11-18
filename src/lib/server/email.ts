@@ -1,4 +1,5 @@
 // E-mails automáticos via Resend (https://resend.com). Sem RESEND_API_KEY, nada é enviado.
+import { linkSecret } from "@/lib/server/secrets";
 import { createHmac } from "node:crypto";
 import { ACCESS_PRICE_LABEL, formatAccessUntil, formatBRL } from "@/lib/billing";
 import { COMPANY, SITE_URL, SUPPORT_WHATSAPP_URL } from "@/lib/site";
@@ -55,7 +56,7 @@ export async function sendEmail(message: {
 
 /* ── Descadastro de lembretes (link assinado, sem login) ── */
 
-const secret = () => process.env.EMAIL_LINK_SECRET || process.env.MERCADOPAGO_WEBHOOK_SECRET || "dev-secret";
+const secret = linkSecret;
 
 export function unsubscribeToken(userId: string) {
   return createHmac("sha256", secret())

@@ -3,6 +3,7 @@
 // o Chrome instalado (CHROME_PATH).
 import type { ResumeDocument, ResumeSection } from "@/lib/resume";
 import { defaultOrder } from "@/lib/resume";
+import { SITE_URL } from "@/lib/site";
 
 type Browser = import("puppeteer-core").Browser;
 
@@ -36,11 +37,29 @@ export async function renderResumePdf(
   doc: ResumeDocument,
   opts: { sections?: ResumeSection[]; scale?: number | "auto" } = {},
 ): Promise<Uint8Array> {
-  const job = { doc, sections: opts.sections?.length ? opts.sections : sectionsOf(doc), scale: opts.scale ?? "auto" };
+  // A foto só pode ser imagem embutida (data:): nada de endereço que o Chrome do servidor iria buscar.
+  const photo = typeof doc.cv.photo === "string" && /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(doc.cv.photo) ? doc.cv.photo : "";
+  const safeDoc = { ...doc, cv: { ...doc.cv, photo } };
+  const job = { doc: safeDoc, sections: opts.sections?.length ? opts.sections : sectionsOf(doc), scale: opts.scale ?? "auto" };
+  const origin = new URL(baseUrl).origin;
   const browser = await launch();
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 794, height: 1123 });
+    // O Chrome do servidor só fala com o próprio site e com as fontes do Google.
+    await page.setRequestInterception(true);
+    page.on("request", (req) => {
+      const url = req.url();
+      const allowed =
+        url.startsWith("data:") ||
+        url.startsWith("blob:") ||
+        url.startsWith(origin + "/") ||
+        url === origin ||
+        url.startsWith("https://fonts.googleapis.com/") ||
+        url.startsWith("https://fonts.gstatic.com/");
+      if (allowed) void req.continue();
+      else void req.abort();
+    });
     // Antes do site carregar: entrega o currículo e desliga aviso de cookies e medições.
     await page.evaluateOnNewDocument((value) => {
       (window as unknown as { __PDF_JOB__: unknown }).__PDF_JOB__ = value;
@@ -75,10 +94,11 @@ export async function renderResumePdf(
 }
 
 /** Endereço do próprio site para o Chrome abrir a página de impressão. */
-export function renderBaseUrl(request?: Request) {
+// Nunca vem do pedido (cabeçalho Host pode ser falsificado): só de configuração.
+export function renderBaseUrl(_request?: Request) {
   const configured = (process.env.PDF_RENDER_URL || process.env.SITE_URL || "").trim();
   if (configured) return configured;
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return "https://" + process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (request) return new URL(request.url).origin;
+  if (process.env.VERCEL) return SITE_URL;
   return "http://localhost:" + (process.env.PORT || 3000);
 }
