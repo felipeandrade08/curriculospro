@@ -7,7 +7,14 @@ import { SiteFooter } from "@/components/site-footer";
 import { CheckoutModal } from "@/components/checkout-modal";
 import { useAccess } from "@/lib/use-access";
 import { trackUsage } from "@/lib/analytics";
-import { ACCESS_DAYS, ACCESS_PRICE_LABEL, SERVICE_SUPPORT_DAYS, formatAccessUntil } from "@/lib/billing";
+import {
+  ACCESS_DAYS,
+  ACCESS_LIST_PRICE_LABEL,
+  ACCESS_PRICE_LABEL,
+  PROMO_PERCENT,
+  SERVICE_PRICE_LABEL,
+  SERVICE_SUPPORT_DAYS,
+} from "@/lib/billing";
 import { ACTIVE_RESUME_KEY, RESUME_LIBRARY_KEY, type ResumeDocument } from "@/lib/resume";
 import { readLibrary } from "@/lib/start";
 import { readResumeFile } from "@/lib/import/read-file";
@@ -214,7 +221,7 @@ export default function DoneForYouPage() {
           <h1>Prefere que a gente faça o seu currículo?</h1>
           <p>
             Envie suas informações e nossa equipe monta um currículo profissional para você em{" "}
-            <b>até 24 horas</b>, por {ACCESS_PRICE_LABEL}, com <b>{SERVICE_SUPPORT_DAYS} dias de suporte</b> para ajustes.
+            <b>até 24 horas</b>, por {SERVICE_PRICE_LABEL}, com <b>{SERVICE_SUPPORT_DAYS} dias de suporte</b> para ajustes.
           </p>
           <ul className="fy-trust">
             <li>Atendimento feito por pessoas, pelo WhatsApp</li>
@@ -293,23 +300,26 @@ export default function DoneForYouPage() {
               Já tem conta? <Link href="/auth/sign-in?callbackURL=%2Ffeito-para-voce">Entrar</Link>
             </p>
           </div>
-        ) : !access.active ? (
+        ) : !access.service ? (
           <div className="fy-card fy-cta">
-            <h2>Libere o acesso e faça seu pedido</h2>
+            <h2>Libere o Fazemos para você</h2>
             <p>
-              Com um Pix de {ACCESS_PRICE_LABEL} você ganha {ACCESS_DAYS} dias de downloads e um currículo
-              feito pela nossa equipe.
+              Com um Pix de {SERVICE_PRICE_LABEL}, nossa equipe monta seu currículo em até 24 horas. Você ainda
+              ganha {ACCESS_DAYS} dias de acesso ao site e {SERVICE_SUPPORT_DAYS} dias de suporte para ajustes.
             </p>
             <button type="button" className="btn btn-primary btn-lg" onClick={() => setCheckoutOpen(true)}>
-              Pagar {ACCESS_PRICE_LABEL} com Pix
+              Pagar {SERVICE_PRICE_LABEL} com Pix
             </button>
+            <p className="fy-small">
+              Prefere montar sozinho? No editor o pacote Currículo está com {PROMO_PERCENT}% de desconto:{" "}
+              <s>{ACCESS_LIST_PRICE_LABEL}</s> por {ACCESS_PRICE_LABEL}.
+            </p>
           </div>
         ) : open ? null : (
           <form className="fy-card fy-form" onSubmit={submit}>
             <h2>Seu pedido</h2>
             <p className="fy-small">
-              Acesso ativo até {access.accessUntil ? formatAccessUntil(access.accessUntil) : "—"}. Um
-              currículo feito pela equipe a cada acesso de {ACCESS_DAYS} dias.
+              Pagamento confirmado: conte pra gente o que precisa e entregamos em até 24 horas.
             </p>
             <div className="fy-grid">
               <label>
@@ -469,6 +479,7 @@ export default function DoneForYouPage() {
         onClose={() => setCheckoutOpen(false)}
         onUnlocked={(until) => unlock(until)}
         onDownload={() => setCheckoutOpen(false)}
+        mode="servico"
       />
       <SiteFooter />
     </main>

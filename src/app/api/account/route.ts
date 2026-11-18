@@ -3,6 +3,7 @@ import { getKitUntil } from "@/lib/server/payments";
 import { getServerSession } from "@/lib/server/session";
 import { pendingReferralBonus } from "@/lib/server/referrals";
 import { adminEmail } from "@/lib/server/admin";
+import { serviceCredit } from "@/lib/server/service";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +11,10 @@ export async function GET() {
   try {
     const session = await getServerSession();
     if (!session) return Response.json({ error: "unauthorized" }, { status: 401 });
-    const [referralBonus, kitUntil] = await Promise.all([
+    const [referralBonus, kitUntil, credit] = await Promise.all([
       pendingReferralBonus(session.userId).catch(() => false),
       getKitUntil(session.userId),
+      session.plan === "pro" ? Promise.resolve("team") : serviceCredit(session.userId),
     ]);
     return Response.json({
       account: {
@@ -24,6 +26,8 @@ export async function GET() {
         referralBonus,
         kitUntil,
         kit: session.plan === "pro" || hasKit(kitUntil),
+        /** Pode pedir um "Fazemos para você" sem pagar de novo. */
+        service: !!credit,
         team: !!adminEmail() && session.email.trim().toLowerCase() === adminEmail(),
       },
     });

@@ -1,7 +1,10 @@
 // Regras comerciais compartilhadas entre servidor e navegador.
 // Altere aqui para mudar preço ou duração do acesso em todo o site.
 
-export const ACCESS_PRICE_CENTS = 990;
+/** Promoção: o pacote para fazer sozinho sai com 20% de desconto (de R$ 9,90 por R$ 7,90). */
+export const ACCESS_LIST_PRICE_CENTS = 990;
+export const PROMO_PERCENT = 20;
+export const ACCESS_PRICE_CENTS = 790;
 export const ACCESS_DAYS = 7;
 export const ACCESS_PRODUCT_NAME = "CurriculosPRO — Acesso de 7 dias";
 
@@ -16,12 +19,16 @@ export const formatBRL = (cents: number) =>
   (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export const ACCESS_PRICE_LABEL = formatBRL(ACCESS_PRICE_CENTS);
+export const ACCESS_LIST_PRICE_LABEL = formatBRL(ACCESS_LIST_PRICE_CENTS);
+/** "Fazemos para você": a equipe monta o currículo (inclui 7 dias de acesso). */
+export const SERVICE_PRICE_CENTS = 990;
+export const SERVICE_PRICE_LABEL = formatBRL(SERVICE_PRICE_CENTS);
 
 /**
  * Pacotes: "semana" = Currículo (7 dias), "mes" = Kit Emprego (30 dias, libera as ferramentas de busca de emprego).
  * "upgrade" completa o Currículo para o Kit Emprego pagando só a diferença.
  */
-export type AccessPlanId = "semana" | "mes" | "upgrade";
+export type AccessPlanId = "semana" | "mes" | "upgrade" | "servico";
 export type AccessPlan = {
   id: AccessPlanId;
   days: number;
@@ -43,13 +50,27 @@ export const ACCESS_PLANS: Record<AccessPlanId, AccessPlan> = {
     title: "Upgrade para o Kit Emprego",
     product: "CurriculosPRO — Upgrade para o Kit Emprego",
   },
+  servico: {
+    id: "servico",
+    days: ACCESS_DAYS,
+    cents: SERVICE_PRICE_CENTS,
+    name: "7 dias",
+    title: "Fazemos para você",
+    product: "CurriculosPRO — Fazemos para você (currículo pronto)",
+  },
 };
 export const KIT_NAME = "Kit Emprego";
 export const KIT_PRICE_LABEL = formatBRL(ACCESS_PLANS.mes.cents);
 export const UPGRADE_PRICE_LABEL = formatBRL(ACCESS_PLANS.upgrade.cents);
 /** O que cada pacote libera (para o checkout e a página de preços). */
 export const PLAN_FEATURES = {
-  semana: ["Currículo em PDF e Word, sem marca d'água", "Carta de apresentação", "Nossa equipe faz para você, se preferir"],
+  semana: ["Você monta no editor, com modelos e exemplos", "Currículo em PDF e Word, sem marca d'água", "Carta de apresentação"],
+  servico: [
+    "Nossa equipe monta seu currículo em até 24 horas",
+    "Você recebe em PDF e Word, por link e por e-mail",
+    "7 dias de suporte para pedir ajustes",
+    "7 dias de acesso ao site para baixar e editar",
+  ],
   mes: [
     "Tudo do pacote Currículo, por 30 dias",
     "Adaptar o currículo para cada vaga, com dicas",
@@ -63,7 +84,8 @@ export const PLAN_FEATURES = {
 export const SERVICE_SUPPORT_DAYS = 7;
 export const hasKit = (kitUntil?: string | null) => !!kitUntil && new Date(kitUntil).getTime() > Date.now();
 export const MONTH_PRICE_LABEL = formatBRL(ACCESS_PLANS.mes.cents);
-export const isAccessPlan = (x: unknown): x is AccessPlanId => x === "semana" || x === "mes" || x === "upgrade";
+export const isAccessPlan = (x: unknown): x is AccessPlanId =>
+  x === "semana" || x === "mes" || x === "upgrade" || x === "servico";
 
 /** Valor mínimo cobrado depois de qualquer desconto. */
 export const MIN_CHARGE_CENTS = 100;

@@ -1214,3 +1214,25 @@ body {
 .pricingPage .pricingHelp a svg {
   color: #1a8d4a;
 }
+
+/* Promoção do pacote Currículo (20% off) */
+.promo-tag {
+  display: inline-block;
+  align-self: flex-start;
+  margin-bottom: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--marker, #ffe066);
+  color: #5c3b00;
+  font-size: 12px;
+  font-weight: 800;
+}
+.promo-was {
+  display: block;
+  color: #6b7a8c;
+  font-size: 15px;
+  font-weight: 600;
+}
+.promo-tag {
+  width: fit-content;
+}

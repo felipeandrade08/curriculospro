@@ -16,7 +16,7 @@ type Charge = {
 };
 
 const KINDS = [
-  { id: "semana", label: "Pacote Currículo (7 dias)", price: "9,90", hint: "Libera o download na conta do cliente." },
+  { id: "semana", label: "Pacote Currículo (7 dias)", price: "7,90", hint: "Libera o download na conta do cliente." },
   { id: "mes", label: "Kit Emprego (30 dias)", price: "19,90", hint: "Libera o Kit na conta do cliente." },
   { id: "servico", label: "Fazemos para você", price: "9,90", hint: "Equipe faz o currículo + 7 dias de ajustes." },
   { id: "avulso", label: "Outro valor", price: "", hint: "Qualquer cobrança avulsa." },

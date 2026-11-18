@@ -6,7 +6,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ResumeThumb } from "@/components/resume-view";
-import { ACCESS_DAYS, ACCESS_PRICE_LABEL, MONTH_PRICE_LABEL } from "@/lib/billing";
+import { ACCESS_DAYS, ACCESS_LIST_PRICE_LABEL, ACCESS_PRICE_LABEL, MONTH_PRICE_LABEL, PROMO_PERCENT, SERVICE_PRICE_LABEL } from "@/lib/billing";
 import { JobTools } from "@/components/job-tools";
 import { EXAMPLE_CATEGORIES, RESUME_EXAMPLES, exampleById, type ResumeExample } from "@/lib/examples";
 import { TEMPLATES } from "@/lib/templates";
@@ -110,7 +110,7 @@ export default async function Home() {
             <Link href="/feito-para-voce" className="hero-service">
               <span className="hero-service-tag">Novo</span>
               <span>
-                Sem tempo? <b>Nossa equipe faz seu currículo em até 24h</b>
+                Sem tempo? <b>Nossa equipe faz seu currículo em até 24h</b> por {SERVICE_PRICE_LABEL}
               </span>
               <span aria-hidden="true">→</span>
             </Link>
@@ -144,7 +144,7 @@ export default async function Home() {
             <h2 id="fy-hl-title">Prefere não fazer sozinho? A gente faz o seu currículo.</h2>
             <p>
               Conte onde trabalhou e o que sabe fazer. Nossa equipe escreve, organiza e entrega seu currículo
-              pronto em até 24 horas — incluído no acesso de {ACCESS_PRICE_LABEL}.
+              pronto em até 24 horas, por {SERVICE_PRICE_LABEL}.
             </p>
             <ul>
               <li>Feito por pessoas, não por robô</li>
@@ -339,6 +339,8 @@ export default async function Home() {
           </div>
           <div className="price-card">
             <div className="price-amount">
+              <span className="promo-tag">{PROMO_PERCENT}% OFF · promoção</span>
+              <s className="promo-was">{ACCESS_LIST_PRICE_LABEL}</s>
               <strong>{ACCESS_PRICE_LABEL}</strong>
               <span>pagamento único via Pix ou cartão</span>
             </div>

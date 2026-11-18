@@ -4,16 +4,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { UsageBeacon } from "@/components/usage-beacon";
-import {
-  ACCESS_DAYS,
-  ACCESS_PLANS,
-  ACCESS_PRICE_LABEL,
-  KIT_NAME,
-  KIT_PRICE_LABEL,
-  MONTH_PRICE_LABEL,
-  SERVICE_SUPPORT_DAYS,
-  UPGRADE_PRICE_LABEL,
-} from "@/lib/billing";
+import { ACCESS_DAYS, ACCESS_LIST_PRICE_LABEL, ACCESS_PLANS, ACCESS_PRICE_LABEL, KIT_NAME, KIT_PRICE_LABEL, MONTH_PRICE_LABEL, PROMO_PERCENT, SERVICE_PRICE_LABEL, SERVICE_SUPPORT_DAYS, UPGRADE_PRICE_LABEL } from "@/lib/billing";
 import { SUPPORT_WHATSAPP_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -38,7 +29,7 @@ const rows: [string, boolean, boolean][] = [
 const faq = [
   {
     q: "Como funciona o “Fazemos para você”?",
-    a: `Você paga ${ACCESS_PRICE_LABEL}, envia o currículo antigo ou conta onde trabalhou (pelo site ou pelo WhatsApp) e nossa equipe monta seu currículo em até 24 horas. Você recebe em PDF e Word e tem ${SERVICE_SUPPORT_DAYS} dias de suporte para pedir ajustes.`,
+    a: `Você paga ${SERVICE_PRICE_LABEL}, envia o currículo antigo ou conta onde trabalhou (pelo site ou pelo WhatsApp) e nossa equipe monta seu currículo em até 24 horas. Você recebe em PDF e Word e tem ${SERVICE_SUPPORT_DAYS} dias de suporte para pedir ajustes.`,
   },
   {
     q: "É uma assinatura?",
@@ -112,6 +103,8 @@ export default function PricingPage() {
         <article className="pricingPlan">
           <header>
             <h2>Currículo</h2>
+            <span className="promo-tag">{PROMO_PERCENT}% OFF · promoção</span>
+            <s className="promo-was">{ACCESS_LIST_PRICE_LABEL}</s>
             <strong>{ACCESS_PRICE_LABEL}</strong>
             <span>{ACCESS_DAYS} dias de acesso · pagamento único</span>
           </header>
@@ -125,9 +118,6 @@ export default function PricingPage() {
             </li>
             <li>
               <b>Carta de apresentação</b> montada a partir do currículo
-            </li>
-            <li>
-              Se preferir, <b>nossa equipe faz o currículo</b> em até 24 horas
             </li>
             <li>Seus currículos salvos na nuvem</li>
           </ul>
@@ -223,7 +213,7 @@ export default function PricingPage() {
       <section className="pricingService shell" aria-labelledby="serviceTitle">
         <div>
           <span className="pricingServiceTag">Fazemos para você</span>
-          <h2 id="serviceTitle">Prefere que a gente faça? Seu currículo pronto por {ACCESS_PRICE_LABEL}</h2>
+          <h2 id="serviceTitle">Prefere que a gente faça? Seu currículo pronto por {SERVICE_PRICE_LABEL}</h2>
           <ul>
             <li>
               Nossa equipe monta seu currículo em <b>até 24 horas</b>
@@ -240,7 +230,7 @@ export default function PricingPage() {
           </ul>
         </div>
         <div className="pricingServiceCta">
-          <strong>{ACCESS_PRICE_LABEL}</strong>
+          <strong>{SERVICE_PRICE_LABEL}</strong>
           <span>pagamento único · sem mensalidade</span>
           <Link href="/feito-para-voce" className="btn btn-primary btn-lg">
             Quero que façam o meu

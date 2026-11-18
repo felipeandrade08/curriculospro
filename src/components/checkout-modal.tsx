@@ -3,7 +3,9 @@ import { storedOrigin } from "@/lib/origin";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ACCESS_LIST_PRICE_CENTS,
   ACCESS_PLANS,
+  PROMO_PERCENT,
   KIT_NAME,
   PLAN_FEATURES,
   REFERRED_BONUS_DAYS,
@@ -39,8 +41,8 @@ export function CheckoutModal({
   onClose: () => void;
   onUnlocked: (accessUntil: string | null) => void;
   onDownload?: () => void;
-  /** "kit": aberto por uma ferramenta do Kit Emprego (oferece o Kit ou o upgrade). */
-  mode?: "download" | "kit";
+  /** "kit": aberto por uma ferramenta do Kit Emprego (oferece o Kit ou o upgrade). "servico": Fazemos para você. */
+  mode?: "download" | "kit" | "servico";
 }) {
   const [stage, setStage] = useState<Stage>("offer");
   const [checkout, setCheckout] = useState<CheckoutPix | null>(null);
@@ -73,8 +75,9 @@ export function CheckoutModal({
     if (!open) return;
     unlockedRef.current = false;
     const upgrade = mode === "kit" && access.active && !access.kit;
-    setStage(access.active && !upgrade && !(mode === "kit" && !access.kit) ? "approved" : "offer");
-    setPlan(upgrade ? "upgrade" : mode === "kit" ? "mes" : "semana");
+    const needsPurchase = mode === "servico" ? !access.service : !access.active || upgrade || (mode === "kit" && !access.kit);
+    setStage(needsPurchase ? "offer" : "approved");
+    setPlan(upgrade ? "upgrade" : mode === "kit" ? "mes" : mode === "servico" ? "servico" : "semana");
     setQuote(null);
     setCouponMsg("");
     setHasRef(!!storedReferral());
@@ -83,7 +86,8 @@ export function CheckoutModal({
     if (saved) {
       setCouponOpen(true);
       setCouponCode(saved);
-      if (!(mode === "kit" && access.active)) void checkCoupon(saved, mode === "kit" ? "mes" : "semana");
+      if (!(mode === "kit" && access.active))
+        void checkCoupon(saved, mode === "kit" ? "mes" : mode === "servico" ? "servico" : "semana");
     }
     trackUsage("paywall_view");
     dialog.current?.focus();
@@ -306,6 +310,17 @@ export function CheckoutModal({
                   </div>
                 </div>
               </>
+            ) : mode === "servico" ? (
+              <>
+                <span className="checkoutEyebrow">FAZEMOS PARA VOCÊ</span>
+                <h2 id="checkoutTitle">Nossa equipe monta seu currículo.</h2>
+                <div className="checkoutUpgrade">
+                  <div>
+                    <strong>{formatBRL(ACCESS_PLANS.servico.cents)}</strong>
+                    <span>currículo pronto em até 24 horas · pagamento único</span>
+                  </div>
+                </div>
+              </>
             ) : (
               <>
                 <span className="checkoutEyebrow">{mode === "kit" ? KIT_NAME.toUpperCase() : "ESCOLHA SEU PACOTE"}</span>
@@ -325,9 +340,15 @@ export function CheckoutModal({
                         onClick={() => choosePlan(id)}
                       >
                         <span className="cpName">{p.title}</span>
+                        {id === "semana" && ACCESS_LIST_PRICE_CENTS > p.cents && (
+                          <s className="cpList">{formatBRL(ACCESS_LIST_PRICE_CENTS)}</s>
+                        )}
                         <strong>{formatBRL(p.cents)}</strong>
                         <small>{p.name} de acesso · pagamento único</small>
                         {id === "mes" && <em>Mais completo</em>}
+                        {id === "semana" && ACCESS_LIST_PRICE_CENTS > p.cents && (
+                          <em className="cpPromo">{PROMO_PERCENT}% OFF</em>
+                        )}
                       </button>
                     );
                   })}
@@ -380,7 +401,12 @@ export function CheckoutModal({
               </p>
             )}
             <ul className="checkoutBenefits">
-              {(plan === "semana" ? PLAN_FEATURES.semana : PLAN_FEATURES.mes.slice(plan === "upgrade" ? 1 : 0)).map((f) => (
+              {(plan === "semana"
+                ? PLAN_FEATURES.semana
+                : plan === "servico"
+                  ? PLAN_FEATURES.servico
+                  : PLAN_FEATURES.mes.slice(plan === "upgrade" ? 1 : 0)
+              ).map((f) => (
                 <li key={f}>{f}</li>
               ))}
               <li>Sem assinatura e sem renovação automática</li>
@@ -500,9 +526,15 @@ export function CheckoutModal({
             <div className="checkoutCheck" aria-hidden="true">
               ✓
             </div>
-            <h2 id="checkoutTitle">{mode === "kit" ? KIT_NAME + " liberado!" : "Download liberado!"}</h2>
+            <h2 id="checkoutTitle">
+              {mode === "kit" ? KIT_NAME + " liberado!" : mode === "servico" ? "Pagamento confirmado!" : "Download liberado!"}
+            </h2>
             <p>
-              {accessUntil ? (
+              {mode === "servico" ? (
+                <>
+                  Agora é só preencher o pedido com suas informações. Entregamos seu currículo em até 24 horas.
+                </>
+              ) : accessUntil ? (
                 <>
                   Seu acesso vale até <b>{formatAccessUntil(accessUntil)}</b>. Baixe e ajuste seus currículos
                   quantas vezes quiser até lá.
@@ -520,7 +552,7 @@ export function CheckoutModal({
                   onDownload();
                 }}
               >
-                Baixar meu PDF agora ↓
+                {mode === "servico" ? "Preencher meu pedido" : "Baixar meu PDF agora ↓"}
               </button>
             ) : (
               <button className="checkoutPrimary" type="button" onClick={onClose}>
