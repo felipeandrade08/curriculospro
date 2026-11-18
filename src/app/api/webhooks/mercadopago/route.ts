@@ -27,7 +27,16 @@ export async function POST(request: Request) {
       requestId: request.headers.get("x-request-id"),
       dataId,
     });
-    if (!valid) return Response.json({ error: "invalid_signature" }, { status: 401 });
+    if (!valid) {
+      // Registro para diagnóstico (sem dados do pagador): ajuda a ver avisos recusados nos logs da Vercel.
+      console.warn("Aviso do Mercado Pago recusado: assinatura inválida", {
+        dataId,
+        type,
+        hasSignature: !!request.headers.get("x-signature"),
+        hasRequestId: !!request.headers.get("x-request-id"),
+      });
+      return Response.json({ error: "invalid_signature" }, { status: 401 });
+    }
   }
 
   if (type !== "payment" || !dataId || !/^\d{1,20}$/.test(dataId)) return Response.json({ ok: true });

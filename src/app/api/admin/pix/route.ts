@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       payerEmail: email || check.session.email,
       externalReference: userId || PANEL_REFERENCE,
       expiresAt,
-      notificationUrl: base && base.startsWith("https://") ? base + "/api/webhooks/mercadopago" : undefined,
+      notificationUrl: base && base.startsWith("https://") ? base + "/api/webhooks/mercadopago?source_news=webhooks" : undefined,
       idempotencyKey: randomUUID(),
     });
     const data = payment.point_of_interaction?.transaction_data;
