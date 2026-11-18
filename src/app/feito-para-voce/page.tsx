@@ -1,4 +1,5 @@
 "use client";
+import { WhatsappLogo } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { SiteHeader } from "@/components/site-header";
@@ -456,7 +457,7 @@ export default function DoneForYouPage() {
             o currículo.
           </p>
           <a className="btn btn-ghost" href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-            Chamar no WhatsApp
+            <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Chamar no WhatsApp
           </a>
         </aside>
       </section>

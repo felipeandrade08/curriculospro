@@ -9,21 +9,25 @@ const secret = () => process.env.EMAIL_LINK_SECRET || process.env.MERCADOPAGO_WE
 const sign = (id: string, exp: number) =>
   createHmac("sha256", secret()).update(`delivery:${id}:${exp}`).digest("base64url").slice(0, 32);
 
+/** Link curto para o WhatsApp: /e/<pedido>-<validade>-<assinatura>. */
 export function deliveryToken(requestId: string, deliveredAt: string | Date) {
   const exp = Math.floor(new Date(deliveredAt).getTime() / 1000) + DELIVERY_LINK_DAYS * 86_400;
-  return `${requestId}.${exp}.${sign(requestId, exp)}`;
+  return `${requestId}-${exp.toString(36)}-${sign(requestId, exp).slice(0, 16)}`;
 }
 
 export const deliveryUrl = (requestId: string, deliveredAt: string | Date) =>
-  SITE_URL + "/entrega/" + deliveryToken(requestId, deliveredAt);
+  SITE_URL + "/e/" + deliveryToken(requestId, deliveredAt);
 
-/** Confere o link. Devolve o id do pedido ou um motivo. */
+/** Confere o link (formato curto novo e o formato longo dos links já enviados). Devolve o id ou um motivo. */
 export function verifyDeliveryToken(token: string): { id: string } | { error: "invalid" | "expired" } {
-  const m = /^(\d{1,18})\.(\d{9,11})\.([A-Za-z0-9_-]{32})$/.exec(token || "");
+  const short = /^(\d{1,18})-([0-9a-z]{5,8})-([A-Za-z0-9_-]{16})$/.exec(token || "");
+  const long = /^(\d{1,18})\.(\d{9,11})\.([A-Za-z0-9_-]{32})$/.exec(token || "");
+  const m = short || long;
   if (!m) return { error: "invalid" };
   const [, id, expRaw, sig] = m;
-  const exp = Number(expRaw);
-  const expected = Buffer.from(sign(id, exp));
+  const exp = short ? parseInt(expRaw, 36) : Number(expRaw);
+  const full = sign(id, exp);
+  const expected = Buffer.from(short ? full.slice(0, 16) : full);
   const given = Buffer.from(sig);
   if (expected.length !== given.length || !timingSafeEqual(expected, given)) return { error: "invalid" };
   if (exp * 1000 < Date.now()) return { error: "expired" };

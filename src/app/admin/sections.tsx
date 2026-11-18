@@ -1,3 +1,4 @@
+import { WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { channelOf, type SaleSource } from "@/lib/server/sales-source";
 import { PixCharge } from "./pix-charge";
@@ -66,6 +67,32 @@ const PAY_STATUS: Record<string, string> = {
   refunded: "Estornado",
   charged_back: "Contestado",
 };
+
+/* Mensagens de andamento do pedido pelo WhatsApp (o cliente sabe em que pé está). */
+const WA_STAGES = [
+  {
+    id: "recebido",
+    label: "Recebemos",
+    text: (first: string) =>
+      `Olá, ${first}! Aqui é da equipe CurriculosPRO 😊 Recebemos seu pedido e as suas informações. Seu currículo fica pronto em até 24 horas e eu te aviso por aqui.`,
+  },
+  {
+    id: "duvida",
+    label: "Pedir informação",
+    text: (first: string) =>
+      `Olá, ${first}! Estou montando seu currículo e preciso de uma informação: `,
+  },
+  {
+    id: "fazendo",
+    label: "Está quase pronto",
+    text: (first: string) =>
+      `Oi, ${first}! Seu currículo está quase pronto ✍️ Daqui a pouco te mando o link para baixar em PDF e Word.`,
+  },
+];
+function waStage(phone: string, name: string, text: (first: string) => string) {
+  const number = phone.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+  return "https://wa.me/55" + number + "?text=" + encodeURIComponent(text(name.trim().split(/\s+/)[0] || ""));
+}
 
 /* ───────────── Cobrar no Pix ───────────── */
 
@@ -1173,6 +1200,22 @@ export async function OrdersTab({
                   {d.whatsapp}
                 </a>
               </p>
+              {(st === "new" || st === "in_progress") && d.whatsapp.replace(/\D/g, "").length >= 10 && (
+                <div className="cpa-wa-steps">
+                  <span>Avisar o cliente:</span>
+                  {WA_STAGES.map((stage) => (
+                    <a
+                      key={stage.id}
+                      className="cpa-btn small ghost"
+                      href={waStage(d.whatsapp, d.name, stage.text)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <WhatsappLogo size={16} weight="fill" aria-hidden="true" /> {stage.label}
+                    </a>
+                  ))}
+                </div>
+              )}
               {d.notes && (
                 <details>
                   <summary>Experiência contada pelo cliente</summary>
@@ -1264,7 +1307,7 @@ export async function OrdersTab({
                       rel="noopener noreferrer"
                       href={whatsappDeliveryUrl(d.whatsapp, d.name, deliveryUrl(String(r.id), String(r.delivered_at)))}
                     >
-                      Enviar no WhatsApp
+                      <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Enviar no WhatsApp
                     </a>
                     <a
                       className="cpa-btn ghost small"

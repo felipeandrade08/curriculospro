@@ -1201,3 +1201,16 @@ body {
 .pricingPage .pricingServiceCta .btn:hover {
   background: #ffd43b;
 }
+
+/* Links com o ícone do WhatsApp */
+.sf-wa,
+.pricingPage .pricingServiceCta a:not(.btn),
+.pricingPage .pricingHelp a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sf-wa svg,
+.pricingPage .pricingHelp a svg {
+  color: #1a8d4a;
+}

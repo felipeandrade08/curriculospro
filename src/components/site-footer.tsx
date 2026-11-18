@@ -1,3 +1,4 @@
+import { WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
 import { ACCESS_DAYS, ACCESS_PRICE_LABEL } from "@/lib/billing";
@@ -46,8 +47,8 @@ export function SiteFooter() {
         </nav>
         <nav aria-label="Ajuda">
           <h2>Ajuda</h2>
-          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-            Falar no WhatsApp
+          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="sf-wa">
+            <WhatsappLogo size={16} weight="fill" aria-hidden="true" /> Falar no WhatsApp
           </a>
           <Link href="/feito-para-voce">Fazemos para você</Link>
           <Link href="/depoimentos">Depoimentos</Link>

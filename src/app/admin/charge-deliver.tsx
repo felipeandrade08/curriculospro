@@ -1,4 +1,5 @@
 "use client";
+import { WhatsappLogo } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { whatsappDeliveryUrl } from "@/lib/delivery-message";
@@ -49,7 +50,7 @@ export function ChargeDeliver({ paymentId, name, phone, cloud, link: initial, in
               target="_blank"
               rel="noreferrer"
             >
-              Enviar no WhatsApp
+              <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Enviar no WhatsApp
             </a>
           )}
           <a className="cpa-btn small ghost" href={link} target="_blank" rel="noreferrer">

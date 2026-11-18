@@ -2402,3 +2402,101 @@
   border-color: #1553d6;
   color: #fff;
 }
+
+/* Entrega: passos, botão do WhatsApp e envio do PDF */
+.btn.btn-wa {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #1a8d4a;
+  border-color: #1a8d4a;
+  color: #fff !important;
+}
+.btn.btn-wa:hover {
+  background: #157a3f;
+  border-color: #157a3f;
+}
+.dl-steps {
+  list-style: none;
+  counter-reset: dl;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  max-width: 560px;
+}
+.dl-steps > li {
+  counter-increment: dl;
+  position: relative;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 16px 18px 16px 58px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: #fff;
+}
+.dl-steps > li::before {
+  content: counter(dl);
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--pen-soft);
+  color: var(--pen);
+  font-weight: 800;
+  font-size: 14px;
+}
+.dl-steps > li > b {
+  font-size: 17px;
+  color: var(--ink);
+}
+.dl-steps small {
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.dl-share {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.dl-share-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .dl-steps > li {
+    padding: 14px 14px 14px 52px;
+  }
+  .dl-steps .btn-lg {
+    width: 100%;
+    justify-content: center;
+  }
+  .dl-actions,
+  .dl-share {
+    width: 100%;
+  }
+}
+.dl-paper-narrow {
+  display: none;
+}
+@media (max-width: 600px) {
+  .dl-paper-wide {
+    display: none;
+  }
+  .dl-paper-narrow {
+    display: block;
+    width: 340px;
+    max-width: 100%;
+    justify-self: center;
+  }
+}
