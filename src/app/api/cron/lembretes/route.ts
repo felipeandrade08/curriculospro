@@ -3,6 +3,7 @@ import { db } from "@/lib/server/db";
 import { emailConfigured, expiryReminderEmail, sendEmail } from "@/lib/server/email";
 import { sendPixRecoveries, sendReviewRequests, sendSignupNudges } from "@/lib/server/recovery";
 import { purgeOldFiles } from "@/lib/server/service-files";
+import { syncPanelCharges } from "@/lib/server/panel-orders";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,11 @@ export async function GET(request: Request) {
   if (!authorized(request)) return Response.json({ error: "unauthorized" }, { status: 401 });
   // Anexos antigos do "Fazemos para você" são apagados mesmo sem e-mail configurado.
   const purgedFiles = await purgeOldFiles();
-  if (!emailConfigured()) return Response.json({ ok: true, sent: 0, purgedFiles, note: "email_not_configured" });
+  const panelPix = await syncPanelCharges().catch((error) => {
+    console.error("Conferência dos Pix do painel falhou", error);
+    return null;
+  });
+  if (!emailConfigured()) return Response.json({ ok: true, sent: 0, purgedFiles, panelPix, note: "email_not_configured" });
   const sql = db();
   // Marca antes de enviar (reserva), para não repetir se a rotina rodar duas vezes.
   const users = await sql`UPDATE app_users SET expiry_reminder_for = access_until

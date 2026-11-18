@@ -1,4 +1,5 @@
 import { WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { syncPanelCharges } from "@/lib/server/panel-orders";
 import Link from "next/link";
 import { channelOf, type SaleSource } from "@/lib/server/sales-source";
 import { PixCharge } from "./pix-charge";
@@ -97,6 +98,8 @@ function waStage(phone: string, name: string, text: (first: string) => string) {
 /* ───────────── Cobrar no Pix ───────────── */
 
 export async function ChargeTab({ adminUserId }: { adminUserId: string }) {
+  // Confere no Mercado Pago os Pix que ainda aparecem como aguardando e abre os pedidos que faltam.
+  await syncPanelCharges(adminUserId).catch((error) => console.error("Conferência dos Pix falhou", error));
   let rows: Record<string, unknown>[] = [];
   let mine: Record<string, unknown>[] = [];
   try {
@@ -1081,6 +1084,8 @@ export async function OrdersTab({
   msg: string;
   href: Href;
 }) {
+  // Vendas do Cobrar no Pix pagas sem pedido (aviso do Mercado Pago atrasado ou perdido) entram aqui.
+  await syncPanelCharges(adminUserId).catch((error) => console.error("Conferência dos Pix falhou", error));
   const sql = db();
   let rows: Record<string, unknown>[], mine: Record<string, unknown>[];
   let stats: Record<string, unknown> = {};
