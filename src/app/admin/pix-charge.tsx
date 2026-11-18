@@ -37,7 +37,48 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
   const [charge, setCharge] = useState<Charge | null>(null);
   const [copied, setCopied] = useState(false);
   const current = KINDS.find((k) => k.id === kind)!;
-  const needsAccount = kind === "semana" || kind === "mes";
+  const [accountCharge, setAccountCharge] = useState(false);
+  const needsAccount = charge ? accountCharge : kind === "semana" || kind === "mes";
+  const [renewing, setRenewing] = useState(false);
+
+  /** Mostra aqui um Pix gerado de novo (pelo botão desta tela ou da lista). */
+  const showRenewed = (d: Charge & { name?: string; phone?: string; email?: string; needsAccount?: boolean }) => {
+    setCharge(d);
+    setName(d.name || "");
+    setPhone(d.phone || "");
+    setEmail(d.email || "");
+    setAccountCharge(!!d.needsAccount);
+    setCopied(false);
+    setError("");
+  };
+  useEffect(() => {
+    const onRenewed = (e: Event) => {
+      showRenewed((e as CustomEvent).detail);
+      document.querySelector(".cpa-pix-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    window.addEventListener("cpa-pix-renewed", onRenewed);
+    return () => window.removeEventListener("cpa-pix-renewed", onRenewed);
+  }, []);
+  const renew = async () => {
+    if (!charge) return;
+    setRenewing(true);
+    setError("");
+    try {
+      const r = await fetch("/api/admin/pix/renovar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: charge.id }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.message || "Não foi possível gerar o novo Pix.");
+      showRenewed(d);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível gerar o novo Pix.");
+    } finally {
+      setRenewing(false);
+    }
+  };
 
   useEffect(() => {
     if (current.price) setAmount(current.price);
@@ -69,6 +110,7 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.message || "Não foi possível gerar o Pix.");
       setCharge(d as Charge);
+      setAccountCharge(kind === "semana" || kind === "mes");
       setCopied(false);
       router.refresh();
     } catch (e) {
@@ -96,16 +138,26 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
 
   if (charge)
     return (
-      <div className="cpa-pix-result">
+      <div className="cpa-pix-result cpa-pix-anchor">
         <div className={"cpa-pix-status " + charge.status}>
           {charge.status === "approved"
             ? "✓ Pago! O pagamento foi confirmado."
             : charge.status === "pending"
               ? "Aguardando pagamento… (confere sozinho a cada 5 segundos)"
               : charge.status === "expired"
-                ? "Este Pix expirou. Gere outro."
+                ? "Este Pix venceu."
                 : "Pagamento não concluído."}
+          {(charge.status === "expired" || charge.status === "cancelled" || charge.status === "rejected") && (
+            <button type="button" className="cpa-btn small" onClick={renew} disabled={renewing}>
+              {renewing ? "Gerando…" : "Gerar novo Pix (mesma cobrança)"}
+            </button>
+          )}
         </div>
+        {error && (
+          <p className="cpa-pix-error" role="alert">
+            {error}
+          </p>
+        )}
         <div className="cpa-pix-body">
           {charge.qrCodeBase64 && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -163,7 +215,7 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
     );
 
   return (
-    <div className="cpa-pix-form">
+    <div className="cpa-pix-form cpa-pix-anchor">
       <fieldset>
         <legend>O que você está vendendo?</legend>
         <div className="cpa-pix-kinds">

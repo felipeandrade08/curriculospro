@@ -2,6 +2,7 @@ import Link from "next/link";
 import { channelOf, type SaleSource } from "@/lib/server/sales-source";
 import { PixCharge } from "./pix-charge";
 import { ChargeDeliver } from "./charge-deliver";
+import { RenewCharge } from "./renew-charge";
 import { db } from "@/lib/server/db";
 import { formatBRL } from "@/lib/billing";
 import {
@@ -76,7 +77,7 @@ export async function ChargeTab({ adminUserId }: { adminUserId: string }) {
         p.plan, p.customer, u.email AS account, s.id::text AS request_id, s.status AS request_status, s.delivered_at
       FROM payments p LEFT JOIN app_users u ON u.id = p.user_id
       LEFT JOIN service_requests s ON s.id::text = p.customer->>'requestId'
-      WHERE p.customer IS NOT NULL ORDER BY p.created_at DESC LIMIT 30`;
+      WHERE p.customer IS NOT NULL AND NOT (p.customer ? 'replacedBy') ORDER BY p.created_at DESC LIMIT 30`;
     // As cópias já entregues ("— feito pela equipe") não entram na lista de escolha.
     mine = await db()`SELECT id, title, updated_at FROM resumes WHERE user_id = ${adminUserId} AND deleted_at IS NULL
         AND title NOT LIKE '% — feito pela equipe'
@@ -157,6 +158,8 @@ export async function ChargeTab({ adminUserId }: { adminUserId: string }) {
                             link={link}
                             inAccount={!!r.account}
                           />
+                        ) : st === "cancelled" || st === "rejected" ? (
+                          <RenewCharge id={String(r.id)} />
                         ) : (
                           "—"
                         )}
