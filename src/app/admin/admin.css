@@ -1035,3 +1035,11 @@
 .cpa-wa-steps svg {
   color: #1a8d4a;
 }
+
+.cpa-pill.wa {
+  background: #e3f6ea;
+  color: #136c39;
+}
+.cpa-order-kpis {
+  margin-bottom: 14px;
+}

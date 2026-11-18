@@ -1083,11 +1083,22 @@ export async function OrdersTab({
 }) {
   const sql = db();
   let rows: Record<string, unknown>[], mine: Record<string, unknown>[];
+  let stats: Record<string, unknown> = {};
   try {
     rows = await sql`SELECT s.id::text, s.status, s.data, s.created_at, s.delivered_at, s.admin_note, u.email
       FROM service_requests s JOIN app_users u ON u.id = s.user_id
-      WHERE CASE ${filter} WHEN 'abertos' THEN s.status IN ('new', 'in_progress') WHEN 'entregues' THEN s.status = 'delivered' ELSE true END
-      ORDER BY (s.status = 'new') DESC, s.created_at ASC LIMIT 100`;
+      WHERE CASE ${filter} WHEN 'abertos' THEN s.status IN ('new', 'in_progress') WHEN 'entregues' THEN s.status = 'delivered'
+        WHEN 'whatsapp' THEN s.data->>'via' = 'pix' ELSE true END
+      ORDER BY CASE WHEN ${filter} IN ('entregues', 'whatsapp', 'todos') THEN NULL ELSE (s.status = 'new') END DESC,
+        CASE WHEN ${filter} IN ('entregues', 'whatsapp', 'todos') THEN COALESCE(s.delivered_at, s.created_at) END DESC NULLS LAST,
+        s.created_at ASC LIMIT 100`;
+    [stats] = await sql`SELECT
+        count(*) FILTER (WHERE status IN ('new', 'in_progress'))::int AS open,
+        count(*) FILTER (WHERE status = 'delivered' AND delivered_at >= date_trunc('day', now() AT TIME ZONE 'America/Sao_Paulo') AT TIME ZONE 'America/Sao_Paulo')::int AS today,
+        count(*) FILTER (WHERE status = 'delivered' AND delivered_at >= now() - interval '30 days')::int AS month,
+        count(*) FILTER (WHERE status = 'delivered' AND delivered_at >= now() - interval '30 days' AND data->>'via' = 'pix')::int AS month_wa,
+        COALESCE(sum((data->>'amountCents')::int) FILTER (WHERE data->>'via' = 'pix' AND created_at >= now() - interval '30 days'), 0)::int AS wa_cents
+      FROM service_requests`;
     mine =
       await sql`SELECT id, title, updated_at FROM resumes WHERE user_id = ${adminUserId} AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 40`;
   } catch {
@@ -1129,10 +1140,30 @@ export async function OrdersTab({
           </p>
         )}
       </section>
+      <div className="cpa-kpis cpa-order-kpis">
+        <article className="cpa-kpi">
+          <span>Em aberto</span>
+          <strong>{n(stats.open)}</strong>
+        </article>
+        <article className="cpa-kpi">
+          <span>Entregues hoje</span>
+          <strong>{n(stats.today)}</strong>
+        </article>
+        <article className="cpa-kpi">
+          <span>Entregues em 30 dias</span>
+          <strong>{n(stats.month)}</strong>
+        </article>
+        <article className="cpa-kpi">
+          <span>Vendas pelo WhatsApp entregues (30 dias)</span>
+          <strong>{n(stats.month_wa)}</strong>
+          <small className="cpa-muted">{formatBRL(n(stats.wa_cents))} vendidos pelo Pix</small>
+        </article>
+      </div>
       <div className="cpa-chips">
         {[
           ["abertos", "Em aberto"],
           ["entregues", "Entregues"],
+          ["whatsapp", "Vendas pelo WhatsApp"],
           ["todos", "Todos"],
         ].map(([id, label]) => (
           <Link
@@ -1156,7 +1187,12 @@ export async function OrdersTab({
             sourceText: string;
             resume: import("@/lib/resume").ResumeDocument | null;
             delivery?: "email" | "whatsapp";
+            via?: string;
+            email?: string;
+            amountCents?: number;
+            inAccount?: boolean;
           };
+          const viaPix = d.via === "pix";
           const st = String(r.status);
           const hours = (now - new Date(String(r.created_at)).getTime()) / 3_600_000;
           const late = (st === "new" || st === "in_progress") && hours > 20;
@@ -1167,8 +1203,8 @@ export async function OrdersTab({
             encodeURIComponent(
               "Olá, " +
                 d.name.split(" ")[0] +
-                "! Aqui é da equipe CurriculosPRO, sobre o seu currículo para " +
-                d.role +
+                "! Aqui é da equipe CurriculosPRO, sobre o seu currículo" +
+                (d.role ? " para " + d.role : "") +
                 ".",
             );
           return (
@@ -1191,11 +1227,30 @@ export async function OrdersTab({
                 </time>
               </div>
               <p>
+                {viaPix && (
+                  <span className="cpa-pill wa">
+                    Venda pelo WhatsApp{d.amountCents ? " · Pix " + formatBRL(d.amountCents) : ""}
+                  </span>
+                )}{" "}
                 <span className={"cpa-pill " + (d.delivery === "whatsapp" ? "approved" : "pending")}>
                   Receber por {d.delivery === "whatsapp" ? "WhatsApp" : "e-mail"}
                 </span>{" "}
-                <b>Vaga:</b> {d.role}
-                {d.city ? " · " + d.city : ""} · <b>Conta:</b> {String(r.email)} · <b>WhatsApp:</b>{" "}
+                {d.role ? (
+                  <>
+                    <b>Vaga:</b> {d.role}
+                    {d.city ? " · " + d.city : ""} ·{" "}
+                  </>
+                ) : null}
+                {viaPix && !d.inAccount ? (
+                  <>
+                    <b>E-mail:</b> {d.email || "—"}
+                  </>
+                ) : (
+                  <>
+                    <b>Conta:</b> {String(r.email)}
+                  </>
+                )}{" "}
+                · <b>WhatsApp:</b>{" "}
                 <a href={wa} target="_blank" rel="noopener noreferrer">
                   {d.whatsapp}
                 </a>
