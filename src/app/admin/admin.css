@@ -1018,3 +1018,20 @@
   justify-content: space-between;
   gap: 10px;
 }
+
+/* Avisos de andamento do pedido pelo WhatsApp */
+.cpa-wa-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.cpa-wa-steps > span {
+  font-size: 12px;
+  color: #5b6b7d;
+  margin-right: 2px;
+}
+.cpa-wa-steps svg {
+  color: #1a8d4a;
+}

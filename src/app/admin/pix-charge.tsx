@@ -1,4 +1,5 @@
 "use client";
+import { WhatsappLogo } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChargeDeliver } from "./charge-deliver";
@@ -189,7 +190,7 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
                 {copied ? "Copiado ✓" : "Copiar código Pix"}
               </button>
               <a className="cpa-btn wa" href={waLink} target="_blank" rel="noreferrer">
-                Enviar no WhatsApp
+                <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Enviar no WhatsApp
               </a>
               <button type="button" className="cpa-btn ghost" onClick={() => setCharge(null)}>
                 Nova cobrança

@@ -1,4 +1,5 @@
 "use client";
+import { WhatsappLogo } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
@@ -145,7 +146,7 @@ export default function SendPage() {
                   aria-label="Número de WhatsApp da vaga"
                 />
                 <a className="btn btn-ghost" href={waHref} target="_blank" rel="noopener noreferrer">
-                  Abrir no WhatsApp
+                  <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Abrir no WhatsApp
                 </a>
               </>
             )}

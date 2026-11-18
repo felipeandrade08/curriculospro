@@ -1,3 +1,4 @@
+import { WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
@@ -245,7 +246,7 @@ export default function PricingPage() {
             Quero que façam o meu
           </Link>
           <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-            Ou peça pelo WhatsApp
+            <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Ou peça pelo WhatsApp
           </a>
         </div>
       </section>
@@ -261,7 +262,7 @@ export default function PricingPage() {
         <p className="pricingHelp">
           Ainda com dúvida?{" "}
           <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-            Fale com a gente pelo WhatsApp
+            <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Fale com a gente pelo WhatsApp
           </a>
           .
         </p>

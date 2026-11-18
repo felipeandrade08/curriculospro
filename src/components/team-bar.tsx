@@ -1,4 +1,5 @@
 "use client";
+import { WhatsappLogo } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import type { ResumeDocument } from "@/lib/resume";
 import { useTeam } from "@/components/team-flag";
@@ -148,7 +149,7 @@ export function TeamBar({ title, getDoc }: { title: string; getDoc: () => Resume
               <div className="tb-actions">
                 {wa && (
                   <a className="tb-primary" href={wa} target="_blank" rel="noopener noreferrer">
-                    Enviar no WhatsApp
+                    <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Enviar no WhatsApp
                   </a>
                 )}
                 {order.link && (

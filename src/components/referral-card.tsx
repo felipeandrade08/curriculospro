@@ -1,4 +1,5 @@
 "use client";
+import { WhatsappLogo } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { REFERRED_BONUS_DAYS, REFERRER_BONUS_DAYS } from "@/lib/billing";
@@ -65,7 +66,7 @@ export function ReferralCard() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Enviar pelo WhatsApp
+              <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Enviar pelo WhatsApp
             </a>
             <dl className="rf-stats">
               <div>
