@@ -1,3 +1,4 @@
+import { isSameOrigin } from "@/lib/server/request";
 import {
   buildAiFacts,
   validateProviderSuggestion,
@@ -9,6 +10,7 @@ import { db } from "@/lib/server/db";
 
 const MODEL = process.env.OPENAI_TAILOR_MODEL || "gpt-5.6-luna";
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return Response.json({ error: "forbidden_origin" }, { status: 403 });
   if (process.env.ENABLE_PAID_AI !== "true")
     return Response.json({ error: "paid_ai_disabled" }, { status: 503 });
   const session = await getServerSession();

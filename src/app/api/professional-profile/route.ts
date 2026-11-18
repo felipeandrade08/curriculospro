@@ -1,3 +1,4 @@
+import { isSameOrigin } from "@/lib/server/request";
 import { db } from "@/lib/server/db";
 import { getServerSession } from "@/lib/server/session";
 import { isProfessionalProfile } from "@/lib/resume";
@@ -19,6 +20,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  if (!isSameOrigin(request)) return Response.json({ error: "forbidden_origin" }, { status: 403 });
   const session = await getServerSession();
   if (!session) return Response.json({ error: "unauthorized" }, { status: 401 });
   const body = (await request.json().catch(() => null)) as {

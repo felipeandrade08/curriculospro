@@ -1,11 +1,12 @@
 // Entrega do "Fazemos para você" sem login: link assinado que vale 30 dias.
+import { linkSecret } from "@/lib/server/secrets";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/server/db";
 import { SITE_URL } from "@/lib/site";
 import type { ResumeDocument } from "@/lib/resume";
 
 export const DELIVERY_LINK_DAYS = 30;
-const secret = () => process.env.EMAIL_LINK_SECRET || process.env.MERCADOPAGO_WEBHOOK_SECRET || "dev-secret";
+const secret = linkSecret;
 const sign = (id: string, exp: number) =>
   createHmac("sha256", secret()).update(`delivery:${id}:${exp}`).digest("base64url").slice(0, 32);
 

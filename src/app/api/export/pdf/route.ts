@@ -8,6 +8,20 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+// Cada PDF abre um Chrome no servidor: limite por pessoa para evitar abuso (por instância).
+const recent = new Map<string, number[]>();
+const WINDOW_MS = 10 * 60_000;
+const MAX_PER_WINDOW = 20;
+function tooMany(userId: string) {
+  const now = Date.now();
+  const list = (recent.get(userId) || []).filter((t) => now - t < WINDOW_MS);
+  if (list.length >= MAX_PER_WINDOW) return true;
+  list.push(now);
+  recent.set(userId, list);
+  if (recent.size > 5000) for (const [k, v] of recent) if (!v.some((t) => now - t < WINDOW_MS)) recent.delete(k);
+  return false;
+}
+
 const SECTIONS = new Set(["summary", "experiences", "education", "skills", "languages", "courses"]);
 const safe = (s: string) =>
   s
@@ -26,6 +40,8 @@ export async function POST(request: Request) {
   if (!session) return Response.json({ error: "unauthorized" }, { status: 401 });
   if (session.plan !== "pro" && !hasActiveAccess(session.accessUntil))
     return Response.json({ error: "payment_required" }, { status: 402 });
+  if (tooMany(session.userId))
+    return Response.json({ error: "rate_limited", message: "Muitos PDFs seguidos. Espere alguns minutos." }, { status: 429 });
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   if (!isResumeDocument(body)) return Response.json({ error: "invalid_resume" }, { status: 400 });
   const raw = body as unknown as { sections?: unknown; scale?: unknown };
