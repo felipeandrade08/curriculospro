@@ -983,3 +983,38 @@
   border-color: #1fa855;
   color: #fff;
 }
+
+/* Entrega do currículo de uma venda do Cobrar no Pix */
+.cpa-charge-link {
+  display: grid;
+  gap: 8px;
+  min-width: 240px;
+}
+.cpa-charge-link input {
+  border: 1px solid #d5e1ec;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: 12px/1.3 ui-monospace, monospace;
+  width: 100%;
+  box-sizing: border-box;
+}
+.cpa-charge-deliver {
+  margin-top: 4px;
+}
+.cpa-pix-deliver {
+  border-top: 1px solid #e6ebf2;
+  padding-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+.cpa-pix-deliver h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.cpa-pix-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}

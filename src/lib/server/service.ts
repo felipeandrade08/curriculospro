@@ -160,9 +160,10 @@ export async function deliverRequest(
       admin_note = COALESCE(${note}, admin_note), updated_at = now()
     WHERE id = ${requestId} RETURNING user_id, delivered_at, data`;
   const [u] = await sql`SELECT email, display_name FROM app_users WHERE id = ${String(done.user_id)}`;
-  const data = (done.data || {}) as Partial<ServiceInput>;
+  const data = (done.data || {}) as Partial<ServiceInput> & { via?: string; email?: string };
   return {
-    email: String(u?.email || ""),
+    // Pedido criado pela cobrança Pix do painel: o e-mail é o que a equipe informou (pode não ter conta).
+    email: String((data.via === "pix" ? data.email : u?.email) || ""),
     name: data.name || (u?.display_name ? String(u.display_name) : null),
     userId: String(done.user_id),
     deliveredAt: new Date(String(done.delivered_at)).toISOString(),

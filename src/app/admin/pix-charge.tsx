@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChargeDeliver } from "./charge-deliver";
 
 type Charge = {
   id: string;
@@ -23,7 +24,7 @@ const KINDS = [
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /** Gera Pix para o cliente pagar pelo WhatsApp e acompanha o pagamento. */
-export function PixCharge() {
+export function PixCharge({ cloud }: { cloud: { id: string; title: string; updated: string }[] }) {
   const router = useRouter();
   const [kind, setKind] = useState<(typeof KINDS)[number]["id"]>("servico");
   const [amount, setAmount] = useState("");
@@ -36,7 +37,48 @@ export function PixCharge() {
   const [charge, setCharge] = useState<Charge | null>(null);
   const [copied, setCopied] = useState(false);
   const current = KINDS.find((k) => k.id === kind)!;
-  const needsAccount = kind === "semana" || kind === "mes";
+  const [accountCharge, setAccountCharge] = useState(false);
+  const needsAccount = charge ? accountCharge : kind === "semana" || kind === "mes";
+  const [renewing, setRenewing] = useState(false);
+
+  /** Mostra aqui um Pix gerado de novo (pelo botão desta tela ou da lista). */
+  const showRenewed = (d: Charge & { name?: string; phone?: string; email?: string; needsAccount?: boolean }) => {
+    setCharge(d);
+    setName(d.name || "");
+    setPhone(d.phone || "");
+    setEmail(d.email || "");
+    setAccountCharge(!!d.needsAccount);
+    setCopied(false);
+    setError("");
+  };
+  useEffect(() => {
+    const onRenewed = (e: Event) => {
+      showRenewed((e as CustomEvent).detail);
+      document.querySelector(".cpa-pix-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    window.addEventListener("cpa-pix-renewed", onRenewed);
+    return () => window.removeEventListener("cpa-pix-renewed", onRenewed);
+  }, []);
+  const renew = async () => {
+    if (!charge) return;
+    setRenewing(true);
+    setError("");
+    try {
+      const r = await fetch("/api/admin/pix/renovar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: charge.id }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.message || "Não foi possível gerar o novo Pix.");
+      showRenewed(d);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível gerar o novo Pix.");
+    } finally {
+      setRenewing(false);
+    }
+  };
 
   useEffect(() => {
     if (current.price) setAmount(current.price);
@@ -68,6 +110,7 @@ export function PixCharge() {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.message || "Não foi possível gerar o Pix.");
       setCharge(d as Charge);
+      setAccountCharge(kind === "semana" || kind === "mes");
       setCopied(false);
       router.refresh();
     } catch (e) {
@@ -95,16 +138,26 @@ export function PixCharge() {
 
   if (charge)
     return (
-      <div className="cpa-pix-result">
+      <div className="cpa-pix-result cpa-pix-anchor">
         <div className={"cpa-pix-status " + charge.status}>
           {charge.status === "approved"
             ? "✓ Pago! O pagamento foi confirmado."
             : charge.status === "pending"
               ? "Aguardando pagamento… (confere sozinho a cada 5 segundos)"
               : charge.status === "expired"
-                ? "Este Pix expirou. Gere outro."
+                ? "Este Pix venceu."
                 : "Pagamento não concluído."}
+          {(charge.status === "expired" || charge.status === "cancelled" || charge.status === "rejected") && (
+            <button type="button" className="cpa-btn small" onClick={renew} disabled={renewing}>
+              {renewing ? "Gerando…" : "Gerar novo Pix (mesma cobrança)"}
+            </button>
+          )}
         </div>
+        {error && (
+          <p className="cpa-pix-error" role="alert">
+            {error}
+          </p>
+        )}
         <div className="cpa-pix-body">
           {charge.qrCodeBase64 && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -148,11 +201,21 @@ export function PixCharge() {
             </small>
           </div>
         </div>
+        {charge.status === "approved" && (
+          <div className="cpa-pix-deliver">
+            <h3>Entregar o currículo</h3>
+            <small className="cpa-muted">
+              Escolha o currículo que você montou para o cliente. Geramos o link para ele baixar em PDF e Word
+              {email ? " e mandamos por e-mail" : ""}.
+            </small>
+            <ChargeDeliver paymentId={charge.id} name={name} phone={phone} cloud={cloud} inAccount={needsAccount} open />
+          </div>
+        )}
       </div>
     );
 
   return (
-    <div className="cpa-pix-form">
+    <div className="cpa-pix-form cpa-pix-anchor">
       <fieldset>
         <legend>O que você está vendendo?</legend>
         <div className="cpa-pix-kinds">

@@ -1,0 +1,66 @@
+import { checkAdmin } from "@/lib/server/admin";
+import { db } from "@/lib/server/db";
+import { deliverFromForm } from "@/lib/server/deliver";
+import { isSameOrigin } from "@/lib/server/request";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+/**
+ * Entrega do currículo de uma venda feita pelo "Cobrar no Pix": cria o pedido ligado ao pagamento
+ * e gera o link para o cliente baixar em PDF e Word (e envia por e-mail, se tiver).
+ */
+export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return Response.json({ error: "forbidden_origin" }, { status: 403 });
+  const check = await checkAdmin();
+  if (!check.ok) return Response.json({ error: "forbidden" }, { status: 403 });
+  if (Number(request.headers.get("content-length") || 0) > 5_000_000)
+    return Response.json({ ok: false, message: "Envio grande demais (máximo 4 MB de PDF)." }, { status: 413 });
+  const form = await request.formData().catch(() => null);
+  if (!form) return Response.json({ ok: false, message: "Envio inválido." }, { status: 400 });
+  const paymentId = String(form.get("paymentId") || "");
+  if (!/^\d{1,20}$/.test(paymentId)) return Response.json({ ok: false, message: "Cobrança inválida." }, { status: 400 });
+
+  const sql = db();
+  const [pay] = await sql`SELECT id, user_id, customer, granted_at, revoked_at FROM payments WHERE id = ${paymentId}`;
+  if (!pay?.customer) return Response.json({ ok: false, message: "Cobrança não encontrada." }, { status: 404 });
+  if (!pay.granted_at || pay.revoked_at)
+    return Response.json({ ok: false, message: "Esta cobrança ainda não foi paga." }, { status: 409 });
+  const customer = pay.customer as Record<string, string>;
+
+  // Um pedido por cobrança: se já existe e não foi entregue, reaproveita.
+  let requestId = customer.requestId || "";
+  if (requestId) {
+    const [req] = await sql`SELECT status FROM service_requests WHERE id = ${requestId}`;
+    if (req?.status === "delivered")
+      return Response.json({ ok: false, message: "O currículo desta venda já foi entregue." }, { status: 409 });
+    if (!req) requestId = "";
+  }
+  if (!requestId) {
+    const data = {
+      name: customer.name || "",
+      whatsapp: customer.phone || "",
+      email: customer.email || "",
+      role: "",
+      city: "",
+      notes: customer.description || "",
+      sourceText: "",
+      resume: null,
+      delivery: customer.phone ? "whatsapp" : "email",
+      via: "pix",
+      paymentId,
+      inAccount: !!pay.user_id,
+    };
+    // Sem conta do cliente, o pedido fica na conta da equipe (o cliente baixa pelo link).
+    const owner = pay.user_id ? String(pay.user_id) : check.session.userId;
+    const [req] = await sql`INSERT INTO service_requests (user_id, status, data)
+      VALUES (${owner}, 'in_progress', ${JSON.stringify(data)}::jsonb) RETURNING id::text`;
+    requestId = String(req.id);
+    await sql`UPDATE payments SET customer = customer || ${JSON.stringify({ requestId })}::jsonb WHERE id = ${paymentId}`;
+  }
+
+  form.set("id", requestId);
+  const result = await deliverFromForm(form, check.session.userId);
+  return Response.json({ ...result, requestId, inAccount: !!pay.user_id }, { status: result.ok ? 200 : 400 });
+}
