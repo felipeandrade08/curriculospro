@@ -1043,3 +1043,13 @@
 .cpa-order-kpis {
   margin-bottom: 14px;
 }
+.cpa-markpaid,
+.cpa-row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.cpa-markpaid small {
+  font-weight: 600;
+}

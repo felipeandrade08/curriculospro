@@ -3,6 +3,7 @@ import { WhatsappLogo } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChargeDeliver } from "./charge-deliver";
+import { MarkPaid } from "./mark-paid";
 
 type Charge = {
   id: string;
@@ -10,6 +11,7 @@ type Charge = {
   qrCode: string | null;
   qrCodeBase64: string | null;
   ticketUrl: string | null;
+  payUrl?: string | null;
   amountCents: number;
   description: string;
   expiresAt: string;
@@ -37,6 +39,7 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
   const [error, setError] = useState("");
   const [charge, setCharge] = useState<Charge | null>(null);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const current = KINDS.find((k) => k.id === kind)!;
   const [accountCharge, setAccountCharge] = useState(false);
   const needsAccount = charge ? accountCharge : kind === "semana" || kind === "mes";
@@ -50,6 +53,7 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
     setEmail(d.email || "");
     setAccountCharge(!!d.needsAccount);
     setCopied(false);
+    setLinkCopied(false);
     setError("");
   };
   useEffect(() => {
@@ -113,6 +117,7 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
       setCharge(d as Charge);
       setAccountCharge(kind === "semana" || kind === "mes");
       setCopied(false);
+      setLinkCopied(false);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível gerar o Pix.");
@@ -125,14 +130,23 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
   const waNumber = digits.length >= 10 && digits.length <= 11 ? "55" + digits : digits.startsWith("55") ? digits : "";
   const message = charge
     ? [
-        `Olá${name ? ", " + name.split(" ")[0] : ""}! Segue o Pix do CurriculosPRO:`,
+        `Olá${name ? ", " + name.split(" ")[0] : ""}! Segue o pagamento do CurriculosPRO:`,
         `*${charge.description}* — *${brl(charge.amountCents)}*`,
         "",
-        "Copie o código abaixo e cole no app do seu banco, em Pix > Pix Copia e Cola:",
-        "",
-        charge.qrCode || "",
-        "",
-        "Assim que pagar, me avise por aqui. 😊",
+        ...(charge.payUrl
+          ? [
+              "Toque no link, aperte *Copiar código Pix* e cole no app do seu banco, em Pix > Pix Copia e Cola:",
+              charge.payUrl,
+              "",
+              "A página mostra a confirmação sozinha assim que o pagamento cair. 😊",
+            ]
+          : [
+              "Copie o código abaixo e cole no app do seu banco, em Pix > Pix Copia e Cola:",
+              "",
+              charge.qrCode || "",
+              "",
+              "Assim que pagar, me avise por aqui. 😊",
+            ]),
       ].join("\n")
     : "";
   const waLink = (waNumber ? "https://wa.me/" + waNumber : "https://wa.me/") + "?text=" + encodeURIComponent(message);
@@ -148,6 +162,9 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
               : charge.status === "expired"
                 ? "Este Pix venceu."
                 : "Pagamento não concluído."}
+          {charge.status !== "approved" && (
+            <MarkPaid id={charge.id} onDone={() => setCharge({ ...charge, status: "approved" })} />
+          )}
           {(charge.status === "expired" || charge.status === "cancelled" || charge.status === "rejected") && (
             <button type="button" className="cpa-btn small" onClick={renew} disabled={renewing}>
               {renewing ? "Gerando…" : "Gerar novo Pix (mesma cobrança)"}
@@ -192,13 +209,25 @@ export function PixCharge({ cloud }: { cloud: { id: string; title: string; updat
               <a className="cpa-btn wa" href={waLink} target="_blank" rel="noreferrer">
                 <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Enviar no WhatsApp
               </a>
+              {charge.payUrl && (
+                <button
+                  type="button"
+                  className="cpa-btn ghost"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(charge.payUrl || "");
+                    setLinkCopied(true);
+                  }}
+                >
+                  {linkCopied ? "Link copiado ✓" : "Copiar link de pagamento"}
+                </button>
+              )}
               <button type="button" className="cpa-btn ghost" onClick={() => setCharge(null)}>
                 Nova cobrança
               </button>
             </div>
             <small className="cpa-muted">
-              Dica: mande a mensagem e, logo depois, mande o código sozinho numa segunda mensagem. Fica mais fácil
-              de copiar no celular.
+              A mensagem leva um link com o botão “Copiar código Pix” e a confirmação automática. Se o cliente
+              ainda assim pagar pela chave Pix, use “Recebi pela chave Pix” para dar baixa.
             </small>
           </div>
         </div>
