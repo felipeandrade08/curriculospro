@@ -24,7 +24,9 @@ export type UsageEvent =
   | "send_message_copied"
   | "linkedin_used"
   | "kit_gate_view"
-  | "robot_test_used";
+  | "robot_test_used"
+  | "ad_landing_view"
+  | "whatsapp_click";
 
 const repeatable = new Set<UsageEvent>([
   "pdf_print_requested",
@@ -41,6 +43,7 @@ const repeatable = new Set<UsageEvent>([
 const META_EVENTS: Partial<Record<UsageEvent, string>> = {
   resume_started: "Lead",
   checkout_started: "InitiateCheckout",
+  whatsapp_click: "Contact",
 };
 
 export function trackUsage(event: UsageEvent) {
