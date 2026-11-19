@@ -2500,3 +2500,15 @@
     justify-self: center;
   }
 }
+
+/* Promoção do pacote Currículo */
+.checkoutPlan .cpList {
+  color: #6b7a8c;
+  font-size: 13px;
+}
+.checkoutPlan em.cpPromo {
+  right: auto;
+  left: 10px;
+  color: #7a4b00;
+  background: #ffe066;
+}

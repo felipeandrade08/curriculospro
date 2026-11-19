@@ -15,6 +15,8 @@ export type AccessInfo = {
   /** Tem o Kit Emprego ativo (ferramentas de busca de emprego). */
   kit: boolean;
   kitUntil: string | null;
+  /** Tem um "Fazemos para você" pago e ainda não usado. */
+  service: boolean;
 };
 
 const initial: AccessInfo = {
@@ -25,6 +27,7 @@ const initial: AccessInfo = {
   active: false,
   referralBonus: false,
   kit: false,
+  service: false,
   kitUntil: null,
 };
 
@@ -63,6 +66,7 @@ export function useAccess() {
           kitUntil?: string | null;
           kit?: boolean;
           team?: boolean;
+        service?: boolean;
         };
       };
       setTeamBrowser(!!data.account.team);
@@ -80,6 +84,7 @@ export function useAccess() {
         referralBonus: !!data.account.referralBonus,
         kitUntil: data.account.kitUntil ?? null,
         kit: data.account.kit ?? hasKit(data.account.kitUntil),
+        service: !!data.account.service,
       });
     } catch {
       setAccess({ ...initial, loading: false });

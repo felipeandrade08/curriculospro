@@ -1,8 +1,7 @@
-import { hasActiveAccess } from "@/lib/billing";
 import { adminEmail } from "@/lib/server/admin";
 import { emailConfigured, sendEmail, serviceAdminEmail, serviceReceivedEmail } from "@/lib/server/email";
 import { isSameOrigin } from "@/lib/server/request";
-import { canRequest, createRequest, listMyRequests, parseServiceInput } from "@/lib/server/service";
+import { canRequest, createRequest, listMyRequests, parseServiceInput, serviceCredit } from "@/lib/server/service";
 import { getServerSession } from "@/lib/server/session";
 
 export const runtime = "nodejs";
@@ -26,9 +25,11 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession();
     if (!session) return Response.json({ error: "unauthorized" }, { status: 401 });
-    if (session.plan !== "pro" && !hasActiveAccess(session.accessUntil))
+    // Precisa de uma compra do "Fazemos para você" (ou Kit) ainda não usada; a equipe não paga.
+    const credit = session.plan === "pro" ? null : await serviceCredit(session.userId);
+    if (session.plan !== "pro" && !credit)
       return Response.json(
-        { error: "payment_required", message: "O serviço é incluído para quem tem o acesso ativo." },
+        { error: "payment_required", message: "Libere o Fazemos para você para enviar o pedido." },
         { status: 402 },
       );
     const input = parseServiceInput(await request.json().catch(() => null));
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "invalid", message: input }, { status: 400 });
     const blocked = await canRequest(session.userId);
     if (blocked) return Response.json({ error: "limit", message: blocked }, { status: 429 });
-    const created = await createRequest(session.userId, input);
+    const created = await createRequest(session.userId, input, credit);
     if (emailConfigured()) {
       const admin = adminEmail();
       await Promise.allSettled([

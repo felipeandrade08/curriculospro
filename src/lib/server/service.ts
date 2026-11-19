@@ -85,14 +85,29 @@ export async function canRequest(userId: string) {
     FROM service_requests WHERE user_id = ${userId}`;
   if (Number(r?.open || 0) > 0)
     return "Você já tem um pedido em andamento. Assim que entregarmos, você pode pedir outro.";
-  if (Number(r?.week || 0) > 0)
-    return "Cada acesso de 7 dias inclui um currículo feito pela equipe. Você já usou o desta semana.";
   return null;
 }
 
-export async function createRequest(userId: string, input: ServiceInput) {
+/**
+ * Compra que dá direito a um "Fazemos para você" e ainda não foi usada (a mais antiga primeiro):
+ * o pacote Fazemos para você (R$ 9,90), o Kit Emprego, ou o pacote Currículo de R$ 9,90 comprado
+ * antes da promoção (que incluía o serviço). Devolve o id do pagamento ou null.
+ */
+export async function serviceCredit(userId: string): Promise<string | null> {
+  const [row] = await db()`SELECT p.id FROM payments p
+    WHERE p.user_id = ${userId} AND p.granted_at IS NOT NULL AND p.revoked_at IS NULL
+      AND (p.plan IN ('servico', 'mes', 'upgrade') OR (p.plan = 'semana' AND p.original_cents >= 990))
+      AND p.access_until_after > now()
+      AND NOT EXISTS (SELECT 1 FROM service_requests r WHERE r.user_id = p.user_id AND r.status <> 'cancelled'
+        AND (r.data->>'paymentId' = p.id OR (r.data->>'paymentId' IS NULL AND r.created_at >= p.granted_at)))
+    ORDER BY p.granted_at ASC LIMIT 1`.catch(() => []);
+  return row ? String(row.id) : null;
+}
+
+export async function createRequest(userId: string, input: ServiceInput, paymentId?: string | null) {
+  const data = paymentId ? { ...input, paymentId } : input;
   const [row] =
-    await db()`INSERT INTO service_requests (user_id, data) VALUES (${userId}, ${JSON.stringify(input)}::jsonb)
+    await db()`INSERT INTO service_requests (user_id, data) VALUES (${userId}, ${JSON.stringify(data)}::jsonb)
     RETURNING id, status, data, created_at, delivered_at, delivered_resume_id, admin_note`;
   return toRow(row);
 }

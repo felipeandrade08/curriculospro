@@ -554,7 +554,7 @@ export async function SalesTab({
             ["semana", "Currículo (R$ 9,90)"],
             ["mes", "Kit Emprego (R$ 19,90)"],
             ["upgrade", "Upgrades para o Kit"],
-            ["servico", "Fazemos para você (painel)"],
+            ["servico", "Fazemos para você"],
           ] as const
         ).map(([id, label]) => {
           const r = byPlan.find((x) => String(x.plan) === id);

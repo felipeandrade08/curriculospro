@@ -1,7 +1,7 @@
 // E-mails automáticos via Resend (https://resend.com). Sem RESEND_API_KEY, nada é enviado.
 import { linkSecret } from "@/lib/server/secrets";
 import { createHmac } from "node:crypto";
-import { ACCESS_PRICE_LABEL, formatAccessUntil, formatBRL } from "@/lib/billing";
+import { ACCESS_PRICE_LABEL, formatAccessUntil, formatBRL, SERVICE_PRICE_LABEL } from "@/lib/billing";
 import { COMPANY, SITE_URL, SUPPORT_WHATSAPP_URL } from "@/lib/site";
 
 const FROM = () => process.env.EMAIL_FROM || "CurriculosPRO <contato@curriculospro.site>";
@@ -240,7 +240,7 @@ ${
     ? `<p style="background:#fff6d6;border-radius:10px;padding:14px 16px;font-size:16px">Use o cupom <b style="letter-spacing:.04em">${esc(p.coupon.code)}</b> na hora de pagar e libere 7 dias de downloads por <b>${esc(p.coupon.finalLabel)}</b>.</p>`
     : `<p>Com um Pix de ${ACCESS_PRICE_LABEL} você libera 7 dias de downloads, em PDF e Word, com carta de apresentação.</p>`
 }
-<p style="font-size:14px;color:#6b778c">Sem tempo para montar? <a href="${SITE_URL}/feito-para-voce" style="color:#1553d6">Nossa equipe faz o currículo para você em até 24h</a>, já incluído no acesso.</p>`,
+<p style="font-size:14px;color:#6b778c">Sem tempo para montar? <a href="${SITE_URL}/feito-para-voce" style="color:#1553d6">Nossa equipe faz o currículo para você em até 24h</a>, por ${SERVICE_PRICE_LABEL}.</p>`,
       cta: { label: "Continuar meu currículo", url },
       footer: `<a href="${unsub}" style="color:#6b778c">Não quero receber lembretes</a>`,
     }),

@@ -219,7 +219,7 @@ export function toCheckout(row: PaymentRow, accessUntil?: string | null): Checko
     expiresAt: iso(row.expires_at),
     amountCents: Number(row.amount_cents),
     accessUntil: accessUntil ?? null,
-    plan: row.plan === "mes" || row.plan === "upgrade" ? row.plan : "semana",
+    plan: row.plan === "mes" || row.plan === "upgrade" || row.plan === "servico" ? row.plan : "semana",
     couponCode: row.coupon_code ?? null,
   };
 }
