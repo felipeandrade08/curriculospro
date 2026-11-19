@@ -9,6 +9,7 @@ import { JobTools } from "@/components/job-tools";
 import { KitUpsell } from "@/components/kit-upsell";
 import { CustomerOnly } from "@/components/team-flag";
 import { templateMeta } from "@/lib/templates";
+import { ResumeThumb } from "@/components/resume-view";
 import {
   ACTIVE_RESUME_KEY,
   LEGACY_RESUME_KEY,
@@ -19,6 +20,7 @@ import {
   readRecovery,
   storeRecovery,
   cloneResume,
+  defaultOrder,
   migrateLegacyResume,
 } from "@/lib/resume";
 
@@ -45,6 +47,17 @@ export default function ResumesPage() {
     refresh();
     window.addEventListener("curriculospro:library-changed", refresh);
     return () => window.removeEventListener("curriculospro:library-changed", refresh);
+  }, []);
+  // Fecha o menu "Mais" ao clicar fora dele ou escolher uma opção.
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      document.querySelectorAll<HTMLDetailsElement>("details.ml-more[open]").forEach((menu) => {
+        const target = event.target as Node;
+        if (!menu.contains(target) || (target as HTMLElement).closest?.(".ml-more > div button")) menu.open = false;
+      });
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
   }, []);
   const save = (list: ResumeDocument[]) => {
     setItems(list);
@@ -132,160 +145,160 @@ export default function ResumesPage() {
     };
     reader.readAsText(file);
   };
+  const sectionsOf = (doc: ResumeDocument) =>
+    (doc.sectionOrder.length ? doc.sectionOrder : defaultOrder).filter((x) => !doc.hidden.includes(x));
+  const updated = (iso: string) => {
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+    if (days <= 0) return "hoje";
+    if (days === 1) return "ontem";
+    if (days < 7) return `há ${days} dias`;
+    return new Date(iso).toLocaleDateString("pt-BR");
+  };
+
   return (
-    <main className="libraryPage">
+    <main className="libraryPage ml">
       <SiteHeader active="curriculos" />
-      <section className="libraryUtility shell">
+
+      <section className="ml-head shell">
         <div>
-          <span className="librarySecureDot" />
-          Área pessoal de currículos
+          <h1>Meus currículos</h1>
+          <p>Crie uma versão para cada tipo de vaga. Tudo fica salvo aqui e na sua conta.</p>
         </div>
-        <button
-          className="ghostAction"
-          disabled={!items.length}
-          title={
-            items.length ? "Baixar uma cópia dos seus currículos" : "Crie um currículo antes de exportar"
-          }
-          onClick={exportAll}
-        >
-          Exportar backup
-        </button>
-      </section>
-      <section className="libraryHero shell">
-        <div>
-          <span className="pill">SEUS CURRÍCULOS</span>
-          <h1>Um perfil. Várias oportunidades.</h1>
-          <p>
-            Crie versões diferentes do seu currículo para cada objetivo profissional. Elas ficam neste
-            dispositivo e, quando você quiser, também podem ser sincronizadas com sua conta.
-          </p>
-        </div>
-        <div className="libraryActions">
+        <div className="ml-head-actions">
           <button className="primary" onClick={() => add("blank")}>
             ＋ Novo currículo
           </button>
           <a className="secondary" href="/modelos">
             Escolher modelo
           </a>
-          <button className="secondary" onClick={() => add("example")}>
-            Usar exemplo
-          </button>
-          <label className="secondary importButton">
-            Importar backup
-            <input
-              type="file"
-              accept=".json,application/json"
-              onChange={(e) => importFile(e.target.files?.[0])}
-            />
-          </label>
         </div>
       </section>
-      <div className="shell">
-        <KitUpsell />
-        <JobTools />
-        <CustomerOnly>
-          <ReferralCard />
-        </CustomerOnly>
-      </div>
-      <section className="profileSection shell">
-        <div className="sectionEyebrow">SUA BASE PROFISSIONAL</div>
-        <ProfessionalProfileCard resumes={items} />
-      </section>
-      <section className="accountSection shell">
-        <div className="sectionEyebrow">CONTA E ARMAZENAMENTO</div>
-        <CloudSync />
-      </section>
-      <section className="libraryStatusGrid shell">
-        <section className="storageStatus">
-          <div>
-            <b>✓ Salvo neste dispositivo</b>
-            <span>
-              Seus currículos ficam salvos apenas neste navegador, sem precisar de conta. Se você limpar os
-              dados do navegador ou trocar de aparelho, poderá perdê-los. Use “Exportar backup” para guardar
-              uma cópia.
-            </span>
-          </div>
-          {recoveryDate && <button onClick={restore}>↶ Restaurar última recuperação</button>}
-        </section>
-        <div className="dataSafetyCard">
-          <span className="safetyIcon">✓</span>
-          <div>
-            <b>Você mantém o controle</b>
-            <p>
-              O modo local continua disponível mesmo sem conta. Use backup e sincronização como camadas extras
-              de proteção.
-            </p>
-            <a href="/privacidade">Como tratamos seus dados →</a>
-          </div>
+
+      <section className="ml-library shell" aria-labelledby="ml-lib-title">
+        <div className="ml-section-head">
+          <h2 id="ml-lib-title">
+            Seus currículos <span>{items.length}</span>
+          </h2>
+          {recoveryDate && (
+            <button className="ml-link" onClick={restore}>
+              ↶ Desfazer última exclusão
+            </button>
+          )}
         </div>
-      </section>
-      <section className="librarySectionHead shell">
-        <div>
-          <span>BIBLIOTECA</span>
-          <h2>Seus currículos</h2>
-        </div>
-        <small>
-          {items.length} {items.length === 1 ? "currículo" : "currículos"} neste dispositivo
-        </small>
-      </section>
-      <section className="resumeLibrary shell">
         {items.length ? (
-          items.map((doc) => (
-            <article className="resumeCard" key={doc.id}>
-              <div className={"resumeCardThumb " + doc.template}>
-                <i style={{ background: doc.accent }} />
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="resumeCardBody">
-                <small>{templateMeta(doc.template).name.toUpperCase()}</small>
-                <h2>{doc.title}</h2>
-                <p>
-                  {doc.cv.role || "Sem título profissional"} · atualizado{" "}
-                  {new Date(doc.updatedAt).toLocaleDateString("pt-BR")}
-                </p>
-                <div>
-                  <button className="cardPrimary" onClick={() => open(doc.id)}>
-                    Continuar editando
-                  </button>
-                  <button
-                    onClick={() => {
-                      localStorage.setItem(ACTIVE_RESUME_KEY, doc.id);
-                      location.href = "/carta";
-                    }}
-                  >
-                    Carta de apresentação
-                  </button>
-                  <button onClick={() => rename(doc)}>Renomear</button>
-                  <button onClick={() => duplicate(doc)}>Duplicar</button>
-                  <button className="dangerText" onClick={() => remove(doc.id)}>
-                    Excluir
-                  </button>
+          <div className="ml-grid">
+            {items.map((doc) => (
+              <article className="ml-card" key={doc.id}>
+                <button className="ml-thumb" onClick={() => open(doc.id)} aria-label={"Abrir " + doc.title}>
+                  <ResumeThumb
+                    width={196}
+                    cv={doc.cv}
+                    template={doc.template}
+                    accent={doc.accent}
+                    density={doc.density}
+                    sections={sectionsOf(doc)}
+                  />
+                </button>
+                <div className="ml-card-body">
+                  <h3 title={doc.title}>{doc.title}</h3>
+                  <p>{doc.cv.role || "Sem cargo definido"}</p>
+                  <small>
+                    {templateMeta(doc.template).name} · editado {updated(doc.updatedAt)}
+                  </small>
+                  <div className="ml-card-actions">
+                    <button className="cardPrimary" onClick={() => open(doc.id)}>
+                      Editar e baixar
+                    </button>
+                    <details className="ml-more">
+                      <summary aria-label={"Mais opções de " + doc.title}>Mais</summary>
+                      <div>
+                        <button
+                          onClick={() => {
+                            localStorage.setItem(ACTIVE_RESUME_KEY, doc.id);
+                            location.href = "/carta";
+                          }}
+                        >
+                          Carta de apresentação
+                        </button>
+                        <button onClick={() => rename(doc)}>Renomear</button>
+                        <button onClick={() => duplicate(doc)}>Duplicar</button>
+                        <button className="dangerText" onClick={() => remove(doc.id)}>
+                          Excluir
+                        </button>
+                      </div>
+                    </details>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))
+              </article>
+            ))}
+            <button className="ml-new" onClick={() => add("blank")}>
+              <span aria-hidden="true">＋</span>
+              <b>Novo currículo</b>
+              <small>Em branco, ou escolha um modelo</small>
+            </button>
+          </div>
         ) : (
           <div className="emptyLibrary">
             <span className="emptyIcon">CV</span>
-            <b>Seu espaço está pronto.</b>
-            <p>
-              Crie seu primeiro currículo profissional ou abra um exemplo para conhecer todos os recursos.
-            </p>
+            <b>Você ainda não tem currículos aqui.</b>
+            <p>Crie o primeiro, use um exemplo pronto ou peça para a nossa equipe fazer o seu.</p>
             <div>
               <button className="primary" onClick={() => add("blank")}>
-                Criar primeiro currículo →
+                Criar meu currículo
               </button>
-              <a className="secondary" href="/modelos">
-                Escolher um modelo
-              </a>
               <button className="secondary" onClick={() => add("example")}>
-                Explorar exemplo
+                Começar com um exemplo
               </button>
+              <a className="secondary" href="/feito-para-voce">
+                Quero que façam o meu
+              </a>
             </div>
           </div>
         )}
+      </section>
+
+      <section className="ml-block shell">
+        <KitUpsell />
+        <JobTools />
+      </section>
+
+      <section className="ml-block shell" aria-labelledby="ml-profile-title">
+        <div className="ml-section-head">
+          <h2 id="ml-profile-title">Seu perfil profissional</h2>
+        </div>
+        <ProfessionalProfileCard resumes={items} />
+      </section>
+
+      <CustomerOnly>
+        <section className="ml-block shell">
+          <ReferralCard />
+        </section>
+      </CustomerOnly>
+
+      <section className="ml-block shell" aria-labelledby="ml-account-title">
+        <div className="ml-section-head">
+          <h2 id="ml-account-title">Conta e backup</h2>
+        </div>
+        <CloudSync />
+        <div className="ml-backup">
+          <p>
+            Seus currículos ficam salvos neste navegador e, com a conta conectada, também na nuvem. Para
+            garantir, guarde uma cópia. <a href="/privacidade">Como tratamos seus dados</a>
+          </p>
+          <div>
+            <button className="secondary" disabled={!items.length} onClick={exportAll}>
+              Baixar cópia (backup)
+            </button>
+            <label className="secondary importButton">
+              Restaurar de um backup
+              <input
+                type="file"
+                accept=".json,application/json"
+                onChange={(e) => importFile(e.target.files?.[0])}
+              />
+            </label>
+          </div>
+        </div>
       </section>
       <SiteFooter />
     </main>
