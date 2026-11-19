@@ -3,6 +3,7 @@ import { checkAdmin } from "@/lib/server/admin";
 import { db } from "@/lib/server/db";
 import { createPixPayment, mercadoPagoConfigured, MercadoPagoError } from "@/lib/server/mercadopago";
 import { PANEL_REFERENCE, clientStatus, insertPayment } from "@/lib/server/payments";
+import { payUrl } from "@/lib/server/pay-link";
 import { isSameOrigin, publicBaseUrl } from "@/lib/server/request";
 
 export const runtime = "nodejs";
@@ -76,6 +77,7 @@ export async function POST(request: Request) {
       qrCode: data?.qr_code || null,
       qrCodeBase64: data?.qr_code_base64 || null,
       ticketUrl: data?.ticket_url || null,
+      payUrl: payUrl(String(payment.id)),
       amountCents: cents,
       description: customer.description || "CurriculosPRO",
       expiresAt: payment.date_of_expiration || expiresAt.toISOString(),

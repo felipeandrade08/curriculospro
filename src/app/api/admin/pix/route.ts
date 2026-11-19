@@ -10,6 +10,7 @@ import {
   findPayment,
   insertPayment,
 } from "@/lib/server/payments";
+import { payUrl } from "@/lib/server/pay-link";
 import { isSameOrigin, publicBaseUrl } from "@/lib/server/request";
 
 export const runtime = "nodejs";
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
       qrCode: data?.qr_code || null,
       qrCodeBase64: data?.qr_code_base64 || null,
       ticketUrl: data?.ticket_url || null,
+      payUrl: payUrl(String(payment.id)),
       amountCents: cents,
       description: title,
       expiresAt: payment.date_of_expiration || expiresAt.toISOString(),

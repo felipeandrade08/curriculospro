@@ -145,6 +145,22 @@ export async function getPayment(id: string): Promise<MercadoPagoPayment> {
   return (await response.json()) as MercadoPagoPayment;
 }
 
+/** Cancela um Pix ainda não pago (evita o cliente pagar duas vezes). */
+export async function cancelPayment(id: string) {
+  if (!/^\d{1,20}$/.test(id)) throw new MercadoPagoError("ID de pagamento inválido", 400);
+  const response = await fetch(API + "/v1/payments/" + id, {
+    method: "PUT",
+    headers: { authorization: "Bearer " + token(), "content-type": "application/json" },
+    body: JSON.stringify({ status: "cancelled" }),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 800);
+    throw new MercadoPagoError("Falha ao cancelar pagamento", response.status, detail);
+  }
+  return (await response.json()) as MercadoPagoPayment;
+}
+
 /**
  * Valida o cabeçalho x-signature das notificações do Mercado Pago.
  * Manifesto: id:[data.id];request-id:[x-request-id];ts:[ts];

@@ -5,6 +5,7 @@ import { channelOf, type SaleSource } from "@/lib/server/sales-source";
 import { PixCharge } from "./pix-charge";
 import { ChargeDeliver } from "./charge-deliver";
 import { RenewCharge } from "./renew-charge";
+import { MarkPaid } from "./mark-paid";
 import { db } from "@/lib/server/db";
 import { formatBRL } from "@/lib/billing";
 import {
@@ -177,6 +178,7 @@ export async function ChargeTab({ adminUserId }: { adminUserId: string }) {
                       <td>{formatBRL(n(r.amount_cents))}</td>
                       <td>
                         <span className={"cpa-pill " + st}>{PAY_STATUS[st] || st}</span>
+                        {c.paidVia === "chave_pix" ? <small className="cpa-muted"> · pela chave</small> : null}
                       </td>
                       <td>
                         {isPaid || link ? (
@@ -188,8 +190,15 @@ export async function ChargeTab({ adminUserId }: { adminUserId: string }) {
                             link={link}
                             inAccount={!!r.account}
                           />
+                        ) : c.replacedBy ? (
+                          <small className="cpa-muted">Substituído por um Pix novo</small>
                         ) : st === "cancelled" || st === "rejected" ? (
-                          <RenewCharge id={String(r.id)} />
+                          <span className="cpa-row-actions">
+                            <RenewCharge id={String(r.id)} />
+                            <MarkPaid id={String(r.id)} />
+                          </span>
+                        ) : st === "pending" || st === "in_process" ? (
+                          <MarkPaid id={String(r.id)} />
                         ) : (
                           "—"
                         )}
@@ -520,7 +529,7 @@ export async function SalesTab({
         count(*)::int AS total
       FROM payments WHERE created_at >= now() - make_interval(days => ${days})`;
     rows =
-      await sql`SELECT p.id, COALESCE(u.email, p.customer->>'name', p.customer->>'email', 'Venda pelo painel') AS email, p.amount_cents, p.status, p.created_at, p.approved_at, p.revoked_at, u.access_until, p.method, p.plan, p.coupon_code, p.source
+      await sql`SELECT p.id, COALESCE(u.email, p.customer->>'name', p.customer->>'email', 'Venda pelo painel') AS email, p.amount_cents, p.status, p.created_at, p.approved_at, p.revoked_at, u.access_until, p.method, p.plan, p.coupon_code, p.source, p.customer->>'paidVia' AS paid_via
       FROM payments p LEFT JOIN app_users u ON u.id = p.user_id
       WHERE p.created_at >= now() - make_interval(days => ${days})
         AND (${q.trim()} = '' OR lower(COALESCE(u.email, p.customer->>'email', p.customer->>'name', '')) LIKE ${like} OR p.id = ${q.trim()})
@@ -636,7 +645,7 @@ export async function SalesTab({
                         {formatBRL(n(p.amount_cents))}
                         <small className="cpa-muted">
                           {" "}
-                          {p.method === "card" ? "cartão" : "Pix"}
+                          {p.method === "card" ? "cartão" : p.paid_via === "chave_pix" ? "chave Pix" : "Pix"}
                           {p.plan === "mes"
                             ? " · Kit"
                             : p.plan === "upgrade"
