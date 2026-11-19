@@ -1236,3 +1236,29 @@ body {
 .promo-tag {
   width: fit-content;
 }
+
+/* Preços: Fazemos para você em primeiro, em destaque */
+.pricingPage .pricingService.pricingServiceTop {
+  margin-top: 8px;
+  margin-bottom: 36px;
+  padding: 40px 44px;
+  box-shadow: 0 24px 60px rgba(21, 83, 214, 0.28);
+  outline: 4px solid var(--marker, #ffe066);
+  outline-offset: 6px;
+}
+.pricingPage .pricingServiceTop h2 {
+  font-size: clamp(26px, 3.4vw, 38px);
+}
+.pricingPage .pricingServiceTop .pricingServiceCta strong {
+  font-size: 44px;
+}
+@media (max-width: 760px) {
+  .pricingPage .pricingService.pricingServiceTop {
+    padding: 26px 22px;
+    outline-width: 3px;
+    outline-offset: -3px;
+  }
+}
+.pricingPage .pricingServiceTop h2 {
+  margin-bottom: 20px;
+}

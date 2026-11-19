@@ -75,11 +75,42 @@ export default function PricingPage() {
       <UsageBeacon event="pricing_view" />
       <SiteHeader active="precos" />
       <section className="pricingHero shell">
-        <h1>Crie de graça. Pague só quando for baixar.</h1>
+        <h1>A gente faz seu currículo. Ou você monta sozinho.</h1>
         <p>
-          Monte seu currículo com calma, teste modelos e ajuste cada detalhe sem pagar nada. Quando estiver
-          pronto, libere o PDF com um único Pix.
+          Peça para a nossa equipe e receba pronto em até 24 horas por {SERVICE_PRICE_LABEL}. Prefere fazer você
+          mesmo? Crie de graça e pague só para baixar, agora com {PROMO_PERCENT}% de desconto.
         </p>
+      </section>
+
+      <section className="pricingService pricingServiceTop shell" aria-labelledby="serviceTitle">
+        <div>
+          <span className="pricingServiceTag">Fazemos para você · recomendado</span>
+          <h2 id="serviceTitle">Nossa equipe faz seu currículo, pronto em até 24 horas</h2>
+          <ul>
+            <li>
+              Você não precisa escrever nada: <b>a equipe escreve e organiza</b> para você
+            </li>
+            <li>
+              Você manda o currículo antigo ou conta onde trabalhou, <b>pelo site ou pelo WhatsApp</b>
+            </li>
+            <li>
+              Recebe em <b>PDF e Word</b>, por link no WhatsApp e por e-mail
+            </li>
+            <li>
+              <b>{SERVICE_SUPPORT_DAYS} dias de suporte</b> para pedir ajustes
+            </li>
+          </ul>
+        </div>
+        <div className="pricingServiceCta">
+          <strong>{SERVICE_PRICE_LABEL}</strong>
+          <span>pagamento único · sem mensalidade</span>
+          <Link href="/feito-para-voce" className="btn btn-primary btn-lg">
+            Quero que façam o meu
+          </Link>
+          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+            <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Ou peça pelo WhatsApp
+          </a>
+        </div>
       </section>
 
       <section className="pricingPlans three shell" aria-label="Pacotes">
@@ -208,37 +239,6 @@ export default function PricingPage() {
             <span>Por {ACCESS_DAYS} dias, baixe e atualize seus currículos quantas vezes precisar.</span>
           </li>
         </ol>
-      </section>
-
-      <section className="pricingService shell" aria-labelledby="serviceTitle">
-        <div>
-          <span className="pricingServiceTag">Fazemos para você</span>
-          <h2 id="serviceTitle">Prefere que a gente faça? Seu currículo pronto por {SERVICE_PRICE_LABEL}</h2>
-          <ul>
-            <li>
-              Nossa equipe monta seu currículo em <b>até 24 horas</b>
-            </li>
-            <li>
-              Você manda o currículo antigo ou conta onde trabalhou, <b>pelo site ou pelo WhatsApp</b>
-            </li>
-            <li>
-              Recebe em <b>PDF e Word</b>, por link no WhatsApp e por e-mail
-            </li>
-            <li>
-              <b>{SERVICE_SUPPORT_DAYS} dias de suporte</b> para pedir ajustes
-            </li>
-          </ul>
-        </div>
-        <div className="pricingServiceCta">
-          <strong>{SERVICE_PRICE_LABEL}</strong>
-          <span>pagamento único · sem mensalidade</span>
-          <Link href="/feito-para-voce" className="btn btn-primary btn-lg">
-            Quero que façam o meu
-          </Link>
-          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-            <WhatsappLogo size={18} weight="fill" aria-hidden="true" /> Ou peça pelo WhatsApp
-          </a>
-        </div>
       </section>
 
       <section className="pricingFaq shell" aria-labelledby="faqTitle">
