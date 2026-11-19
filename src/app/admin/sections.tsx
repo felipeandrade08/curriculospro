@@ -379,6 +379,14 @@ export async function OverviewTab({ days, href }: { days: number; href: Href }) 
               <dt>PDFs baixados</dt>
               <dd>{ev.get("pdf_print_requested") || 0}</dd>
             </div>
+            <div>
+              <dt>Página do anúncio</dt>
+              <dd>{ev.get("ad_landing_view") || 0}</dd>
+            </div>
+            <div>
+              <dt>Cliques no WhatsApp</dt>
+              <dd>{ev.get("whatsapp_click") || 0}</dd>
+            </div>
           </dl>
           <p className="cpa-muted">
             Etapas contadas uma vez por sessão; vendas confirmadas pelo Mercado Pago.

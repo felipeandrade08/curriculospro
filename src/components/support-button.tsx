@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { SUPPORT_WHATSAPP_URL } from "@/lib/site";
 import { useTeam } from "@/components/team-flag";
 
-const HIDDEN = ["/editor", "/carta", "/admin", "/auth", "/e/", "/entrega/"];
+const HIDDEN = ["/editor", "/carta", "/admin", "/auth", "/e/", "/entrega/", "/fazemos"];
 
 /** Atendimento humano sempre à mão (fora das telas de edição, que já têm barras próprias). */
 export function SupportButton() {

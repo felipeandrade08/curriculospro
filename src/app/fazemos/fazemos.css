@@ -1,0 +1,371 @@
+/* Página de anúncio "A gente faz seu currículo" — pensada primeiro para o celular. */
+.fz {
+  --fz-ink: #071d43;
+  --fz-blue: #1553d6;
+  --fz-sky: #eaf5ff;
+  --fz-muted: #4f6079;
+  --fz-wa: #128c4b;
+  --fz-wa-dark: #0e7a40;
+  --fz-chat: #e7f8dd;
+  color: var(--fz-ink);
+  background: #fff;
+  padding-bottom: 84px;
+}
+.fz section h1,
+.fz section h2,
+.fz section h3 {
+  color: var(--fz-ink);
+  margin: 0;
+}
+.fz-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.fz-top {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 12px 20px;
+}
+.fz-logo img {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+
+/* Topo */
+.fz-hero {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 12px 20px 40px;
+  display: grid;
+  gap: 28px;
+}
+.fz-hero h1 {
+  font-size: clamp(32px, 8.5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  max-width: 13ch;
+}
+.fz-lead {
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--fz-muted);
+  margin: 16px 0 24px;
+  max-width: 34em;
+}
+.fz-actions {
+  display: grid;
+  gap: 12px;
+  max-width: 380px;
+}
+.fz-wa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 24px;
+  border-radius: 14px;
+  background: var(--fz-wa);
+  color: #fff !important;
+  font-weight: 800;
+  font-size: 18px;
+  text-decoration: none;
+  box-shadow: 0 6px 0 var(--fz-wa-dark);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.fz-wa:hover {
+  background: var(--fz-wa-dark);
+}
+.fz-wa:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--fz-wa-dark);
+}
+.fz-wa:focus-visible,
+.fz-site:focus-visible,
+.fz summary:focus-visible {
+  outline: 3px solid var(--fz-blue);
+  outline-offset: 3px;
+}
+.fz-site {
+  text-align: center;
+  font-weight: 700;
+  color: var(--fz-blue);
+  padding: 10px;
+}
+.fz-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0 0;
+  color: var(--fz-muted);
+  font-size: 14px;
+}
+
+/* Conversa + folha: mostra o caminho do WhatsApp até o currículo pronto */
+.fz-demo {
+  position: relative;
+  min-height: 340px;
+  background: var(--fz-sky);
+  border-radius: 24px;
+  padding: 22px 18px;
+  overflow: hidden;
+}
+.fz-chat {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+  max-width: 250px;
+}
+.fz-msg {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.35;
+  box-shadow: 0 1px 1px rgba(7, 29, 67, 0.12);
+}
+.fz-msg.in {
+  background: #fff;
+  border-top-left-radius: 4px;
+  justify-self: start;
+}
+.fz-msg.out {
+  background: var(--fz-chat);
+  border-top-right-radius: 4px;
+  justify-self: end;
+  margin-left: 28px;
+}
+.fz-photo span {
+  display: block;
+  padding: 18px 14px;
+  border-radius: 8px;
+  background: repeating-linear-gradient(-45deg, #f1f4f8 0 8px, #e6ebf2 8px 16px);
+  color: var(--fz-muted);
+  font-size: 13px;
+}
+.fz-sheet {
+  position: absolute;
+  right: -28px;
+  bottom: -60px;
+  transform: rotate(-6deg);
+  box-shadow: 0 18px 40px rgba(7, 29, 67, 0.22);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* Passos */
+.fz-band {
+  background: var(--fz-ink);
+  color: #fff;
+  padding: 44px 0;
+}
+.fz .fz-band h2 {
+  color: #fff;
+}
+.fz section h2 {
+  font-size: clamp(24px, 6vw, 34px);
+  line-height: 1.15;
+  font-weight: 800;
+  margin-bottom: 20px;
+}
+.fz-steps {
+  list-style: none;
+  counter-reset: fz;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 22px;
+}
+.fz-steps li {
+  counter-increment: fz;
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  column-gap: 14px;
+}
+.fz-steps li::before {
+  content: counter(fz);
+  grid-row: span 2;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #ffd43b;
+  color: var(--fz-ink);
+  font-weight: 800;
+  font-size: 20px;
+}
+.fz .fz-steps h3 {
+  color: #fff;
+  font-size: 19px;
+  margin-top: 2px;
+}
+.fz-steps p {
+  margin: 4px 0 0;
+  color: #c9d5ea;
+  line-height: 1.5;
+}
+
+/* O que mandar */
+.fz-what {
+  padding-top: 44px;
+}
+.fz-what ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.fz-what li {
+  padding: 14px 16px 14px 46px;
+  border-radius: 12px;
+  background: var(--fz-sky);
+  position: relative;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.fz-what li::before {
+  content: "✓";
+  position: absolute;
+  left: 16px;
+  top: 13px;
+  color: var(--fz-wa);
+  font-weight: 900;
+}
+
+/* Depoimentos */
+.fz-reviews {
+  padding-top: 44px;
+}
+.fz-review-list {
+  display: grid;
+  gap: 14px;
+}
+.fz-reviews figure {
+  margin: 0;
+  padding: 18px;
+  border: 1px solid #dfe8f1;
+  border-radius: 14px;
+}
+.fz-reviews blockquote {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+.fz-reviews figcaption {
+  color: var(--fz-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Dúvidas */
+.fz-faq {
+  padding-top: 44px;
+}
+.fz-faq details {
+  border-bottom: 1px solid #dfe8f1;
+}
+.fz-faq summary {
+  cursor: pointer;
+  padding: 16px 0;
+  font-weight: 700;
+  font-size: 17px;
+  list-style-position: outside;
+}
+.fz-faq details p {
+  margin: 0 0 16px;
+  color: var(--fz-muted);
+  line-height: 1.55;
+}
+.fz-diy {
+  margin: 22px 0 0;
+  color: var(--fz-muted);
+}
+.fz-diy a {
+  color: var(--fz-blue);
+  font-weight: 700;
+}
+
+/* Fechamento */
+.fz-close {
+  margin: 48px 20px;
+  padding: 32px 22px;
+  border-radius: 24px;
+  background: var(--fz-sky);
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+.fz-close h2 {
+  max-width: 18ch;
+}
+
+/* Barra fixa no celular */
+.fz-sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid #dfe8f1;
+}
+.fz-sticky .fz-wa {
+  width: 100%;
+  min-height: 52px;
+  box-shadow: none;
+}
+
+@media (min-width: 860px) {
+  .fz {
+    padding-bottom: 0;
+  }
+  .fz-hero {
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: center;
+    padding-top: 28px;
+    padding-bottom: 64px;
+  }
+  .fz-actions {
+    grid-template-columns: auto auto;
+    max-width: none;
+    justify-content: start;
+    align-items: center;
+  }
+  .fz-demo {
+    min-height: 420px;
+    padding: 32px;
+  }
+  .fz-steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .fz-what ul,
+  .fz-review-list {
+    grid-template-columns: 1fr 1fr;
+  }
+  .fz-close {
+    max-width: 940px;
+    margin: 64px auto;
+  }
+  .fz-sticky {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fz-wa {
+    transition: none;
+  }
+}
+.fz-sticky .fz-wa {
+  font-size: 16px;
+  white-space: nowrap;
+  padding: 0 14px;
+}
