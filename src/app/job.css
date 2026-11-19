@@ -2512,3 +2512,289 @@
   color: #7a4b00;
   background: #ffe066;
 }
+
+/* ───────── Meus currículos (organizado) ───────── */
+.ml .ml-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding-top: 40px;
+  padding-bottom: 8px;
+}
+.ml .ml-head h1 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 42px);
+  letter-spacing: -0.02em;
+  color: var(--ink, #0e1b2e);
+}
+.ml .ml-head p {
+  margin: 6px 0 0;
+  color: #5b6b7d;
+  font-size: 15px;
+}
+.ml-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ml-head-actions .primary,
+.ml-head-actions .secondary,
+.ml-backup .secondary {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.ml-library,
+.ml-block {
+  margin-top: 30px;
+}
+.ml-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ml-section-head h2 {
+  margin: 0;
+  font-size: 21px;
+  color: var(--ink, #0e1b2e);
+}
+.ml-section-head h2 span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #e8eef9;
+  color: #1553d6;
+  font-size: 13px;
+  vertical-align: 3px;
+}
+.ml-link {
+  border: 0;
+  background: none;
+  color: #1553d6;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 6px 0;
+}
+.ml-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+}
+.ml-card {
+  display: flex;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid #dfe6ef;
+  border-radius: 18px;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ml-card:hover {
+  border-color: #b9cbe6;
+  box-shadow: 0 10px 30px rgba(14, 27, 46, 0.07);
+}
+.ml-thumb {
+  flex: none;
+  padding: 0;
+  border: 1px solid #e3e9f1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  cursor: pointer;
+  width: 120px;
+  height: 170px;
+  position: relative;
+}
+.ml-thumb .cvThumb {
+  transform: scale(0.612);
+  transform-origin: top left;
+  pointer-events: none;
+}
+.ml-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.ml-card-body h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--ink, #0e1b2e);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ml-card-body p {
+  margin: 0;
+  color: #3a4a5f;
+  font-size: 14px;
+}
+.ml-card-body small {
+  color: #6b7a8c;
+  font-size: 12px;
+}
+.ml-card-actions {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ml-card-actions .cardPrimary {
+  margin: 0;
+}
+.ml-more {
+  position: relative;
+}
+.ml-more summary {
+  list-style: none;
+  cursor: pointer;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid #d5e1ec;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3a4a5f;
+  background: #fff;
+}
+.ml-more summary::-webkit-details-marker {
+  display: none;
+}
+.ml-more summary::after {
+  content: "▾";
+  margin-left: 6px;
+  font-size: 11px;
+}
+.ml-more[open] summary {
+  border-color: #1553d6;
+  color: #1553d6;
+}
+.ml-more > div {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 210px;
+  display: grid;
+  padding: 6px;
+  border: 1px solid #dfe6ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(14, 27, 46, 0.14);
+}
+.ml-more > div button {
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #1f2a37;
+}
+.ml-more > div button:hover {
+  background: #f2f6fc;
+}
+.ml-more > div .dangerText {
+  color: #b42318;
+}
+.ml-new {
+  min-height: 204px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  border: 2px dashed #c8d6ea;
+  border-radius: 18px;
+  background: #f8fbff;
+  cursor: pointer;
+  color: #1553d6;
+}
+.ml-new span {
+  font-size: 30px;
+  line-height: 1;
+}
+.ml-new b {
+  font-size: 16px;
+}
+.ml-new small {
+  color: #5b6b7d;
+}
+.ml-new:hover {
+  border-color: #1553d6;
+  background: #f2f6ff;
+}
+.ml-backup {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid #dfe6ef;
+  border-radius: 16px;
+  background: #fff;
+}
+.ml-backup p {
+  margin: 0;
+  flex: 1 1 320px;
+  color: #5b6b7d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.ml-backup > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ml .ml-block .jobTools,
+.ml .ml-block .profileCard {
+  margin-top: 0;
+}
+@media (max-width: 600px) {
+  .ml .ml-head {
+    padding-top: 24px;
+  }
+  .ml-head-actions {
+    width: 100%;
+  }
+  .ml-head-actions > * {
+    flex: 1;
+  }
+  .ml-card {
+    gap: 14px;
+    padding: 14px;
+  }
+  .ml-thumb {
+    width: 96px;
+    height: 136px;
+  }
+  .ml-thumb .cvThumb {
+    transform: scale(0.49);
+  }
+  .ml-card-actions {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 600px) {
+  .ml-new {
+    min-height: 110px;
+  }
+}
