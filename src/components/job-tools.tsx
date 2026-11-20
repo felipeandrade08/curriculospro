@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const TOOLS = [
   { href: "/plataformas", title: "Sites de vagas", text: "Gupy, Indeed, Infojobs: seus dados prontos para colar." },
+  { href: "/nota", title: "Nota para a vaga", text: "Cole a vaga e veja a nota do seu currículo, de 0 a 10." },
   { href: "/teste-robo", title: "Teste do robô", text: "Veja se os sistemas de seleção leem seu currículo." },
   { href: "/adaptar-vaga", title: "Comparar com uma vaga", text: "Veja o que a vaga pede e o que falta no seu currículo." },
   { href: "/enviar-curriculo", title: "Mensagem para enviar", text: "Texto pronto para WhatsApp, e-mail e LinkedIn." },

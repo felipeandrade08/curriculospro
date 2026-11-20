@@ -97,7 +97,14 @@ export default function ImportResumePage() {
       });
       if (saveProfile) mergeIntoProfile(cv);
       trackUsage("resume_imported");
-      router.push("/editor");
+      // Vindo da "Nota do currículo": depois de importar, segue para adaptar à vaga.
+      let next = "/editor";
+      try {
+        const after = sessionStorage.getItem("curriculospro.afterImport");
+        sessionStorage.removeItem("curriculospro.afterImport");
+        if (after === "/adaptar-vaga") next = after;
+      } catch {}
+      router.push(next);
     } catch {
       setError("Não foi possível salvar neste navegador. Verifique se há espaço livre e tente de novo.");
     }
