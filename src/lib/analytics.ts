@@ -26,7 +26,8 @@ export type UsageEvent =
   | "kit_gate_view"
   | "robot_test_used"
   | "ad_landing_view"
-  | "whatsapp_click";
+  | "whatsapp_click"
+  | "grade_used";
 
 const repeatable = new Set<UsageEvent>([
   "pdf_print_requested",
